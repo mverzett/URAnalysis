@@ -29,10 +29,10 @@ def compile_string(includes, libs, src, trgt)
   fnal_libs = ''
   if ENV['HOSTNAME'].include? "fnal.gov"
     #assume we are using CMSSW
-    fnal_include="-I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/include/"
-    fnal_libs="-L/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/lib/"
+    fnal_include="-I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/include/ -I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/lhapdf6/6.1.5/include"
+    fnal_libs="-L/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/lib/ -L/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/lhapdf6/6.1.5/lib"
   end
-  return "g++ -g -std=c++11 -Wl,--no-as-needed #{fnal_include} #{includes.map{|x| '-I'+x}.join(' ')} `root-config --cflags` `root-config --libs` -lMinuit #{fnal_libs} -lboost_program_options #{libs.join(' ')} #{src} -o #{trgt}"
+  return "g++ -g -std=c++11 -Wl,--no-as-needed #{fnal_include} #{includes.map{|x| '-I'+x}.join(' ')} `root-config --cflags` `root-config --libs` -lMinuit #{fnal_libs} -lLHAPDF -lboost_program_options #{libs.join(' ')} #{src} -o #{trgt}"
 end
      
 
@@ -44,7 +44,7 @@ def make_obj_task(source, dependencies, *include_dirs)
     fnal_include = ''
     if ENV['HOSTNAME'].include? "fnal.gov"
       #assume we are using CMSSW
-      fnal_include="-I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/include/"
+      fnal_include="-I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/include/ -I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/lhapdf6/6.1.5/include"
     end
     sh "g++ #{include_dirs.map{|x| "-I#{x}"}.join(' ')} #{fnal_include} `root-config --cflags` -Wall -c #{source} -o #{target}"
   end
