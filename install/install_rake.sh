@@ -3,7 +3,7 @@ if which ruby >/dev/null && which gem >/dev/null; then
 	echo "rake already set up, nothing to do here!"
     else
 	gemspath=`ruby -rubygems -e 'puts Gem.user_dir'`
-	if [-e gemspath/bin/rake]; then
+	if [ -e $gemspath/bin/rake ]; then
 	    echo "rake already installed"
 	    echo "source environment.sh to activate it"
 	    echo "or automatically set it up in .bash_profile"
