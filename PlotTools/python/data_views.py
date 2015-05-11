@@ -72,7 +72,10 @@ def data_views(files, lumifiles, styles, forceLumi=-1):
     log.info("Creating views from %i files", len(files))
 
     # Map sample_name => root file
-    histo_files = dict((extract_sample(x), io.open(x)) for x in files)
+    if isinstance(files, list):
+        histo_files = dict((extract_sample(x), io.open(x)) for x in files)
+    elif isinstance(files, dict):
+        histo_files = dict((extract_sample(x), y) for x,y in files.iteritems())
 
     # Map sample_name => lumi file
     lumi_files = dict((extract_sample(x), read_lumi(x)) for x in lumifiles)
