@@ -77,7 +77,7 @@ while not escape:
       print "Jobs completed!",
       if args.check_correctness:
          stdouts = glob.glob(os.path.join(args.check_correctness, '*/*.stdout'))
-         failed_samples = set()
+         failed_samples = {}
          for log in stdouts:
             lines = open(log).readlines()
             last_line = lines[-1] if len(lines) else 'exit code: 999' #fake wrong exit code
@@ -85,7 +85,10 @@ while not escape:
             if match:
                exitcode = int(match.group('exitcode'))
                if exitcode != 0 :
-                  failed_samples.add(os.path.dirname(log))
+                  key = os.path.dirname(log)
+                  if key not in failed_samples:
+                     failed_samples[key] = []
+                  failed_samples[key].append(os.path.basename(log))
             else:
                raise ValueError("cannot match %s with exit code regex!" % last_line)
          if len(failed_samples) == 0:
@@ -96,10 +99,15 @@ while not escape:
                submission += 1
                print " %i samples failed to complete properly! Resubmitting them..." % len(failed_samples)
                cwd = os.getcwd()
-               for condor_dir in failed_samples:
+               for condor_dir, jobs in failed_samples.iteritems():
                   os.chdir(condor_dir)
-                  os.system("rm *.root *.stdout *.stderr")
-                  os.system("condor_submit condor.jdl")
+                  set_trace()
+                  id_getter = re.compile(r'con_(:P<id>\d+)\.stdout')
+                  job_ids = [int(id_getter.match(i).group('id')) for i in jobs]
+                  for idjob in jobs:
+                     os.system("rm *_out_{ID}.root con_{ID}.*".format(ID=idjob))
+                  rescued = rescue("condor.jdl", submission, job_ids)
+                  os.system("condor_submit %s" % rescued)
                os.chdir(cwd)
             else:
                print (" There are still some failing samples, bet the maximum numbers"
