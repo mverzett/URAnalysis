@@ -1,3 +1,12 @@
+task :getfiles, [:inputdir] do |t, args|
+  jobid = ENV['jobid']
+  sh "mkdir -p inputs/#{jobid}"
+  Dir.glob("#{args.inputdir}/*").each do |dir|
+    sample = File.basename(dir)
+    sh "ls #{dir}/*.root > inputs/#{jobid}/#{sample}.txt"
+  end
+end
+
 rule '.meta.json' => [proc {|trgt| trgt.sub(/\.meta\.json$/, '.txt')}] do |t|
   sample = File.basename(t.source).split('.')[0]
   workers = ENV.fetch('URA_NTHREADS', 4)
