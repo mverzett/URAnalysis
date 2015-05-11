@@ -21,6 +21,33 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+def rescue(jdl, nrescue, to_rescue):
+   proc_lines = []
+   header_lines = []
+   with open(jdl) as submitter:
+      for line in submitter:
+         if i.startswith('Queue'):
+            continue
+         if '$(Process)' in i:
+            proc_lines.append(line)
+         else:
+            header_lines.append(line)
+
+   header_lines.append('')
+   header_lines.append('')
+   
+   rescuer = os.path.join(
+      os.path.dirname(jdl),
+      'condor.rescue%i.jdl' % nrescue
+      )
+   with open(rescuer, 'w') as rescue:
+      rescue.write('\n'.join(header_lines))
+      for ijob in to_rescue:
+         proc = [i.replace('$(Process)', ijob) for i in proc_lines]
+         proc.extend(['Queue', '', ''])
+         rescue.write('\n'.join(proc))
+   return rescuer
+
 escape = False
 start = time.time()
 totjobs = -1
@@ -52,7 +79,8 @@ while not escape:
          stdouts = glob.glob(os.path.join(args.check_correctness, '*/*.stdout'))
          failed_samples = set()
          for log in stdouts:
-            last_line = open(log).readlines()[-1]
+            lines = open(log).readlines()
+            last_line = lines[-1] if len(lines) else 'exit code: 999' #fake wrong exit code
             match = regex.match(last_line)
             if match:
                exitcode = int(match.group('exitcode'))

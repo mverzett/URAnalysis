@@ -30,8 +30,8 @@ transferfiles = [os.path.join(transferdir, tf) for tf in transferfiles]
 transferfiles_config = ', '.join(transferfiles)
 
 
-filesperjob = 20
-minjobs = 20
+filesperjob = 10
+minjobs = 40
 
 for sf in samplefiles:
   infile = os.path.join(inputdir, sf)
