@@ -15,6 +15,7 @@ except ImportError:
     from rootpy import asrootpy
 import ROOT
 import os
+from pdb import set_trace
 
 class RebinView(views._FolderView):
     ''' Rebin a histogram.
@@ -29,7 +30,21 @@ class RebinView(views._FolderView):
     @staticmethod
     def newRebin2D(histogram, bin_arrayx, bin_arrayy):
         'Rebin 2D histo with irregular bin size'
+
+        #old binning
+        oldbinx = [float(histogram.GetXaxis().GetBinLowEdge(1))]
+        oldbiny = [float(histogram.GetYaxis().GetBinLowEdge(1))]
+        oldbinx.extend(float(histogram.GetXaxis().GetBinUpEdge(x)) for x in xrange(1, histogram.GetNbinsX()+1))
+        oldbiny.extend(float(histogram.GetYaxis().GetBinUpEdge(y)) for y in xrange(1, histogram.GetNbinsY()+1))
         
+        #if new binninf is just one number and int, use it to rebin rather than as edges
+        if len(bin_arrayx) == 1 and isinstance(bin_arrayx[0], int):
+            nrebin = bin_arrayx[0]
+            bin_arrayx = [j for i, j in enumerate(oldbinx) if i % nrebin == 0]
+        if len(bin_arrayy) == 1 and isinstance(bin_arrayy[0], int):
+            nrebin = bin_arrayy[0]
+            bin_arrayy = [j for i, j in enumerate(oldbiny) if i % nrebin == 0]
+
         #create a clone with proper binning
         # from pdb import set_trace; set_trace()
         new_histo = plotting.Hist2D(
@@ -41,10 +56,6 @@ class RebinView(views._FolderView):
         )
 
         #check that new bins don't overlap on old edges
-        oldbinx = [float(histogram.GetXaxis().GetBinLowEdge(1))]
-        oldbiny = [float(histogram.GetYaxis().GetBinLowEdge(1))]
-        oldbinx.extend(float(histogram.GetXaxis().GetBinUpEdge(x)) for x in xrange(1, histogram.GetNbinsX()+1))
-        oldbiny.extend(float(histogram.GetYaxis().GetBinUpEdge(y)) for y in xrange(1, histogram.GetNbinsY()+1))
         for x in bin_arrayx:
             if x==0:
                 if not any( abs((oldx)) < 10**-8 for oldx in oldbinx ):
