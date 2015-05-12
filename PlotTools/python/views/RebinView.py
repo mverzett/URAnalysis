@@ -15,6 +15,8 @@ except ImportError:
     from rootpy import asrootpy
 import ROOT
 import os
+from URAnalysis.Utilities.quad import quad
+from pdb import set_trace
 
 class RebinView(views._FolderView):
     ''' Rebin a histogram.
@@ -29,7 +31,21 @@ class RebinView(views._FolderView):
     @staticmethod
     def newRebin2D(histogram, bin_arrayx, bin_arrayy):
         'Rebin 2D histo with irregular bin size'
+
+        #old binning
+        oldbinx = [float(histogram.GetXaxis().GetBinLowEdge(1))]
+        oldbiny = [float(histogram.GetYaxis().GetBinLowEdge(1))]
+        oldbinx.extend(float(histogram.GetXaxis().GetBinUpEdge(x)) for x in xrange(1, histogram.GetNbinsX()+1))
+        oldbiny.extend(float(histogram.GetYaxis().GetBinUpEdge(y)) for y in xrange(1, histogram.GetNbinsY()+1))
         
+        #if new binninf is just one number and int, use it to rebin rather than as edges
+        if len(bin_arrayx) == 1 and isinstance(bin_arrayx[0], int):
+            nrebin = bin_arrayx[0]
+            bin_arrayx = [j for i, j in enumerate(oldbinx) if i % nrebin == 0]
+        if len(bin_arrayy) == 1 and isinstance(bin_arrayy[0], int):
+            nrebin = bin_arrayy[0]
+            bin_arrayy = [j for i, j in enumerate(oldbiny) if i % nrebin == 0]
+
         #create a clone with proper binning
         # from pdb import set_trace; set_trace()
         new_histo = plotting.Hist2D(
@@ -41,10 +57,6 @@ class RebinView(views._FolderView):
         )
 
         #check that new bins don't overlap on old edges
-        oldbinx = [float(histogram.GetXaxis().GetBinLowEdge(1))]
-        oldbiny = [float(histogram.GetYaxis().GetBinLowEdge(1))]
-        oldbinx.extend(float(histogram.GetXaxis().GetBinUpEdge(x)) for x in xrange(1, histogram.GetNbinsX()+1))
-        oldbiny.extend(float(histogram.GetYaxis().GetBinUpEdge(y)) for y in xrange(1, histogram.GetNbinsY()+1))
         for x in bin_arrayx:
             if x==0:
                 if not any( abs((oldx)) < 10**-8 for oldx in oldbinx ):
@@ -63,7 +75,23 @@ class RebinView(views._FolderView):
         #fill the new histogram
         for x in xrange(1, histogram.GetNbinsX()+1 ):
             for y in xrange(1, histogram.GetNbinsY()+1 ):
-                new_histo.Fill(histogram.GetXaxis().GetBinCenter(x), histogram.GetYaxis().GetBinCenter(y), histogram.GetBinContent(x,y))
+                new_bin_x = new_histo.GetXaxis().FindFixBin(
+                    histogram.GetXaxis().GetBinCenter(x)
+                    )
+                new_bin_y = new_histo.GetYaxis().FindFixBin(
+                    histogram.GetYaxis().GetBinCenter(y)
+                    )
+                new_histo.SetBinContent(
+                    new_bin_x, new_bin_y,
+                    histogram.GetBinContent(x,y)+new_histo.GetBinContent(new_bin_x, new_bin_y)
+                    )
+                new_histo.SetBinError(
+                    new_bin_x, new_bin_y,
+                    quad(
+                        histogram.GetBinContent(x,y)+new_histo.GetBinContent(new_bin_x, new_bin_y)
+                        )
+                    )
+                #new_histo.Fill(histogram.GetXaxis().GetBinCenter(x), histogram.GetYaxis().GetBinCenter(y), histogram.GetBinContent(x,y))
 
         new_histo.SetEntries( histogram.GetEntries() )
         return new_histo
@@ -104,7 +132,6 @@ class RebinView(views._FolderView):
             print 'ERROR in RebinView: not a TH1 or TH2 histo. Rebin not done'
             
             return histogram
-        #import pdb; pdb.set_trace()
 
     def apply_view(self, object):
         object = object.Clone()
