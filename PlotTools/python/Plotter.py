@@ -11,6 +11,7 @@ import re
 import os
 import rootpy.plotting.views as views
 import rootpy.plotting as plotting
+import rootpy.io as io
 from URAnalysis.PlotTools.data_views import data_views
 from URAnalysis.PlotTools.data_styles import data_styles
 from URAnalysis.PlotTools.views.RebinView import RebinView
@@ -59,7 +60,7 @@ class Plotter(object):
         self.data = self.views['data']['view'] if 'data' in self.views else None
         self.keep = []
         # List of MC sample names to use.  Can be overridden.
-        self.mc_samples = []
+        self.mc_samples = [i for i in self.views if not i.startswith('data')]
 
         file_to_map = filter(lambda x: x.startswith('data_'), self.views.keys())
         if not file_to_map: #no data here!
@@ -86,6 +87,8 @@ class Plotter(object):
         '''Sets the output to be written 
         in a particular subdir'''
         self.outputdir = '/'.join([self.base_out_dir, folder])
+        if not os.path.isdir(self.outputdir):
+            os.mkdir(self.outputdir)
 
     @staticmethod
     def rebin_view(x, rebin):
@@ -378,18 +381,20 @@ class Plotter(object):
             with open(os.path.join(self.outputdir, filename) + '.json', 'w') as jout:
                 jout.write(prettyjson.dumps(jdict))
         if dotroot:
-            outfile = ROOT.TFile.Open(os.path.join(self.outputdir, filename) + '.root', 'recreate')
-            outfile.cd()
-            self.canvas.Write()
-            for obj in self.keep:
-                obj.Write()
+            logging.error(
+                'This functionality still has to be implemented '
+                'properly, due to the awsome ROOT "features"')
+            rfile = os.path.join(self.outputdir, filename) + '.root'
+            with io.root_open(rfile, 'recreate') as tfile:
+                #set_trace()
+                self.canvas.Write()
+                for obj in self.keep:
+                    if isinstance(obj, plotting.HistStack):
+                        for hist in obj.hists:
+                            hist.Write()
+                    obj.Write()
             #self.keep = []
             self.reset()
-            outfile.Close()
-            #self.canvas = plotting.Canvas(name='adsf', title='asdf')
-            #self.canvas.cd()
-            #self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
-            #self.pad.cd()
 
         if self.keep and self.lower_pad:
             #pass
