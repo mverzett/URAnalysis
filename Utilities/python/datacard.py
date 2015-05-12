@@ -3,7 +3,7 @@ import rootpy.io as io
 from URAnalysis.Utilities.struct import Struct
 from URAnalysis.Utilities.tables import Table
 import math
-from fnmatch import fnmatch
+import re
 from pdb import set_trace
 import logging
 
@@ -31,13 +31,14 @@ class Systematic(object):
    def applies(self, category, sample, value):
       '''applies(self, category, sample, value): defines how 
       a systematic behaves on a sample, POSIX regex are allowed'''
-      self.applies_.append((category, sample, value))
+      self.applies_.append((re.compile(category), re.compile(sample), value))
 
    def effect(self, category, sample):
       '''effect(self, category, sample) returns the 
       effect on given sample''' 
       for cpat, spat, value in self.applies_:
-         if fnmatch(category, cpat) and fnmatch(sample, spat):
+         if cpat.match(category) and spat.match(sample):
+            logging.debug('applying %.3f sys effect to %s/%s' % (value, category, sample))
             return '%.3f' % value
       return '-'
 
@@ -47,10 +48,11 @@ class DataCard(object):
       self.categories = {}
       self.systematics = {}
       if isinstance(signals, basestring):
-         self.signals = [signals]
+         self.signals = [re.compile(signals)]
       else:
-         self.signals = signals
-      
+         self.signals = [re.compile(i) for i in signals]
+      self.shape_sys_naming = re.compile(r'.*_.*(:?Down|Up)')
+
    def add_category(self, name):
       'adds a category'
       self.categories[name] = Struct()
@@ -82,8 +84,7 @@ class DataCard(object):
          sample_category = self.categories.values()[0]
          has_data = 'data_obs' in sample_category
          samples  = sample_category.keys()
-         samples  = filter(lambda x: not fnmatch(x, '*_*Up'), samples)
-         samples  = filter(lambda x: not fnmatch(x, '*_*Down'), samples)
+         samples  = filter(lambda x: not self.shape_sys_naming.match(x), samples)
          #set_trace()
          nsamples = len(samples)
          if has_data:
@@ -107,7 +108,7 @@ class DataCard(object):
          for sample in samples:
             if 'data_obs' == sample:
                continue
-            if any(fnmatch(sample, j) for j in self.signals):
+            if any(j.match(sample) for j in self.signals):
                mcsamples.append((sample, sig_idx))
                sig_idx -= 1
             else:
@@ -154,6 +155,7 @@ class DataCard(object):
                continue
             line = sys_table.new_line()
             line.header = '%s %s' % (sys_name, syst.type)
+            logging.debug('Adding systematic %s' % sys_name)
             for category, info in self.categories.iteritems():
                for sample, _ in info.iteritems():
                   if sample not in mcsamples: continue
@@ -190,18 +192,19 @@ class DataCard(object):
       self.systematics[name].applies(categories, samples, value)
 
    def add_bbb_systematics(self, categories, samples, threshold=0.05):
+      categories = [re.compile(i) for i in categories]
+      samples = [re.compile(i) for i in samples]
       sample_category = self.categories.values()[0]
       all_samples = sample_category.keys()
-      all_samples = filter(lambda x: not fnmatch(x, '*_*Up'),   all_samples)
-      all_samples = filter(lambda x: not fnmatch(x, '*_*Down'), all_samples)
+      all_samples = filter(lambda x: not self.shape_sys_naming.match(x), all_samples)
       
       samples_to_process = filter(
-         lambda x: any(fnmatch(x, i) for i in samples), 
+         lambda x: any(i.match(x) for i in samples), 
          all_samples
          )
       categories_to_process = [
          i for i in self.categories
-         if any(fnmatch(i, j) for j in categories)
+         if any(j.match(i) for j in categories)
          ]
 
       n_nuis=0
