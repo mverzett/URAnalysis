@@ -15,6 +15,7 @@ except ImportError:
     from rootpy import asrootpy
 import ROOT
 import os
+from URAnalysis.Utilities.quad import quad
 from pdb import set_trace
 
 class RebinView(views._FolderView):
@@ -74,7 +75,23 @@ class RebinView(views._FolderView):
         #fill the new histogram
         for x in xrange(1, histogram.GetNbinsX()+1 ):
             for y in xrange(1, histogram.GetNbinsY()+1 ):
-                new_histo.Fill(histogram.GetXaxis().GetBinCenter(x), histogram.GetYaxis().GetBinCenter(y), histogram.GetBinContent(x,y))
+                new_bin_x = new_histo.GetXaxis().FindFixBin(
+                    histogram.GetXaxis().GetBinCenter(x)
+                    )
+                new_bin_y = new_histo.GetYaxis().FindFixBin(
+                    histogram.GetYaxis().GetBinCenter(y)
+                    )
+                new_histo.SetBinContent(
+                    new_bin_x, new_bin_y,
+                    histogram.GetBinContent(x,y)+new_histo.GetBinContent(new_bin_x, new_bin_y)
+                    )
+                new_histo.SetBinError(
+                    new_bin_x, new_bin_y,
+                    quad(
+                        histogram.GetBinContent(x,y)+new_histo.GetBinContent(new_bin_x, new_bin_y)
+                        )
+                    )
+                #new_histo.Fill(histogram.GetXaxis().GetBinCenter(x), histogram.GetYaxis().GetBinCenter(y), histogram.GetBinContent(x,y))
 
         new_histo.SetEntries( histogram.GetEntries() )
         return new_histo
@@ -115,7 +132,6 @@ class RebinView(views._FolderView):
             print 'ERROR in RebinView: not a TH1 or TH2 histo. Rebin not done'
             
             return histogram
-        #import pdb; pdb.set_trace()
 
     def apply_view(self, object):
         object = object.Clone()
