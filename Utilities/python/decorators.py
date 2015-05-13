@@ -1,4 +1,5 @@
 from functools import update_wrapper
+from rootpy import asrootpy
 
 def decorator(d):
     "Make function d a decorator that wraps function fn"
@@ -42,3 +43,9 @@ def memo_last(fn):
             return fn(*args, **kwargs)
     return _f
         
+@decorator
+def asrpy(fn):
+    '''Changes the output of a function to a rootpy type'''
+    def _f(*args, **kwargs):
+        return asrootpy(fn(*args, **kwargs))
+    return _f
