@@ -6,7 +6,7 @@ import math
 import numpy.random
 import rootpy.io
 from rootpy import asrootpy
-#import rootpy.plotting
+import rootpy.plotting
 
 from rootpy import log
 log = log["/URUnfolding"]
@@ -43,7 +43,7 @@ class URUnfolding():
                  regmode = 'Curvature', 
                  constraint = 'Area', 
                  density = 'BinWidthAndUser'):
-        self.dunfoldingdone = False
+        self.unfoldingdone = False
         self.unfoldingparam = 0.1
         self.scale = scale
         
@@ -57,24 +57,48 @@ class URUnfolding():
         self.density = density
         
     def InitUnfolder(self):
-        log.warning("Setting underflow and overflow bins to zero! This must be removed once the binning is corrected.")
-
-        #set_trace()
-        for ix in range(0,self.matrix.GetNbinsX()+1):
-            self.matrix.SetBinContent(ix,0,0)
-            self.matrix.SetBinContent(ix,self.matrix.GetNbinsY()+1,0)
-        for iy in range(0,self.matrix.GetNbinsY()+1):
-            self.matrix.SetBinContent(0,iy,0)  
-            self.matrix.SetBinContent(self.matrix.GetNbinsX()+1,iy,0)
+        log.warning("Rebinning response matrix to match the input distribution. This should be removed from the final version of the code!")
         
+        
+        xbinning = []
+        for ix in range(1,self.measured.GetNbinsX()+2):
+            xbinning.append(self.measured.GetBinLowEdge(ix))
+            
+        ybinning = [i for i in xbinning]
+
+        del xbinning[1]
+        del xbinning[2]
+
+        newmatrix = rootpy.plotting.Hist2D(xbinning, ybinning, name = 'newmatrix')
+
+        for ix in range(0,self.matrix.GetNbinsX()+1):
+            for iy in range(0,self.matrix.GetNbinsY()+1):
+                newmatrix.Fill(self.matrix.GetXaxis().GetBinCenter(ix), self.matrix.GetYaxis().GetBinCenter(iy), self.matrix.GetBinContent(ix,iy))
+
+        self.matrix = newmatrix
+        
+        log.warning("Setting underflow and overflow bins to zero! This must be removed once the binning is corrected.")
+        #for ix in range(0,self.matrix.GetNbinsX()+1):
+        #    self.matrix.SetBinContent(ix,0,0)
+        #    self.matrix.SetBinContent(ix,self.matrix.GetNbinsY()+1,0)
+        #for iy in range(0,self.matrix.GetNbinsY()+1):
+        #    self.matrix.SetBinContent(0,iy,0)  
+        #    self.matrix.SetBinContent(self.matrix.GetNbinsX()+1,iy,0)
+         
         self.ScaleDistributions(self.scale)
 
+        log.debug('Initializing unfolder.')
         self.unfolder = ROOT.TUnfoldDensity(
             self.matrix,
             URUnfolding.orientations[self.orientation],
             URUnfolding.regularizations[self.regmode],
             URUnfolding.constraints[self.constraint],
             URUnfolding.densities[self.density])
+        log.debug('Loading histogram %s into unfolder' %self.measured.GetName() )
+        status = self.unfolder.SetInput(self.measured)
+        if status >= 10000:
+            raise RuntimeError('Unfolding status %i. Unfolding impossible!'%status)
+        
         
     def ScaleDistributions(self, scalefactor):
         self.matrix.scale(scalefactor)
@@ -119,9 +143,6 @@ class URUnfolding():
             self.unfoldingdone = False
         if self.unfoldingdone == False:
             log.debug('Unfolding distribution "%s" using regularization parameter %f' % (self.measured.GetName(), unfoldingparam))
-            status = self.unfolder.SetInput(self.measured)
-            if status >= 10000:
-                raise RuntimeError('Unfolding status %i. Unfolding impossible!'%status)
             self.unfolder.DoUnfold(unfoldingparam)
             self.unfoldingdone = True
         
@@ -224,23 +245,24 @@ class URUnfolding():
 
 def testUnfolding(datafile = '', hist = ''):
     responsefile = '/uscms/home/mgalanti/nobackup/URAnalysis/CMSSW_7_2_3_patch1/src/URAnalysis/ttJets_pu30.root'
-    datafile = responsefile # Need to run on a datafile different from the responsefile!
-    # datafile = '/uscms/home/mgalanti/nobackup/URAnalysis/CMSSW_7_2_3_patch1/src/URAnalysis/AnalysisTools/python/unfolding/ptthad.harvested.root'
+    #datafile = responsefile # Need to run on a datafile different from the responsefile!
+    datafile = '/uscms/home/mgalanti/nobackup/URAnalysis/CMSSW_7_2_3_patch1/src/URAnalysis/AnalysisTools/python/unfolding/ptthad.harvested.root'
     hist = 'toppthad'
     scale = 5000.*806./13977743. # NO idea yet what this means
     scale = 1.
-    myunfolding = URUnfolding(truthfilename=responsefile, measuredfilename=datafile, distribution=hist, scale=scale )
+    myunfolding = URUnfolding(truthfilename=responsefile, measuredfilename=datafile, distribution=hist, scale=scale)
     myunfolding.LoadMatrix(distribution = myunfolding.distribution)
     myunfolding.LoadTruth(distribution = myunfolding.distribution)
-    myunfolding.LoadMeasured(distribution = myunfolding.distribution)
-    # myunfolding.LoadMeasured(distribution = 'tt_right', basename = '', suffix='', filedir = 'ptthad')
+    # myunfolding.LoadMeasured(distribution = myunfolding.distribution)
+    myunfolding.LoadMeasured(distribution = 'tt_right', basename = '', suffix='', filedir = 'ptthad')
     myunfolding.InitUnfolder()
     # fdata = rootpy.io.root_open(datafile, 'read')
     # hdata = getattr(fdata,'fitsum') # This was the original line defining hdata
     hdata = asrootpy(myunfolding.measured) # Duplicate. Remove!
-    hdata_unfolded = asrootpy(myunfolding.GetUnfolded(0.3))
+    hdata_unfolded = asrootpy(myunfolding.GetUnfolded(0.1))
     hdata_refolded = asrootpy(myunfolding.GetRefolded())
     error_matrix = myunfolding.GetEmatrixTotal("error_matrix")
+
     hcorrelations = myunfolding.GetRhoItotal("hcorrelations")
     htruth = myunfolding.truth
     hmatrix = asrootpy(myunfolding.matrix)
@@ -251,11 +273,11 @@ def testUnfolding(datafile = '', hist = ''):
     hreconstructed = hmatrix.ProjectionX()
     hreconstructed.SetName('hreconstructed')
 
-    hdifference = hdata_unfolded - hgenerated
-    hdifference.SetName('hdifference')
+    #hdifference = hdata_unfolded - hgenerated
+    #hdifference.SetName('hdifference')
 
-    hdifference_refolded = hdata_refolded - hreconstructed
-    hdifference_refolded.SetName('hdifference_refolded')
+    #hdifference_refolded = hdata_refolded - hreconstructed
+    #hdifference_refolded.SetName('hdifference_refolded')
 
     numexp = 10
     myunfolding.unfoldingparam = 10
@@ -270,10 +292,10 @@ def testUnfolding(datafile = '', hist = ''):
         myunfolding.truth.Write()
         myunfolding.measured.Write()
         myunfolding.matrix.Write()
-        hdifference.Write()
+        #hdifference.Write()
         hgenerated.Write()
         hreconstructed.Write()
-        hdifference_refolded.Write()
+        #hdifference_refolded.Write()
         #uncertainty10.Write()
         outfile.Write()
 
