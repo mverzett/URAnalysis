@@ -6,14 +6,16 @@ import math
 import numpy.random
 import rootpy.io
 from rootpy import asrootpy
-import rootpy.plotting
+import rootpy.plotting as plotting
+from URAnalysis.Utilities.decorators import asrpy
+import uuid
 
 from rootpy import log
 log = log["/URUnfolding"]
 rootpy.log.basic_config_colorized()
 ROOT.TH1.AddDirectory(False)
 
-class URUnfolding():
+class URUnfolding(object):
     orientations = {'Horizontal':ROOT.TUnfold.kHistMapOutputHoriz, 
                     'Vertical':ROOT.TUnfold.kHistMapOutputVert}
     regularizations = {'None':ROOT.TUnfold.kRegModeNone, 
@@ -55,28 +57,15 @@ class URUnfolding():
         self.regmode = regmode
         self.constraint = constraint
         self.density = density
-        
-    def InitUnfolder(self):
-        log.warning("Rebinning response matrix to match the input distribution. This should be removed from the final version of the code!")
-        
-        
-        xbinning = []
-        for ix in range(1,self.measured.GetNbinsX()+2):
-            xbinning.append(self.measured.GetBinLowEdge(ix))
-            
-        ybinning = [i for i in xbinning]
 
-        del xbinning[1]
-        del xbinning[2]
+        #TO BE DEFINED AFTERWARDS
+        self.measured = None
+        self.matrix = None
+        self.truth = None         
+        self.unfolder = None
+        self.cov_matrix = None
 
-        newmatrix = rootpy.plotting.Hist2D(xbinning, ybinning, name = 'newmatrix')
-
-        for ix in range(0,self.matrix.GetNbinsX()+1):
-            for iy in range(0,self.matrix.GetNbinsY()+1):
-                newmatrix.Fill(self.matrix.GetXaxis().GetBinCenter(ix), self.matrix.GetYaxis().GetBinCenter(iy), self.matrix.GetBinContent(ix,iy))
-
-        self.matrix = newmatrix
-        
+    def InitUnfolder(self):        
         log.warning("Setting underflow and overflow bins to zero! This must be removed once the binning is corrected.")
         #for ix in range(0,self.matrix.GetNbinsX()+1):
         #    self.matrix.SetBinContent(ix,0,0)
@@ -95,7 +84,7 @@ class URUnfolding():
             URUnfolding.constraints[self.constraint],
             URUnfolding.densities[self.density])
         log.debug('Loading histogram %s into unfolder' %self.measured.GetName() )
-        status = self.unfolder.SetInput(self.measured)
+        status = self.unfolder.SetInput(self.measured,0.,0.,self.cov_matrix)
         if status >= 10000:
             raise RuntimeError('Unfolding status %i. Unfolding impossible!'%status)
         
@@ -146,30 +135,97 @@ class URUnfolding():
             self.unfolder.DoUnfold(unfoldingparam)
             self.unfoldingdone = True
         
-    def DoScanTau(self):
-        pass
+    @asrpy
+    def DoScanTau(self, npoints, tau_min=0., tau_max=20., mode='RhoAvg'):
+        scan_mode = URUnfolding.scantaumodes['RhoAvg']
+        spline = ROOT.TSpline3()
+        best = self.unfolder.ScanTau(
+            npoints, tau_min, tau_max, 
+            spline, scan_mode
+            )
+        #, const char* distribution = 0, const char* projectionMode = 0, TGraph** lCurvePlot = 0, TSpline** logTauXPlot = 0, TSpline** logTauYPlot = 0)
+        #convert spline in Graph
+        step = (tau_max - tau_min)/float(npoints)
+        x_vals = []
+        y_vals = []
+        val = tau_min
+        while val < tau_max:
+            x_vals.append(val)
+            y_vals.append(
+                spline.Eval(val)
+                )
+            val += step
+        tcurve = plotting.Graph(100)
+        for idx, xy in enumerate(zip(x_vals, y_vals)):
+            tcurve.SetPoint(idx, *xy)
+        return tau_min+step*best, tcurve
 
-    def DoScanLcurve(self):
-        pass
+    @asrpy
+    def DoScanLcurve(self, npoints, tau_min=0, tau_max=20):
+        lcurve = ROOT.TGraph()
+        best = self.unfolder.ScanLcurve(
+            npoints,
+            tau_min,
+            tau_max,
+            lcurve
+            )
+        step = float(tau_max-tau_min)/npoints
+        return tau_min+best*step, lcurve
 
-    def GetUnfolded(self, unfoldingparam = None):
+    @property
+    def tau(self):
+        return self.unfoldingparam
+    
+    @tau.setter
+    def tau(self, val):
+        if val != self.unfoldingparam:
+            self.unfoldingparam = val
+            self.unfoldingdone = False
+        
+    @asrpy
+    def GetUnfolded(self, unfoldingparam = None, name="Unfolded"):
         self.DoUnfolding(unfoldingparam)
-        return self.unfolder.GetOutput("Unfolded")
+        return self.unfolder.GetOutput(name)
 
+    @property
+    def unfolded(self):
+        self.DoUnfolding()
+        return self.unfolder.GetOutput(uuid.uuid4().hex)
+
+    @asrpy
     def GetRefolded(self):
-        if self.unfoldingdone == False:
-            self.DoUnfolding()
+        self.DoUnfolding()
         return self.unfolder.GetFoldedOutput("Refolded")
 
+    @property
+    def refolded(self):
+        return self.GetRefolded()
+
+    @asrpy
     def GetEmatrixTotal(self, name):
-        if self.unfoldingdone == False:
-            self.DoUnfolding()
+        self.DoUnfolding()
         return self.unfolder.GetEmatrixTotal(name)
 
+    @property
+    def ematrix_total(self):
+        return self.unfolder.GetEmatrixTotal(
+            uuid.uuid4().hex
+            )
+    
+    @asrpy
     def GetRhoItotal(self, name):
-        if self.unfoldingdone == False:
-            self.DoUnfolding()
+        self.DoUnfolding()
         return self.unfolder.GetRhoItotal(name)
+
+    @property
+    def rhoI_total(self):
+        return self.GetRhoItotal(uuid.uuid4().hex)
+
+    @property
+    @asrpy
+    def bias(self):
+        self.DoUnfolding()
+        return self.unfolder.GetBias(uuid.uuid4().hex)
 
     def Generate(self, numevents):
         if (not hasattr(self,'gentruth')) or self.gentruth == 0:
@@ -242,6 +298,77 @@ class URUnfolding():
             diff.SetBinError(b, math.sqrt(abs(meanq-mean*mean))/self.gentruth.GetBinContent(b))
         return diff
 
+    def write_to(self, tdir, name):
+        unfold_dir = tdir.mkdir(name)
+        unfold_dir.cd()
+        written = 0
+        def write_txt(txt, name):
+            if txt:
+                ttxt = ROOT.TText(0.,0.,txt)
+                ttxt.SetName(name)
+                return ttxt.Write()
+            else:
+                return 0.
+
+        def write_hist(h, name):
+            if h:
+                h.SetName(name)
+                return h.Write()
+            else:
+                return 0.
+
+        def write_float(h, name):
+            return ROOT.RooRealVar(name, name, h).Write()
+        written += write_txt(self.unfoldingdone.__repr__(), 'bool_unfoldingdone')
+        written += write_float(self.unfoldingparam, 'unfoldingparam')
+        written += write_float(self.scale, 'scale')
+        
+        written += write_txt(self.distribution, 'distribution')
+        written += write_txt(self.truthfilename, 'truthfilename')
+        written += write_txt(self.measuredfilename, 'measuredfilename')
+        
+        written += write_txt(self.orientation, 'orientation')
+        written += write_txt(self.regmode    , 'regmode')
+        written += write_txt(self.constraint , 'constraint')
+        written += write_txt(self.density    , 'density')
+
+        #TO BE DEFINED AFTERWARDS
+        written += write_hist(self.measured, 'measured')
+        written += write_hist(self.matrix, 'matrix')
+        written += write_hist(self.truth, 'truth')
+        written += write_hist(self.cov_matrix, 'cov_matrix')
+        #written += self.unfolder.Write() if self.unfolder else 0.
+        return written
+
+    @classmethod
+    def read_from(unfolder, tdir):
+        #still experimental
+        keys = dict((i.GetName(), i.ReadObj()) for i in tdir.GetListOfKeys())
+        unfolder.unfoldingdone = eval(keys['bool_unfoldingdone'])
+        unfolder.unfoldingparam = keys['unfoldingparam'].getVal()
+        unfolder.scale = keys['scale'].getVal()
+        
+        unfolder.distribution     = keys['distribution'    ].GetTitle()
+        unfolder.truthfilename    = keys['truthfilename'   ].GetTitle()
+        unfolder.measuredfilename = keys['measuredfilename'].GetTitle()
+        
+        unfolder.orientation= keys['orientation'].GetTitle()
+        unfolder.regmode    = keys['regmode'    ].GetTitle()
+        unfolder.constraint = keys['constraint' ].GetTitle()
+        unfolder.density    = keys['density'    ].GetTitle()
+
+        #TO BE DEFINED AFTERWARDS
+        unfolder.measured = keys.get('measured', None)
+        unfolder.matrix   = keys.get('matrix'  , None)
+        unfolder.truth    = keys.get('truth'   , None)
+        unfolder.cov_matrix = keys.get('cov_matrix', None)  
+        #written += self.unfolder.Write() if self.unfolder else 0.
+        if unfolder.unfoldingdone:
+            unfolder.InitUnfolder()
+            #trigger unfolding!
+            unfolder.unfoldingdone = False
+            unfolder.DoUnfolding()
+        return unfolder
 
 def testUnfolding(datafile = '', hist = ''):
     responsefile = '/uscms/home/mgalanti/nobackup/URAnalysis/CMSSW_7_2_3_patch1/src/URAnalysis/ttJets_pu30.root'
@@ -260,6 +387,7 @@ def testUnfolding(datafile = '', hist = ''):
     # hdata = getattr(fdata,'fitsum') # This was the original line defining hdata
     hdata = asrootpy(myunfolding.measured) # Duplicate. Remove!
     hdata_unfolded = asrootpy(myunfolding.GetUnfolded(0.1))
+    tau_curve = myunfolding.DoScanLcurve(100)
     hdata_refolded = asrootpy(myunfolding.GetRefolded())
     error_matrix = myunfolding.GetEmatrixTotal("error_matrix")
 
