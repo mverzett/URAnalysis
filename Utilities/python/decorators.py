@@ -47,5 +47,11 @@ def memo_last(fn):
 def asrpy(fn):
     '''Changes the output of a function to a rootpy type'''
     def _f(*args, **kwargs):
-        return asrootpy(fn(*args, **kwargs))
+        retval = fn(*args, **kwargs)
+        if isinstance(retval, tuple):
+            return tuple(asrootpy(i) for i in retval)
+        elif isinstance(retval, list):
+            return list(asrootpy(i) for i in retval)
+        else:
+            return asrootpy(fn(*args, **kwargs))
     return _f
