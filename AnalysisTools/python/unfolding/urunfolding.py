@@ -8,6 +8,7 @@ import rootpy.io
 from rootpy import asrootpy
 import rootpy.plotting as plotting
 from URAnalysis.Utilities.decorators import asrpy
+from URAnalysis.Utilities.roottools import spline2graph
 import uuid
 
 from rootpy import log
@@ -37,8 +38,10 @@ class URUnfolding(object):
                     'RhoSquareAvgSys':ROOT.TUnfoldDensity.kEScanTauRhoSquareAvgSys}
 
     def __init__(self, 
-                 truthfilename = '/uscms/home/mgalanti/nobackup/URAnalysis/CMSSW_7_2_3_patch1/src/URAnalysis/ttJets_pu30.root', 
-                 measuredfilename='/uscms/home/mgalanti/nobackup/URAnalysis/CMSSW_7_2_3_patch1/src/URAnalysis/ttJets_pu30.root',  
+                 matrix   = None,
+                 measured = None,
+                 truth    = None,
+                 cov_matrix = None,
                  distribution = 'topptlep', 
                  scale = 1., 
                  orientation = 'Horizontal', 
@@ -50,8 +53,6 @@ class URUnfolding(object):
         self.scale = scale
         
         self.distribution = distribution
-        self.truthfilename = truthfilename
-        self.measuredfilename = measuredfilename
         
         self.orientation = orientation
         self.regmode = regmode
@@ -59,11 +60,11 @@ class URUnfolding(object):
         self.density = density
 
         #TO BE DEFINED AFTERWARDS
-        self.measured = None
-        self.matrix = None
-        self.truth = None         
+        self.matrix     = matrix   
+        self.measured   = measured 
+        self.truth      = truth    
+        self.cov_matrix = cov_matrix 
         self.unfolder = None
-        self.cov_matrix = None
 
     def InitUnfolder(self):        
         log.warning("Setting underflow and overflow bins to zero! This must be removed once the binning is corrected.")
@@ -88,42 +89,11 @@ class URUnfolding(object):
         if status >= 10000:
             raise RuntimeError('Unfolding status %i. Unfolding impossible!'%status)
         
-        
     def ScaleDistributions(self, scalefactor):
         self.matrix.scale(scalefactor)
         self.truth.scale(scalefactor)
         self.measured.scale(scalefactor)
         self.unfoldingdone = False
-
-    def LoadMatrix(self, basename='truth_response_', suffix='_matrix',  distribution='topptlep', filename=None, filedir='TRUTH'):
-        self.unfoldingdone = False
-        if filename is None:
-            filename = self.truthfilename
-        log.debug('Loading matrix for distribution "%s" from file "%s"' %(distribution,filename))
-        myfile = rootpy.io.root_open(filename, 'read')
-        mydir = getattr(myfile,filedir)
-        self.matrix = getattr(mydir,basename+distribution+suffix)
-        myfile.close()
-
-    def LoadTruth(self, basename='truth_response_', suffix='_truth', distribution='topptlep', filename=None, filedir='TRUTH'):
-        self.unfoldingdone = False
-        if filename is None:
-            filename = self.truthfilename
-        log.debug('Loading truth for distribution "%s" from file "%s"' %(distribution,filename))
-        myfile = rootpy.io.root_open(filename, 'read')
-        mydir = getattr(myfile,filedir)
-        self.truth = getattr(mydir,basename+distribution+suffix)
-        myfile.close()
-
-    def LoadMeasured(self, basename='truth_response_', suffix='_measured', distribution='topptlep', filename=None, filedir='TRUTH'):
-        self.unfoldingdone = False
-        if filename is None:
-            filename = self.measuredfilename
-        log.debug('Loading measured for distribution "%s" from file "%s"' %(distribution,filename))
-        myfile = rootpy.io.root_open(filename, 'read')
-        mydir = getattr(myfile, filedir)
-        self.measured = getattr(mydir, basename+distribution+suffix)
-        myfile.close()
 
     def DoUnfolding(self, unfoldingparam = None):
         if unfoldingparam is None:
@@ -137,7 +107,9 @@ class URUnfolding(object):
         
     @asrpy
     def DoScanTau(self, npoints, tau_min=0., tau_max=20., mode='RhoAvg'):
-        scan_mode = URUnfolding.scantaumodes['RhoAvg']
+        #reset unfolding (if any) since the method messes up with the output
+        self.unfoldingdone = False
+        scan_mode = URUnfolding.scantaumodes[mode]
         spline = ROOT.TSpline3()
         best = self.unfolder.ScanTau(
             npoints, tau_min, tau_max, 
@@ -145,32 +117,39 @@ class URUnfolding(object):
             )
         #, const char* distribution = 0, const char* projectionMode = 0, TGraph** lCurvePlot = 0, TSpline** logTauXPlot = 0, TSpline** logTauYPlot = 0)
         #convert spline in Graph
-        step = (tau_max - tau_min)/float(npoints)
-        x_vals = []
-        y_vals = []
-        val = tau_min
-        while val < tau_max:
-            x_vals.append(val)
-            y_vals.append(
-                spline.Eval(val)
-                )
-            val += step
-        tcurve = plotting.Graph(100)
-        for idx, xy in enumerate(zip(x_vals, y_vals)):
-            tcurve.SetPoint(idx, *xy)
-        return tau_min+step*best, tcurve
+
+        scan = spline2graph(spline)
+        scan.get_xaxis().SetTitle('log(#tau)')
+        scan.get_yaxis().SetTitle(mode)
+        return self.unfolder.GetTau(), scan
 
     @asrpy
     def DoScanLcurve(self, npoints, tau_min=0, tau_max=20):
+        #reset unfolding (if any) since the method messes up with the output
+        self.unfoldingdone = False
         lcurve = ROOT.TGraph()
+        spline_x = ROOT.TSpline3()
+        spline_y = ROOT.TSpline3()
         best = self.unfolder.ScanLcurve(
             npoints,
             tau_min,
             tau_max,
-            lcurve
+            lcurve,
+            spline_x,
+            spline_y
             )
-        step = float(tau_max-tau_min)/npoints
-        return tau_min+best*step, lcurve
+        lcurve.GetXaxis().SetTitle('log(#chi^{2})')
+        lcurve.GetYaxis().SetTitle('log(regularization)')
+
+        graph_x = spline2graph(spline_x)
+        graph_y = spline2graph(spline_y)
+
+        graph_x.get_xaxis().SetTitle('log(#tau)')
+        graph_y.get_xaxis().SetTitle('log(#tau)')
+        graph_x.get_yaxis().SetTitle('log(#chi^{2})')
+        graph_y.get_yaxis().SetTitle('log(regularization)')
+
+        return self.unfolder.GetTau(), lcurve, graph_x, graph_y
 
     @property
     def tau(self):
@@ -189,17 +168,16 @@ class URUnfolding(object):
 
     @property
     def unfolded(self):
-        self.DoUnfolding()
-        return self.unfolder.GetOutput(uuid.uuid4().hex)
+        return self.GetUnfolded(name=uuid.uuid4().hex)
 
     @asrpy
-    def GetRefolded(self):
+    def GetRefolded(self, name):
         self.DoUnfolding()
-        return self.unfolder.GetFoldedOutput("Refolded")
+        return self.unfolder.GetFoldedOutput(name)
 
     @property
     def refolded(self):
-        return self.GetRefolded()
+        return self.GetRefolded(uuid.uuid4().hex)
 
     @asrpy
     def GetEmatrixTotal(self, name):
@@ -208,7 +186,7 @@ class URUnfolding(object):
 
     @property
     def ematrix_total(self):
-        return self.unfolder.GetEmatrixTotal(
+        return self.GetEmatrixTotal(
             uuid.uuid4().hex
             )
     
@@ -324,8 +302,6 @@ class URUnfolding(object):
         written += write_float(self.scale, 'scale')
         
         written += write_txt(self.distribution, 'distribution')
-        written += write_txt(self.truthfilename, 'truthfilename')
-        written += write_txt(self.measuredfilename, 'measuredfilename')
         
         written += write_txt(self.orientation, 'orientation')
         written += write_txt(self.regmode    , 'regmode')
