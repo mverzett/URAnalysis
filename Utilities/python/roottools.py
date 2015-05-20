@@ -26,6 +26,15 @@ def slice_hist(histo, strt, end=None, axis='X'):
    ret.decorate(**histo.decorators)
    return ret
 
+def spline2graph(spline):
+   n_points = spline.GetNp()
+   graph = rootpy.plotting.Graph(n_points)
+   for idx in xrange(n_points):
+      x, y = ROOT.Double(), ROOT.Double()
+      spline.GetKnot(idx, x, y)
+      graph.SetPoint(idx, x, y)
+   return graph
+
 class ArgSet(object):
    'a RooArgSet, but with python set functionalities'
    def __init__(self, rooset):
@@ -43,3 +52,18 @@ class ArgSet(object):
 
    def __contains__(self, key):
       pass
+
+## def asrpy_plus(obj):
+##    'extend asrootpy with custom classes and more'
+##    #for some reason rootpy does not extend tgraphs
+##    if obj.InheritsFrom('TGraphErrors'):
+##       pass
+##    elif obj.InheritsFrom('TGraph'):
+##       ret = rootpy.plotting.Graph(obj.GetN())
+##       for i in xrange(obj.GetN()):
+##          ret.SetPoint(i, obj.GetX()[i], obj.GetY()[i])
+##       return ret
+##    elif obj.InheritsFrom('RooArgSet'):
+##       return ArgSet(obj)
+##    else:
+##       return rootpy.asrootpy(obj)
