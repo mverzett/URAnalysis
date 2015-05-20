@@ -26,26 +26,26 @@ def rescue(jdl, nrescue, to_rescue):
    header_lines = []
    with open(jdl) as submitter:
       for line in submitter:
-         if i.startswith('Queue'):
+         if line.startswith('Queue'):
             continue
-         if '$(Process)' in i:
+         if '$(Process)' in line:
             proc_lines.append(line)
          else:
             header_lines.append(line)
 
-   header_lines.append('')
-   header_lines.append('')
+   header_lines.append('\n')
+   header_lines.append('\n')
    
    rescuer = os.path.join(
       os.path.dirname(jdl),
       'condor.rescue%i.jdl' % nrescue
       )
    with open(rescuer, 'w') as rescue:
-      rescue.write('\n'.join(header_lines))
+      rescue.write(''.join(header_lines))
       for ijob in to_rescue:
-         proc = [i.replace('$(Process)', ijob) for i in proc_lines]
-         proc.extend(['Queue', '', ''])
-         rescue.write('\n'.join(proc))
+         proc = [i.replace('$(Process)', str(ijob)) for i in proc_lines]
+         proc.extend(['Queue', '\n', '\n'])
+         rescue.write(''.join(proc))
    return rescuer
 
 escape = False
@@ -101,12 +101,13 @@ while not escape:
                cwd = os.getcwd()
                for condor_dir, jobs in failed_samples.iteritems():
                   os.chdir(condor_dir)
-                  set_trace()
-                  id_getter = re.compile(r'con_(:P<id>\d+)\.stdout')
+                  id_getter = re.compile(r'con_(?P<id>\d+)\.stdout')
                   job_ids = [int(id_getter.match(i).group('id')) for i in jobs]
-                  for idjob in jobs:
+                  for idjob in job_ids:
                      os.system("rm *_out_{ID}.root con_{ID}.*".format(ID=idjob))
                   rescued = rescue("condor.jdl", submission, job_ids)
+                  print "rescuing %s" % os.path.join(condor_dir, rescued)
+                  raise ValueError()
                   os.system("condor_submit %s" % rescued)
                os.chdir(cwd)
             else:
