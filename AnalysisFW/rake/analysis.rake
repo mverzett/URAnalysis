@@ -50,6 +50,15 @@ task :analyze, [:analyzer] do |t, args|
   Rake::Task["runThis"].invoke
 end
 
+task :analyze_only, [:analyzer, :sample] do |t, args|
+  bname = File.basename(args.analyzer).split('.')[0]
+  jobid = ENV['jobid']
+  samples = Dir.glob("inputs/#{jobid}/#{args.sample}.txt").map{|x| File.basename(x).split('.')[0]}
+  rootfiles = samples.map{|x| "results/#{jobid}/#{bname}/#{x}.root"}
+  task :runThis => rootfiles
+  Rake::Task["runThis"].invoke
+end
+
 task :test, [:analyzer] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
