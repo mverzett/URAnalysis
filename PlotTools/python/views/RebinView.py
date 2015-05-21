@@ -73,8 +73,8 @@ class RebinView(views._FolderView):
                     raise Exception('New bin edge in y axis %s does not match any old bin edge, operation not permitted' % y)
         
         #fill the new histogram
-        for x in xrange(1, histogram.GetNbinsX()+1 ):
-            for y in xrange(1, histogram.GetNbinsY()+1 ):
+        for x in xrange(0, histogram.GetNbinsX()+2 ):
+            for y in xrange(0, histogram.GetNbinsY()+2 ):
                 new_bin_x = new_histo.GetXaxis().FindFixBin(
                     histogram.GetXaxis().GetBinCenter(x)
                     )
