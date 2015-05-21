@@ -53,6 +53,15 @@ class ArgSet(object):
    def __contains__(self, key):
       pass
 
+def ArgList(roolist):
+   it = roolist.iterator()
+   ret = []
+   obj = it()
+   while obj:
+      ret.append(obj)
+      obj = it()
+   return ret
+
 ## def asrpy_plus(obj):
 ##    'extend asrootpy with custom classes and more'
 ##    #for some reason rootpy does not extend tgraphs
