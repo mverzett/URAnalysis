@@ -66,17 +66,8 @@ class URUnfolding(object):
         self.cov_matrix = cov_matrix 
         self.unfolder = None
 
-    def InitUnfolder(self):        
-        log.warning("Setting underflow and overflow bins to zero! This must be removed once the binning is corrected.")
-        #for ix in range(0,self.matrix.GetNbinsX()+1):
-        #    self.matrix.SetBinContent(ix,0,0)
-        #    self.matrix.SetBinContent(ix,self.matrix.GetNbinsY()+1,0)
-        #for iy in range(0,self.matrix.GetNbinsY()+1):
-        #    self.matrix.SetBinContent(0,iy,0)  
-        #    self.matrix.SetBinContent(self.matrix.GetNbinsX()+1,iy,0)
-         
+    def InitUnfolder(self):                 
         self.ScaleDistributions(self.scale)
-
         log.debug('Initializing unfolder.')
         self.unfolder = ROOT.TUnfoldDensity(
             self.matrix,
@@ -85,7 +76,11 @@ class URUnfolding(object):
             URUnfolding.constraints[self.constraint],
             URUnfolding.densities[self.density])
         log.debug('Loading histogram %s into unfolder' %self.measured.GetName() )
-        status = self.unfolder.SetInput(self.measured,0.,0.,self.cov_matrix)
+        if self.cov_matrix:
+            status = self.unfolder.SetInput(self.measured,0.,0.,self.cov_matrix)
+        else:
+            status = self.unfolder.SetInput(self.measured)
+            
         if status >= 10000:
             raise RuntimeError('Unfolding status %i. Unfolding impossible!'%status)
         
@@ -164,7 +159,9 @@ class URUnfolding(object):
     @asrpy
     def GetUnfolded(self, unfoldingparam = None, name="Unfolded"):
         self.DoUnfolding(unfoldingparam)
-        return self.unfolder.GetOutput(name)
+        ret = self.unfolder.GetOutput(name)
+        ret.SetTitle('unfolded')
+        return ret
 
     @property
     def unfolded(self):
@@ -173,7 +170,9 @@ class URUnfolding(object):
     @asrpy
     def GetRefolded(self, name):
         self.DoUnfolding()
-        return self.unfolder.GetFoldedOutput(name)
+        ret = self.unfolder.GetFoldedOutput(name)
+        ret.SetTitle('refolded')
+        return ret
 
     @property
     def refolded(self):
