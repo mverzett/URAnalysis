@@ -23,6 +23,8 @@ from pdb import set_trace
 import logging
 import ROOT
 
+ROOT.gROOT.SetBatch(True)
+
 _original_draw = plotting.Legend.Draw
 # Make legends not have crappy border
 def _monkey_patch_legend_draw(self, *args, **kwargs):
