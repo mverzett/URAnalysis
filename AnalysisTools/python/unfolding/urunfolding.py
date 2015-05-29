@@ -116,7 +116,7 @@ class URUnfolding(object):
         scan = spline2graph(spline)
         scan.get_xaxis().SetTitle('log(#tau)')
         scan.get_yaxis().SetTitle(mode)
-        return self.unfolder.GetTau(), scan
+        return self.unfolder.GetTau(), scan, best
 
     @asrpy
     def DoScanLcurve(self, npoints, tau_min=0, tau_max=20):
