@@ -107,7 +107,6 @@ while not escape:
                      os.system("rm *_out_{ID}.root con_{ID}.*".format(ID=idjob))
                   rescued = rescue("condor.jdl", submission, job_ids)
                   print "rescuing %s" % os.path.join(condor_dir, rescued)
-                  raise ValueError()
                   os.system("condor_submit %s" % rescued)
                os.chdir(cwd)
             else:
