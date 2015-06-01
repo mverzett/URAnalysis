@@ -88,7 +88,7 @@ class Plotter(object):
         in a particular subdir'''
         self.outputdir = '/'.join([self.base_out_dir, folder])
         if not os.path.isdir(self.outputdir):
-            os.mkdir(self.outputdir)
+            os.makedirs(self.outputdir)
 
     @staticmethod
     def rebin_view(x, rebin):
@@ -216,14 +216,21 @@ class Plotter(object):
             self.views['data']['intlumi']/1000.)
         self.keep.append(latex.DrawLatex(0.18,0.96, label_text));
 
-    def add_ratio_plot(self, data_hist, mc_distribution, x_range=None, 
-                       ratio_range=0.2, quote_errors=False):
+    def add_ratio_plot(self, data_hist, *tests, **kwargs):
         '''Adds a ratio plot under the main pad, with same x range'''
 
-        mc_hist = mc_distribution
-        if isinstance(mc_hist, HistStack):
-            mc_hist = sum(mc_hist.GetHists())
-            quote_errors = False
+        x_range = kwargs.get('x_range', None)
+        ratio_range = kwargs.get('ratio_range', 4)
+        quote_errors= kwargs.get('quote_errors', False)
+        ytitle = kwargs.get('ytitle', 'MC / data')
+
+        test_hists = []
+        for mc_hist in tests:
+            if isinstance(mc_hist, HistStack):
+                test_hists.append(sum(mc_hist.GetHists()))
+                quote_errors = False
+            else:
+                test_hists.append(mc_hist)
 
         #resize the canvas and the pad to fit the second pad
         self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
@@ -238,32 +245,39 @@ class Plotter(object):
 
         nbins = data_hist.GetNbinsX()
         #make ratio, but use only data errors
-        data_clone = data_hist.Clone()
-        for ibin in range(1, nbins+1):
-            d_cont = data_clone.GetBinContent(ibin)
-            d_err  = data_clone.GetBinError(ibin)  
+        first = True
+        ratios = []
+        for test_h in test_hists:
+            clone = test_h.clone()
+            clone.markerstyle = 20
+            for ibin in range(1, nbins+1):
+                d_cont = data_hist.GetBinContent(ibin)
+                d_err  = data_hist.GetBinError(ibin)  
 
-            m_cont = mc_hist.GetBinContent(ibin)
+                m_cont = clone.GetBinContent(ibin)
+                m_err  = clone.GetBinError(ibin)
+                
+                cont = m_cont / d_cont if d_cont else -10.*ratio_range
+                err  = m_err / d_cont if d_cont else 0.
+                clone.SetBinContent(ibin, cont)
+                clone.SetBinError(ibin, err)  
 
-            d_cont = (d_cont-m_cont)/ m_cont if m_cont else -10.
-            d_err  = d_err / m_cont if m_cont else 0.
-            
-            data_clone.SetBinContent( ibin, d_cont )
-            data_clone.SetBinError(   ibin, d_err  )  
+            clone.Draw('ep' if first else 'ep same')
+            clone.GetYaxis().SetTitle(ytitle)
+            first = False
+            ratios.append(clone)
 
-        data_clone.Draw('ep')
-        self.keep.append(data_clone)
         if ratio_range:
-            data_clone.GetYaxis().SetRangeUser(-ratio_range, ratio_range)
+            ratios[0].GetYaxis().SetRangeUser(10**(-ratio_range), 10**ratio_range)
 
         #reference line
         if not x_range:
-            nbins = data_clone.GetNbinsX()
-            x_range = (data_clone.GetBinLowEdge(1), 
-                       data_clone.GetBinLowEdge(nbins)+data_clone.GetBinWidth(nbins))
+            nbins = ratios[0].GetNbinsX()
+            x_range = (ratios[0].GetBinLowEdge(1), 
+                       ratios[0].GetBinLowEdge(nbins)+ratios[0].GetBinWidth(nbins))
         else:
-            data_clone.GetXaxis().SetRangeUser(*x_range)
-        ref_function = ROOT.TF1('f', "0.", *x_range)
+            ratios[0].GetXaxis().SetRangeUser(*x_range)
+        ref_function = ROOT.TF1('f', "1.", *x_range)
         ref_function.SetLineWidth(3)
         ref_function.SetLineStyle(2)
         ref_function.Draw('same')
@@ -286,8 +300,10 @@ class Plotter(object):
             err_histo.Draw('pe2 same') #was pe
             self.keep.append(err_histo)
 
+        self.lower_pad.SetLogy()
         self.pad.cd()
-        return data_clone
+        self.keep.extend(ratios)
+        return None
 
     def fit_shape(self, histo, model, x_range, fitopt='IRMENS'):
         '''Performs a fit with ROOT libraries.
