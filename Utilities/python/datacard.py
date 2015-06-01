@@ -164,7 +164,7 @@ class DataCard(object):
          sys_table.add_separator()
          txt.write('%s\n' % sys_table)
          for sys_name, syst in param_sys:
-            txt.write('%s  param %f %f' % (sys_name, syst.val, syst.unc))
+            txt.write('%s  param %f %f\n' % (sys_name, syst.val, syst.unc))
       logging.info('Written file %s' % txt_name)
       ##
       # Write shape file
@@ -182,7 +182,7 @@ class DataCard(object):
       'add a systematic effect to a bunch of samples. POSIX regex supported'
       if name not in self.systematics:
          if stype == 'param':
-            self.systematics[name] = Systematic(stype, unc, value)
+            self.systematics[name] = Systematic(stype, unc=unc, val=value)
          else:
             self.systematics[name] = Systematic(stype)
       if stype != self.systematics[name].type:
@@ -192,8 +192,20 @@ class DataCard(object):
       self.systematics[name].applies(categories, samples, value)
 
    def add_bbb_systematics(self, categories, samples, threshold=0.05):
-      categories = [re.compile(i) for i in categories]
-      samples = [re.compile(i) for i in samples]
+      if isinstance(categories, list):
+         categories = [re.compile(i) for i in categories]
+      elif isinstance(categories, basestring):
+         categories = [re.compile(categories)]
+      else:
+         raise TypeError('categories can only be lists or strings')
+
+      if isinstance(samples, list):
+         samples = [re.compile(i) for i in samples]
+      elif isinstance(samples, basestring):
+         samples = [re.compile(samples)]
+      else:
+         raise TypeError('samples can only be lists or strings')
+
       sample_category = self.categories.values()[0]
       all_samples = sample_category.keys()
       all_samples = filter(lambda x: not self.shape_sys_naming.match(x), all_samples)
