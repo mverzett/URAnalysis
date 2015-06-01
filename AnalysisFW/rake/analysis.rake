@@ -83,7 +83,7 @@ task :test, [:analyzer] do |t, args|
   Rake::Task["testThis"].invoke
 end
 
-task :trackBatch, [:submit_dir] do |t, args|
+task :track_batch, [:submit_dir] do |t, args|
   sh "hold.py --check_correctness #{args.submit_dir}"
   Dir.chdir(args.submit_dir) do
     sh 'addjobs.py'
@@ -101,7 +101,7 @@ task :analyze_batch, [:analyzer] do |t, args|
     submit_dir = "/uscms_data/d3/#{ENV['USER']}/BATCH_#{Time.now.to_i}_#{bname}"
     puts "Submitting to #{submit_dir}"
     sh "jobsub #{submit_dir} #{bname}.exe"
-    Rake::Task["trackBatch"].invoke(submit_dir)
+    Rake::Task["track_batch"].invoke(submit_dir)
   end
   Rake::Task["runThisBatch"].invoke
 end
