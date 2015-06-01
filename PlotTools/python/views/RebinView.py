@@ -18,6 +18,8 @@ import os
 from URAnalysis.Utilities.quad import quad
 from pdb import set_trace
 
+ROOT.TH1.SetDefaultSumw2(True)
+
 class RebinView(views._FolderView):
     ''' Rebin a histogram.
 
@@ -83,15 +85,21 @@ class RebinView(views._FolderView):
                     )
                 new_histo.SetBinContent(
                     new_bin_x, new_bin_y,
-                    histogram.GetBinContent(x,y)+new_histo.GetBinContent(new_bin_x, new_bin_y)
+                    histogram.GetBinContent(x,y) + 
+                    new_histo.GetBinContent(new_bin_x, new_bin_y)
                     )
                 new_histo.SetBinError(
                     new_bin_x, new_bin_y,
                     quad(
-                        histogram.GetBinContent(x,y)+new_histo.GetBinContent(new_bin_x, new_bin_y)
+                        histogram.GetBinError(x,y),
+                        new_histo.GetBinError(new_bin_x, new_bin_y)
                         )
                     )
-                #new_histo.Fill(histogram.GetXaxis().GetBinCenter(x), histogram.GetYaxis().GetBinCenter(y), histogram.GetBinContent(x,y))
+                #new_histo.Fill(
+                #    histogram.GetXaxis().GetBinCenter(x), 
+                #    histogram.GetYaxis().GetBinCenter(y), 
+                #    histogram.GetBinContent(x,y)
+                #    )
 
         new_histo.SetEntries( histogram.GetEntries() )
         return new_histo
