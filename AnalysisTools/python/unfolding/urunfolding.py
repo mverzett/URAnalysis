@@ -116,7 +116,7 @@ class URUnfolding(object):
         scan = spline2graph(spline)
         scan.get_xaxis().SetTitle('log(#tau)')
         scan.get_yaxis().SetTitle(mode)
-        return self.unfolder.GetTau(), scan
+        return self.unfolder.GetTau(), scan, best
 
     @asrpy
     def DoScanLcurve(self, npoints, tau_min=0, tau_max=20):
@@ -172,6 +172,18 @@ class URUnfolding(object):
         self.DoUnfolding()
         ret = self.unfolder.GetFoldedOutput(name)
         ret.SetTitle('refolded')
+        return ret
+
+    @asrpy
+    def GetProbabilityMatrix(self, name):
+        ret = self.unfolder.GetProbabilityMatrix(name)
+        ret.SetTitle('probability matrix')
+        return ret
+
+    @asrpy
+    def GetEmatrixInput(self, name):
+        ret = self.unfolder.GetEmatrixInput(name)
+        ret.SetTitle('error matrix from input')
         return ret
 
     @property
@@ -312,6 +324,8 @@ class URUnfolding(object):
         written += write_hist(self.matrix, 'matrix')
         written += write_hist(self.truth, 'truth')
         written += write_hist(self.cov_matrix, 'cov_matrix')
+        written += write_hist(self.GetProbabilityMatrix('prob_matrix'), 'prob_matrix')
+        written += write_hist(self.GetEmatrixInput('error_matrix_input'), 'error_matrix_input')
         #written += self.unfolder.Write() if self.unfolder else 0.
         return written
 
