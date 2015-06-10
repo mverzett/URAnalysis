@@ -114,7 +114,7 @@ class Plotter(object):
         pars       = []
         formula    = fcn_string
         for par_num, match in enumerate(re.finditer("(?P<name>\w+)(?P<boundaries>\[[^\]]+\]),? ?", pars_string)):
-            par        = struct()
+            par        = Struct()
             par.num    = par_num
             par.name   = match.group('name')
             par.bounds = eval( match.group('boundaries') )
