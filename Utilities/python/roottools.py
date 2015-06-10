@@ -6,6 +6,7 @@ import ROOT #should this be rootbindings?
 import rootpy
 import uuid
 from pdb import set_trace
+import URAnalysis.Utilities.prettyjson as prettyjson
 
 def slice_hist(histo, ibin, axis='X'):
    '''cuts a slice of a Hist2D'''
@@ -185,14 +186,55 @@ class Envelope(object):
    def Draw(self):
       self.draw()
 
-   def median(self, ibin):
-      pass
+   def median_value(self, ibin):
+      self._compute_()
+      return self.median[ibin-1]
    
-   def one_sigma(self, ibin):
-      pass
+   def one_sigma_range(self, ibin):
+      self._compute_()
+      center = self.one_sigma[ibin-1]
+      err    = self.one_sigma.GetBinError(ibin)
+      return center - err, center + err
    
-   def two_sigma(self, ibin):
-      pass
+   def two_sigma_range(self, ibin):
+      self._compute_()
+      center = self.two_sigma[ibin-1]
+      err    = self.two_sigma.GetBinError(ibin)
+      return center - err, center + err
+
+   def nbins(self):
+      self._compute_()
+      return self.median.GetNbinsX()
+
+   def json(self):
+      self._compute_()
+      jret = []
+      for idx in xrange(1, self.nbins()+1):
+         jbin = {
+            'median' : self.median_value(idx),
+            'one_sigma' : {'range' : self.one_sigma_range(idx)},
+            'two_sigma' : {'range' : self.two_sigma_range(idx)},
+            'label' : self.median.GetXaxis().GetBinLabel(idx),
+            'low_edge' : self.median.GetXaxis().GetBinLowEdge(idx),
+            'up_edge' : self.median.GetXaxis().GetBinUpEdge(idx),
+            }
+         jbin['one_sigma']['val'] = max(
+            abs(i - jbin['median']) 
+            for i in jbin['one_sigma']['range']
+            )
+         jbin['two_sigma']['val'] = max(
+            abs(i - jbin['median']) 
+            for i in jbin['two_sigma']['range']
+            )
+
+         if jbin['median']:
+            jbin['one_sigma']['relative'] = jbin['one_sigma']['val']/jbin['median']
+            jbin['two_sigma']['relative'] = jbin['two_sigma']['val']/jbin['median']
+         else:
+            jbin['one_sigma']['relative'] = 0
+            jbin['two_sigma']['relative'] = 0
+         jret.append(jbin)
+      return prettyjson.dumps(jret)
 
 ## def asrpy_plus(obj):
 ##    'extend asrootpy with custom classes and more'
