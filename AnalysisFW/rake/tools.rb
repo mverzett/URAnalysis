@@ -87,3 +87,40 @@ def compile_analyzer(source, libs='', *deps)
     puts t.investigation
   end 
 end
+
+def new_trial(res_dir, plot_dir, label='')
+  timestamp = Time.now.strftime("%Y%b%d")
+  if not res_dir.empty?
+    full_res  = "results/#{$jobid}/#{res_dir}"
+    if File.exist? full_res
+      if not File.symlink? full_res
+        throw "#{full_res} MUST be a symlink in the first place to work!"
+      end
+      sh "rm -f #{full_res}"
+    end
+    
+    #add new dir and new link
+    chdir("results/#{$jobid}") do
+      new_res = "#{res_dir}_#{timestamp}_#{label}"
+      sh "mkdir -p #{new_res}" 
+      sh "ln -s #{new_res} #{res_dir}"
+    end
+  end
+
+  if not plot_dir.empty?
+    full_plot = "plots/#{$jobid}/#{plot_dir}"
+    if File.exist? full_plot 
+      if not File.symlink? full_plot
+        throw "#{full_plot} MUST be a symlink in the first place to work!"
+      end
+      sh "rm -f #{full_plot}"    
+    end
+    
+    chdir("plots/#{$jobid}") do
+      new_plot = "#{plot_dir}_#{timestamp}_#{label}"
+      sh "mkdir -p #{new_plot}" 
+      sh "ln -s #{new_plot} #{plot_dir}"
+    end
+  end
+end
+
