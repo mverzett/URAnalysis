@@ -68,8 +68,21 @@ class ArgSet(object):
          yield obj
          obj = it.Next()         
 
+   def __getitem__(self, val):
+      for obj in self:
+         if obj.GetName() == val:
+            return obj
+      raise KeyError(val)
+
    def __contains__(self, key):
-      pass
+      try:
+         self[key]
+         return True
+      except KeyError:
+         return False
+
+   def keys(self):
+      return set([i.GetName() for i in self])
 
 def ArgList(roolist):
    it = roolist.iterator()
