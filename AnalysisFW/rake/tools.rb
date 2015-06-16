@@ -124,3 +124,19 @@ def new_trial(res_dir, plot_dir, label='')
   end
 end
 
+def publish_pics(input_name, output_name)
+  puts input_name, output_name
+  puts File.directory? output_name
+  if not (File.directory? output_name)
+    sh "mkdir #{output_name}"
+  end
+  Dir["#{input_name}/*"].each do |path|
+    if File.directory? path
+      bname = File.basename(path)
+      newdir = "#{output_name}/#{bname}"
+      publish_pics(path, newdir)
+    elsif path.end_with? '.png'
+      `cp #{path} #{output_name}/.`
+    end
+  end
+end
