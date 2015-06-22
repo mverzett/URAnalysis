@@ -64,7 +64,7 @@ if __name__ == '__main__':
     tfile_name = arguments.pop(0)
     categories = arguments
 
-    tfile = io.open(tfile_name)
+    tfile = io.root_open(tfile_name)
     logging.info("Opened file %s" % tfile_name)
     
     #get a directory and look into that

@@ -93,6 +93,69 @@ def ArgList(roolist):
       obj = it()
    return ret
 
+class RealVar(ROOT.RooRealVar):
+   #does it make sense/work?
+   def __init__(self, val, err=None, name=None, range=None, asym_errs=None):
+      if isinstance(val, ROOT.RooRealVar):
+         super(RealVar, self).__init__(val)
+         return
+      vname = uuid.uuid4().hex if not name else name
+      super(RealVar, self).__init__(vname, vname, val)
+      if err is not None:
+         self.error=err
+      if range is not None:
+         self.setRange(*range)
+      if asym_errs is not None:
+         self.setAsymError(*asym_errs)
+
+   def __repr__(self):
+      if self.hasAsymError():
+         lo, hi = self.asym_error
+         return "<%s | %s: %f %f/+%f>" % (
+            self.__class__.__name__, self.name, self.value, lo, hi)
+      elif self.hasError():
+         return "<%s | %s: %f +/- %f>" % (
+            self.__class__.__name__, self.name, self.value, self.error)         
+      else:
+         return "<%s | %s: %f>" % (
+            self.__class__.__name__, self.name, self.value)         
+   
+   @property
+   def name(self):
+      return self.GetName()
+
+   @name.setter
+   def name(self, val):
+      self.SetName(val)
+
+   @property
+   def value(self):
+      return self.getVal()
+
+   @value.setter
+   def value(self, val):
+      self.setVal(val)
+
+   @property
+   def error(self):
+      if self.hasAsymError():
+         return max(self.getErrorHi(), self.getErrorLo())
+      else:
+         return self.getError()
+
+   @error.setter
+   def error(self, val):
+      self.setError(val)
+   
+   @property
+   def asym_error(self):
+      return self.getErrorLo(), self.getErrorHi()
+
+   @asym_error.setter
+   def asym_error(self, val):
+      self.setAsymError(*val)
+      
+
 class Envelope(object):
    'represents an envelope of histograms'
    def __init__(self):
@@ -201,18 +264,18 @@ class Envelope(object):
 
    def median_value(self, ibin):
       self._compute_()
-      return self.median[ibin-1]
+      return self.median[ibin].value
    
    def one_sigma_range(self, ibin):
       self._compute_()
-      center = self.one_sigma[ibin-1]
-      err    = self.one_sigma.GetBinError(ibin)
+      center = self.one_sigma[ibin].value
+      err    = self.one_sigma[ibin].error
       return center - err, center + err
    
    def two_sigma_range(self, ibin):
       self._compute_()
-      center = self.two_sigma[ibin-1]
-      err    = self.two_sigma.GetBinError(ibin)
+      center = self.two_sigma[ibin].value
+      err    = self.two_sigma[ibin].error
       return center - err, center + err
 
    def nbins(self):
@@ -231,6 +294,7 @@ class Envelope(object):
             'low_edge' : self.median.GetXaxis().GetBinLowEdge(idx),
             'up_edge' : self.median.GetXaxis().GetBinUpEdge(idx),
             }
+
          jbin['one_sigma']['val'] = max(
             abs(i - jbin['median']) 
             for i in jbin['one_sigma']['range']

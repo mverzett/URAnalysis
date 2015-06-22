@@ -50,7 +50,7 @@ class Plotter(object):
         self.views = data_views(files, lumifiles, styles, forceLumi)
         self.canvas = plotting.Canvas(name='adsf', title='asdf')
         self.canvas.cd()
-        self.pad    = plotting.Pad('up', 'up', 0., 0., 1., 1.) #ful-size pad
+        self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
         self.pad.Draw()
         self.pad.cd()
         self.lower_pad = None
@@ -189,14 +189,15 @@ class Plotter(object):
         else:
             legend = plotting.Legend(nentries, rightmargin=0.07, topmargin=0.05, leftmargin=0.45)
         for sample in samples:
-            if isinstance(sample, plotting.HistStack):
-                for s in sample:
-                    if getattr(sample, 'inlegend', True):
-                        label = s.GetTitle()
-                        style = s.legendstyle
-                        legend.AddEntry(s, style, label) 
-            else:
-                legend.AddEntry(sample)
+            legend.AddEntry(sample)
+            ## if isinstance(sample, plotting.HistStack):
+            ##     for s in sample:
+            ##         if getattr(sample, 'inlegend', True):
+            ##             label = s.GetTitle()
+            ##             style = s.legendstyle
+            ##             legend.AddEntry(s, style, label) 
+            ## else:
+            ##     legend.AddEntry(sample)
         legend.SetEntrySeparation(0.0)
         legend.SetMargin(0.35)
         legend.Draw()
@@ -241,7 +242,7 @@ class Plotter(object):
         self.pad.Draw()
         self.canvas.cd()
         #create lower pad
-        self.lower_pad = plotting.Pad('low', 'low', 0, 0., 1., 0.33)
+        self.lower_pad = plotting.Pad(0, 0., 1., 0.33)
         self.lower_pad.Draw()
         self.lower_pad.cd()
 
@@ -370,7 +371,7 @@ class Plotter(object):
         self.keep = []
         self.canvas = plotting.Canvas(name='adsf', title='asdf')
         self.canvas.cd()
-        self.pad    = plotting.Pad('up', 'up', 0., 0., 1., 1.) #ful-size pad
+        self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
         self.pad.Draw()
         self.pad.cd()
         self.lower_pad = None

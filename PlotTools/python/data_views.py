@@ -73,7 +73,7 @@ def data_views(files, lumifiles, styles, forceLumi=-1):
 
     # Map sample_name => root file
     if isinstance(files, list):
-        histo_files = dict((extract_sample(x), io.open(x)) for x in files)
+        histo_files = dict((extract_sample(x), io.root_open(x)) for x in files)
     elif isinstance(files, dict):
         histo_files = dict((extract_sample(x), y) for x,y in files.iteritems())
 

@@ -21,6 +21,6 @@ class FileView(views.SumView):
             self.filenames.extend(glob.glob(path))
         self.files = []
         for filename in self.filenames:
-            self.files.append(io.open(filename, 'read'))
+            self.files.append(io.root_open(filename, 'read'))
         # Sum them together.
         super(FileView, self).__init__(**self.files)
