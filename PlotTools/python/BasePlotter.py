@@ -18,6 +18,7 @@ from URAnalysis.PlotTools.views.RebinView import RebinView
 from URAnalysis.Utilities.struct import Struct
 import URAnalysis.Utilities.prettyjson as prettyjson
 import sys
+from math import sqrt
 from rootpy.plotting.hist import HistStack
 from pdb import set_trace
 import logging
@@ -35,35 +36,36 @@ plotting.Legend.Draw = _monkey_patch_legend_draw
 
 class LegendDefinition(object):
     def __init__(self, title='', labels=[], position=''):
-        self.title = title
-        self.labels = labels
-        self.position = position
+        self.title_ = title
+        self.labels_ = labels
+        self.position_ = position
         
     @property
     def title(self):
-        return self.title
+        return self.title_
     @title.setter
     def title(self, title):
-        self.title=title
+        self.title_=title
     @property
     def labels(self):
-        return self.labels
+        return self.labels_
     @labels.setter
     def labels(self, labels):
-        self.labels=labels
+        self.labels_=labels
     @property
     def position(self):
-        return self.position
+        return self.position_
     @position.setter
     def position(self, position):
-        self.position=position
+        self.position_=position 
     
     
 
 class BasePlotter(object):
-    def __init__(self, files, lumifiles, outputdir, 
-                 styles=data_styles, blinder=None, forceLumi=-1, 
-                 fileMapping=True):
+    #def __init__(self, files, lumifiles, outputdir, 
+                 #styles=data_styles, blinder=None, forceLumi=-1, 
+                 #fileMapping=True):
+    def __init__(self):
         ''' Initialize the Plotter object
 
         Files should be a list of SAMPLE_NAME.root files.
@@ -73,38 +75,18 @@ class BasePlotter(object):
         If [blinder] is not None, it will be applied to the data view.
         '''
         self.set_style()
-        self.outputdir = outputdir
-        self.base_out_dir = outputdir
-        self.views = data_views(files, lumifiles, styles, forceLumi)
         self.canvas = plotting.Canvas(name='adsf', title='asdf')
         self.canvas.cd()
-        self.pad    = plotting.Pad('up', 'up', 0., 0., 1., 1.) #ful-size pad
+        self.pad    = plotting.Pad( 0., 0., 1., 1.) #ful-size pad 
         self.pad.Draw()
         self.pad.cd()
         self.lower_pad = None
-        if blinder:
-            # Keep the unblinded data around if desired.
-            self.views['data']['unblinded_view'] = self.views['data']['view']
-            # Apply a blinding function
-            self.views['data']['view'] = blinder(self.views['data']['view'])
-        self.data = self.views['data']['view'] if 'data' in self.views else None
         self.keep = []
-        # List of MC sample names to use.  Can be overridden.
-        self.mc_samples = [i for i in self.views if not i.startswith('data')]
-
-        file_to_map = filter(lambda x: x.startswith('data_'), self.views.keys())
-        if not file_to_map: #no data here!
-            file_to_map = self.views.keys()[0]
-        else:
-            file_to_map = file_to_map[0]
-        #set_trace()
-        self.file_dir_structure = Plotter.map_dir_structure( self.views[file_to_map]['file'] )
-
 
     def set_style(self):
         # For the canvas:
         ROOT.gStyle.SetCanvasBorderMode(0)
-        ROOT.gStyle.SetCanvasColor(kWhite)
+        ROOT.gStyle.SetCanvasColor(ROOT.kWhite)
         ROOT.gStyle.SetCanvasDefH(600) # Height of canvas
         ROOT.gStyle.SetCanvasDefW(600) # Width of canvas
         ROOT.gStyle.SetCanvasDefX(0) # Position on screen
@@ -112,9 +94,9 @@ class BasePlotter(object):
         
         # For the Pad:
         ROOT.gStyle.SetPadBorderMode(0)
-        ROOT.gStyle.SetPadColor(kWhite)
-        ROOT.gStyle.SetPadGridX(false)
-        ROOT.gStyle.SetPadGridY(false)
+        ROOT.gStyle.SetPadColor(ROOT.kWhite)
+        ROOT.gStyle.SetPadGridX(False)
+        ROOT.gStyle.SetPadGridY(False)
         ROOT.gStyle.SetGridColor(0)
         ROOT.gStyle.SetGridStyle(3)
         ROOT.gStyle.SetGridWidth(1)
@@ -124,7 +106,7 @@ class BasePlotter(object):
         ROOT.gStyle.SetFrameBorderSize(1)
         ROOT.gStyle.SetFrameFillColor(0)
         ROOT.gStyle.SetFrameFillStyle(0)
-        ROOT.gStyleSetFrameLineColor(1)
+        ROOT.gStyle.SetFrameLineColor(1)
         ROOT.gStyle.SetFrameLineStyle(1)
         ROOT.gStyle.SetFrameLineWidth(1)
         
@@ -158,7 +140,7 @@ class BasePlotter(object):
         # For the statistics box:
         ROOT.gStyle.SetOptFile(0)
         ROOT.gStyle.SetOptStat(1110) # To display the mean and RMS:   SetOptStat("mr")
-        ROOT.gStyle.SetStatColor(kWhite)
+        ROOT.gStyle.SetStatColor(ROOT.kWhite)
         ROOT.gStyle.SetStatFont(42)
         ROOT.gStyle.SetStatFontSize(0.025)
         ROOT.gStyle.SetStatTextColor(1)
@@ -209,7 +191,7 @@ class BasePlotter(object):
         
         # For the axis:
         ROOT.gStyle.SetAxisColor(1, "XYZ")
-        ROOT.gStyle.SetStripDecimals(kTRUE)
+        ROOT.gStyle.SetStripDecimals(True)
         ROOT.gStyle.SetTickLength(0.03, "XYZ")
         ROOT.gStyle.SetNdivisions(505, "X")
         ROOT.gStyle.SetNdivisions(510, "YZ")
@@ -403,20 +385,20 @@ class BasePlotter(object):
         return histonew
     
     @staticmethod
-    def set_canvas_style(self, logscalex=False, logscaley=False, logscalez=False):
-        self.canvas.UseCurrentStyle()
+    def set_canvas_style(c, logscalex=False, logscaley=False, logscalez=False):
+        c.UseCurrentStyle()
         if logscalex == True:
-            self.canvas.SetLogx(1)
+            c.SetLogx(1)
         else:
-            self.canvas.SetLogx(0)
+            c.SetLogx(0)
         if logscaley == True:
-            self.canvas.SetLogy(1)
+            c.SetLogy(1)
         else:
-            self.canvas.SetLogy(0)
+            c.SetLogy(0)
         if logscalez == True:
-            self.canvas.SetLogz(1)
+            c.SetLogz(1)
         else:
-            self.canvas.SetLogz(0)
+            c.SetLogz(0)
             
     @staticmethod
     def set_profile_style(p):
@@ -433,7 +415,7 @@ class BasePlotter(object):
         histo.SetLineColor(linecolor)
         histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
         histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
-        histo.SetStats(kFALSE)
+        histo.SetStats(False)
         
     @staticmethod
     def set_stack_histo_style(histo, color):
@@ -444,7 +426,7 @@ class BasePlotter(object):
         histo.SetFillColor(color)
         histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
         histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
-        histo.SetStats(kFALSE)
+        histo.SetStats(False)
     
     @staticmethod
     def set_graph_style(graph, markerstyle, linecolor):
@@ -508,26 +490,24 @@ class BasePlotter(object):
             c.Write()
         return c
     
-    @staticmethod
-    def create_and_write_canvas_with_comparison(cname, linestyles, markerstyles, colors, legend_definition, logscalex, logscaley, histos, write = True, comparison = 'pull', stack = False):
+    def create_and_write_canvas_with_comparison(self, cname, linestyles, markerstyles, colors, legend_definition, logscalex, logscaley, histos, write = True, comparison = 'pull', stack = False):
         if len(histos) < 2:
             logging.warning('create_and_write_canvas_with_comparison(): Less than two histograms to compare! Returning.')
             return
         for histo in histos:
-            set_trace()
-            if issubclass(histo, plotting.TH2) or issubclass(histo, plotting.TH3):
+            if issubclass(type(histo), ROOT.TH2) or issubclass(type(histo), ROOT.TH3):
                 logging.warning('create_and_write_canvas_with_comparison(): Comparison plots are supported only for 1D histograms! Returning.')
                 return 0
         c = plotting.Canvas(name=cname, title=histos[0].GetTitle())
-        set_canvas_style(c, logscalex, logscaley)
+        self.set_canvas_style(c, logscalex, logscaley) 
         
         c.cd()
         pad1 = ROOT.TPad("pad1","",0,0.33,1,1,0,0,0)
         pad2 = ROOT.TPad("pad2","",0,0,1,0.33,0,0,0)
-        set_canvas_style(pad1, logscalex, logscaley)
+        self.set_canvas_style(pad1, logscalex, logscaley)
         pad1.SetBottomMargin(0.001)
         pad2.SetTopMargin(0.005)
-        pad2.SetGridy(kTRUE)
+        pad2.SetGridy(True)
         pad2.SetBottomMargin(pad2.GetBottomMargin()*3)
         pad1.Draw()
         pad2.Draw()
@@ -535,7 +515,7 @@ class BasePlotter(object):
         pad1.cd()        
         plotoptions = []
         if stack == True:
-            set_histo_style(histos[0], 0, markerstyles[0], colors[0])
+            self.set_histo_style(histos[0], 0, markerstyles[0], colors[0])
             plotoptions.append('e x0')
             canvasname = cname
             stackname = 'hs' + canvasname[1:]
@@ -544,7 +524,7 @@ class BasePlotter(object):
             histosum.SetMarkerStyle(0)
             histosum.SetFillStyle(0)
             for i in range(1,len(histos)):
-                set_stack_histo_style(histos[i], colors[i])
+                self.set_stack_histo_style(histos[i], colors[i])
                 histostack.Add(histos[i])
                 plotoptions.append('fill')
                 if i > 1:
@@ -565,7 +545,7 @@ class BasePlotter(object):
         histos[0].SetLabelSize(ROOT.gStyle.GetLabelSize()*labelSizeFactor1, "XYZ")
         histos[0].SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor1, "XYZ")
         histos[0].GetYaxis().SetTitleOffset(histos[0].GetYaxis().GetTitleOffset()/labelSizeFactor1)
-        histos[0].Draw(plotOptions[0])
+        histos[0].Draw(plotoptions[0])
         yMin = histos[0].GetMinimum()
         yMax = histos[0].GetMaximum()
         yMinNew = yMin + (yMax-yMin)/100000000
@@ -576,8 +556,9 @@ class BasePlotter(object):
             histostack.Draw("hist same")
             histosum.SetLineWidth(3)
             histosum.Draw("hist same")
-            histos[0].Draw(plotOptions[0] + ' same')
-            OOT.TH1.AddDirectory(False)
+            histos[0].Draw(plotoptions[0] + ' same')
+            pad2.cd()
+            ROOT.TH1.AddDirectory(False)
             histocomp = histos[0].Clone()
             ROOT.TH1.AddDirectory(True)
             histocomp.SetMarkerColor(1)
@@ -591,7 +572,7 @@ class BasePlotter(object):
                     binContent2 = binContent2 + histos[ihisto].GetBinContent(ibin)
                     ierror = histos[ihisto].GetBinError(ibin)
                     binError2 = binError2 + sqrt(binError2**2 + ierror**2) # FIXME: This is probably wrong! The first binError2 should not be there
-                    #binError2 = + sqrt(binError2**2 + ierror**2)
+                    #binError2 = sqrt(binError2**2 + ierror**2)
                 result = 0
                 error = 0
                 if comparison == 'pull':
@@ -600,8 +581,8 @@ class BasePlotter(object):
                         result = (binContent1-binContent2)/error
                     else:
                         result = 9999
-                    histocomp.SetBinContent(iBin, result)
-                    histocomp.SetBinError(iBin,0.01)
+                    histocomp.SetBinContent(ibin, result)
+                    histocomp.SetBinError(ibin,0.01)
                 elif comparison == 'ratio':
                     if binContent1 != 0 and binContent2 != 0:
                         result = binContent1/binContent2
@@ -623,6 +604,25 @@ class BasePlotter(object):
                         error = 1
                     histocomp.SetBinContent(ibin, result)
                     histocomp.SetBinError(ibin,error)
+            histocomp.SetLabelSize(ROOT.gStyle.GetLabelSize()*labelSizeFactor2, "XYZ")
+            histocomp.SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor2, "XYZ")
+            histocomp.GetYaxis().SetTitleOffset(histocomp.GetYaxis().GetTitleOffset()/labelSizeFactor2)
+            if comparison == 'pull':
+                histocomp.GetYaxis().SetTitle('Pull')
+            elif comparison == 'ratio':
+                histocomp.GetYaxis().SetTitle('Ratio')
+            elif comparison == 'diff':
+                histocomp.GetYaxis().SetTitle('Difference')
+            histocomp.SetTitle('')
+            histocomp.SetStats(False)
+            histocomp.Draw('e x0')
+            if comparison == 'pull':
+                histocomp.GetYaxis().SetRangeUser(-2.999,2.999)
+            elif comparison == 'ratio':
+                histocomp.GetYaxis().SetRangeUser(0.,1.999)
+            elif comparison == 'diff':
+                histocomp.GetYaxis().SetRangeUser(-0.499,0.499)
+            histocomp.GetYaxis().SetNdivisions(505)
         else:
             for i in range(1,len(histos)):
                 pad1.cd()
@@ -669,11 +669,10 @@ class BasePlotter(object):
                             error = 1
                         histocomp.SetBinContent(iBin, result)
                         histocomp.SetBinError(iBin,error)
-                
                 histocomp.SetLabelSize(ROOT.gStyle.GetLabelSize()*labelSizeFactor2, "XYZ")
                 histocomp.SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor2, "XYZ")
                 histocomp.GetYaxis().SetTitleOffset(histocomp.GetYaxis().GetTitleOffset()/labelSizeFactor2)
-                if len(histos) == 2 or stack == True:
+                if len(histos) == 2:
                     if comparison == 'pull':
                         histocomp.GetYaxis().SetTitle('Pull')
                     elif comparison == 'ratio':
@@ -689,6 +688,7 @@ class BasePlotter(object):
                         histocomp.GetYaxis().SetTitle('Differences')
                 histocomp.SetTitle('')
                 histocomp.SetStats(False)
+                
                 if i == 1:
                     histocomp.Draw("e1")
                     if comparison == 'pull':
@@ -703,9 +703,9 @@ class BasePlotter(object):
         
         pad1.cd()
         if stack == True:
-            plot_legend(pad1, histos[0], histostack, plotoptions, legend_definition)            
+            self.plot_stack_legend(pad1, histos[0], histostack, plotoptions, legend_definition)            
         else:
-            plot_legend(pad1, histos, plotoptions, legend_definition)
+            self.plot_legend(pad1, histos, plotoptions, legend_definition)
         pad1.Update()
         pad2.Update()
         c.Update()
@@ -853,16 +853,16 @@ class BasePlotter(object):
         padBottomMargin = c.GetBottomMargin()
         plotWidth = 1. - (padLeftMargin + padRightMargin)
         plotHeight = 1. - (padTopMargin + padBottomMargin)
-        nEntries = objects.size()
+        nentries = len(objects)
         maxTextSize = 0
-        if legend_definition.title.size() > maxTextSize:
-            maxTextSize = leg.title.size()
+        if len(legend_definition.title) > maxTextSize:
+            maxTextSize = len(leg.title)
         if maxTextSize > 40:
             maxTextSize = 40
-        for ientry in range(0, legend_definition.labels.size()):
-            if legend_definition.labels[ientry].size() > maxTextSize:
-                maxTextSize = legend_definition.labels[ientry].size()
-        if legend_definition.title.length() > 0:
+        for ientry in range(0, len(legend_definition.labels)):
+            if len(legend_definition.labels[ientry]) > maxTextSize:
+                maxTextSize = len(legend_definition.labels[ientry])
+        if len(legend_definition.title) > 0:
             nentries = nentries + 1
         if  'e' in legPosition or 'E' in legPosition:
             legX1 = (0.95-maxTextSize*0.012-0.1)*plotWidth + padLeftMargin
@@ -903,7 +903,7 @@ class BasePlotter(object):
             else:
                 legendoptions.append('l')
         
-        legend  = plotting.TLegend(legX1,legY1, legX2, legY2, legend_definition.title, 'NDC')
+        legend  = ROOT.TLegend(legX1,legY1, legX2, legY2, legend_definition.title, 'NDC')
         
         # Set generic options
         legend.UseCurrentStyle()
@@ -918,6 +918,20 @@ class BasePlotter(object):
         
         c.cd()
         legend.Draw()
+        
+    @staticmethod
+    def plot_stack_legend(c, histo, stack, plotoptions, legend_definition):
+        objects = []
+        objects.append(histo)
+        histolist = stack.GetHists()
+        for ihisto in range(len(histolist)-1,-1,-1):
+            objects.append(histolist.At(ihisto))
+        legend_labels_ordered = []
+        legend_labels_ordered.append(legend_definition.labels[0])
+        for ilabel in range (len(legend_definition.labels)-1, 0, -1):
+            legend_labels_ordered.append(legend_definition.labels[ilabel])
+        legend_ordered = LegendDefinition(legend_definition.title, legend_labels_ordered, legend_definition.position)
+        BasePlotter.plot_legend(c,objects, plotoptions, legend_ordered)
     
     @staticmethod
     def parse_formula(fcn_string, pars_string):
@@ -1038,40 +1052,6 @@ class BasePlotter(object):
         ''' Save the current canvas contents to [filename] '''
         self.pad.Draw()
         self.canvas.Update()
-        if not os.path.exists(self.outputdir):
-            os.makedirs(self.outputdir)
-        if verbose:
-            print 'saving '+os.path.join(self.outputdir, filename) + '.png'
-        if png: self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.png')
-        if pdf: self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.pdf')
-        if dotc:
-            self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.C')
-        if json:
-            jdict = {}
-            for obj in self.keep:
-                if isinstance(obj, ROOT.TH1):
-                    jdict[obj.GetTitle()] = [obj.GetBinContent(1), obj.GetBinError(1)] 
-                if isinstance(obj, ROOT.THStack):
-                    jdict['hist_stack'] = {}
-                    for i in obj.GetHists():
-                        jdict['hist_stack'][i.GetTitle()] = [i.GetBinContent(1), i.GetBinError(1)]
-            with open(os.path.join(self.outputdir, filename) + '.json', 'w') as jout:
-                jout.write(prettyjson.dumps(jdict))
-        if dotroot:
-            logging.error(
-                'This functionality still has to be implemented '
-                'properly, due to the awsome ROOT "features"')
-            rfile = os.path.join(self.outputdir, filename) + '.root'
-            with io.root_open(rfile, 'recreate') as tfile:
-                #set_trace()
-                self.canvas.Write()
-                for obj in self.keep:
-                    if isinstance(obj, plotting.HistStack):
-                        for hist in obj.hists:
-                            hist.Write()
-                    obj.Write()
-            #self.keep = []
-            self.reset()
 
         if self.keep and self.lower_pad:
             #pass
@@ -1100,5 +1080,49 @@ class BasePlotter(object):
         histo.GetXaxis().SetTitle(xaxis)
         self.keep.append(histo)
         return histo
-
-
+    
+    
+if __name__ == '__main__':
+    from rootpy.io import root_open
+    p = BasePlotter()
+    myfile = root_open('plots/2015May05/ttxsec_standard/ptthad/ptthad.root', 'READ')
+    outfile = root_open('test_baseplotter.root','RECREATE')
+    outfile.cd()
+    for directory in myfile.objects(cls=ROOT.TDirectory):
+        dirname=directory.GetName()
+        print dirname
+        #if dirname == 'Bin14':
+            #set_trace()
+        tt_wrong = directory.tt_wrong
+        print 'I am here 0.1'
+        tt_right = directory.tt_right
+        print 'I am here 0.2'
+        single_top = directory.single_top
+        print 'I am here 0.3'
+        only_thad_right = directory.only_thad_right
+        print 'I am here 0.4'
+        vjets = directory.vjets
+        print 'I am here 0.5'
+        data_obs = directory.data_obs
+        print 'I am here 0.6'
+        
+        print 'I am here 1'
+        leg = LegendDefinition()
+        leg.title = dirname
+        leg.position = 'ne'
+        leg.labels = ['Data', 'V+jets', 'Single top', 'Only t_{had} right', 'Wrong t#bar{t}', 'Right t#bar{t}']
+        
+        print 'I am here 2'
+        
+        linestyles = [1,1,1,1,1,1,1,1]
+        markerstyles = [23,23,23,23,23,23,23,23]
+        colors = [2,3,4,5,6,7,8,9]
+        histos = [data_obs, vjets, single_top, only_thad_right, tt_wrong, tt_right]
+        print 'I am here 3'
+        canvas = p.create_and_write_canvas_with_comparison('test'+dirname, linestyles, markerstyles, colors, leg, False, False, histos, write=True, comparison='pull', stack=True)
+        print 'I am here 4'
+        
+    outfile.Close()
+    myfile.Close()
+    
+    
