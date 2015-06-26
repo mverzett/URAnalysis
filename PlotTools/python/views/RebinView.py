@@ -9,6 +9,7 @@ Author: Evan K. Friis, UW Madison
 import array
 import rootpy.plotting.views as views
 import rootpy.plotting as plotting
+import rootpy
 try:
     from rootpy.utils import asrootpy
 except ImportError:
@@ -17,7 +18,7 @@ import ROOT
 import os
 from URAnalysis.Utilities.quad import quad
 from pdb import set_trace
-
+log = rootpy.log["/RebinView"]
 ROOT.TH1.SetDefaultSumw2(True)
 
 class RebinView(views._FolderView):
@@ -130,15 +131,16 @@ class RebinView(views._FolderView):
                 return self.newRebin2D(histogram, bin_arrayx, bin_arrayy)
         elif isinstance(histogram, ROOT.TH1):
             if isinstance(binning[0], (list, tuple)):
-                return histogram
+                raise ValueError(
+                    "You are providing a binning scheme (%s) "
+                    "not compatible with 1D hists!" % (binning.__repr__()))
             bin_array = array.array('d', binning)
             ret = asrootpy( histogram.Rebin(len(binning)-1, histogram.GetName() + 'rebin', bin_array) )
             if hasattr(histogram, 'decorators'):
                 ret.decorate( **histogram.decorators )
             return ret 
         else:
-            print 'ERROR in RebinView: not a TH1 or TH2 histo. Rebin not done'
-            
+            raise ValueError('ERROR in RebinView: not a TH1 or TH2 histo. Rebin not done')
             return histogram
 
     def apply_view(self, object):
