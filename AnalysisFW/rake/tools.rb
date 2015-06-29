@@ -125,8 +125,6 @@ def new_trial(res_dir, plot_dir, label='')
 end
 
 def publish_pics(input_name, output_name)
-  puts input_name, output_name
-  puts File.directory? output_name
   if not (File.directory? output_name)
     sh "mkdir #{output_name}"
   end
