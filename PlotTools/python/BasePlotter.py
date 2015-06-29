@@ -555,17 +555,28 @@ class BasePlotter(object):
         histos[0].SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor1, "XYZ")
         histos[0].GetYaxis().SetTitleOffset(histos[0].GetYaxis().GetTitleOffset()/labelSizeFactor1)
         histos[0].Draw(plotoptions[0])
-        yMin = histos[0].GetMinimum()
-        yMax = histos[0].GetMaximum()
+        yMin = histos[0].GetBinContent(1)
+        yMax = histos[0].GetBinContent(1)
+        for histo in histos:
+            for ibin in range(1,histos[0].GetXaxis().GetNbins()+1):
+                value = histo.GetBinContent(ibin) + histo.GetBinError(ibin)
+                if value > yMax:
+                    yMax = value
+                value = histo.GetBinContent(ibin) - histo.GetBinError(ibin)
+                if value < yMin:
+                    yMin = value
+        
+        #yMin = histos[0].GetMinimum()
+        #yMax = histos[0].GetMaximum()
         if yMin > 0:
             yMinNew = 0 + (yMax-yMin)/100000000
-            yMaxNew = yMax + (yMax-yMin)*0.2
+            yMaxNew = yMax + (yMax-yMinNew)*0.2
         elif yMin < 0 and yMax > 0:
             yMinNew = yMin - (yMax-yMin)*0.2
-            yMaxNew = yMax + (yMax-yMin)*0.2
+            yMaxNew = yMax + (yMax-yMinNew)*0.2
         else:
             yMinNew = yMin - (yMax-yMin)*0.2
-            yMaxNew = 0 - (yMax-yMin)/100000000
+            yMaxNew = 0 - (yMax-yMinNew)/100000000
         histos[0].GetYaxis().SetRangeUser(yMinNew,yMaxNew)
         if stack == True:
             pad1.cd()
