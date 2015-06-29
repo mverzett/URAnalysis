@@ -158,6 +158,31 @@ class RealVar(ROOT.RooRealVar):
 
 class Envelope(object):
    'represents an envelope of histograms'
+
+   class BinProxy(object):
+      'represents one bin of the envelope'
+      def __init__(self, envelope, ibin):
+         self.env_ = envelope
+         self.ibin_ = ibin
+
+      @property
+      def median(self):
+         return self.env_.median_value(self.ibin_)
+
+      @property
+      def one_sigma(self):
+         return self.env_.one_sigma_range(self.ibin_)
+
+      @property
+      def two_sigma(self):
+         return self.env_.two_sigma_range(self.ibin_)
+
+      @property
+      def error(self):
+         center = self.median
+         down, up = self.one_sigma
+         return abs(down-center), abs(up-center)
+
    def __init__(self):
       self.styles = {
          'two_sigma' : {
@@ -187,7 +212,7 @@ class Envelope(object):
 
       self._hists = []
       self._nhists = 0
-      self.median, self.one_sigma, self.two_sigma = None, None, None
+      self.median_, self.one_sigma_, self.two_sigma_ = None, None, None
       self.log = rootpy.log['/Envelope']
 
    def add(self, hist):
@@ -198,20 +223,20 @@ class Envelope(object):
       return self
 
    def _make_hists_(self):
-      if self.median is not None:
+      if self.median_ is not None:
          return
-      self.median, self.one_sigma, self.two_sigma = tuple(self._hists[0].clone() for _ in range(3))
-      self.median.reset()
-      self.one_sigma.reset()
-      self.two_sigma.reset()
+      self.median_, self.one_sigma_, self.two_sigma_ = tuple(self._hists[0].clone() for _ in range(3))
+      self.median_.reset()
+      self.one_sigma_.reset()
+      self.two_sigma_.reset()
 
-      self.median.decorate(**self.styles['median'])
-      self.one_sigma.decorate(**self.styles['one_sigma'])
-      self.two_sigma.decorate(**self.styles['two_sigma'])
+      self.median_.decorate(**self.styles['median'])
+      self.one_sigma_.decorate(**self.styles['one_sigma'])
+      self.two_sigma_.decorate(**self.styles['two_sigma'])
       
-      self.median.title = 'median'
-      self.one_sigma.title = '#pm1 #sigma'
-      self.two_sigma.title = '#pm2 #sigma'
+      self.median_.title = 'median'
+      self.one_sigma_.title = '#pm1 #sigma'
+      self.two_sigma_.title = '#pm2 #sigma'
 
    def _compute_(self):
       'compute the envelope'
@@ -227,7 +252,7 @@ class Envelope(object):
       self._nhists = len(self._hists)
       self._make_hists_()
 
-      nbins = len(self.median) 
+      nbins = len(self.median_) 
       max_pos = self._nhists-1
       one_sigmas = ROOT.TMath.Nint(max_pos*0.158), ROOT.TMath.Nint(max_pos*(1-0.158))
       two_sigmas = ROOT.TMath.Nint(max_pos*0.022), ROOT.TMath.Nint(max_pos*(1-0.022))
@@ -235,7 +260,7 @@ class Envelope(object):
       for ibin in range(1, nbins+1):
          vals = [i.get_bin_content(ibin) for i in self._hists]
          vals.sort()
-         self.median.SetBinContent(ibin, vals[median])
+         self.median_.SetBinContent(ibin, vals[median])
          one_s_range = tuple(vals[i] for i in one_sigmas)
          two_s_range = tuple(vals[i] for i in two_sigmas)
          self.log.debug(
@@ -247,52 +272,73 @@ class Envelope(object):
                (ibin, mean(*one_s_range), delta(*one_s_range)/2.)
             )
 
-         self.one_sigma.SetBinContent(ibin, mean(*one_s_range))
-         self.two_sigma.SetBinContent(ibin, mean(*two_s_range))
+         self.one_sigma_.SetBinContent(ibin, mean(*one_s_range))
+         self.two_sigma_.SetBinContent(ibin, mean(*two_s_range))
          
-         self.one_sigma.SetBinError(ibin, delta(*one_s_range)/2.)
-         self.two_sigma.SetBinError(ibin, delta(*two_s_range)/2.)
+         self.one_sigma_.SetBinError(ibin, delta(*one_s_range)/2.)
+         self.two_sigma_.SetBinError(ibin, delta(*two_s_range)/2.)
 
-   def draw(self):
+   def draw(self, options=''):
       self._compute_()
-      self.two_sigma.Draw()
-      self.one_sigma.Draw()
-      self.median.Draw()
+      self.two_sigma_.Draw(options)
+      self.one_sigma_.Draw(options)
+      self.median_.Draw(options)
 
-   def Draw(self):
+   def Draw(self, options=''):
       self.draw()
+
+   def __iter__(self):
+      self._compute_()
+      for i in range(self.nbins+2):
+         yield Envelope.BinProxy(self, i)
+
+   @property
+   def median(self):
+      self._compute_()
+      return self.median_
+   
+   @property
+   def one_sigma(self):
+      self._compute_()
+      return self.one_sigma_
+
+   @property
+   def two_sigma(self):
+      self._compute_()
+      return self.two_sigma_
 
    def median_value(self, ibin):
       self._compute_()
-      return self.median[ibin].value
+      return self.median_[ibin].value
    
    def one_sigma_range(self, ibin):
       self._compute_()
-      center = self.one_sigma[ibin].value
-      err    = self.one_sigma[ibin].error
+      center = self.one_sigma_[ibin].value
+      err    = self.one_sigma_[ibin].error
       return center - err, center + err
    
    def two_sigma_range(self, ibin):
       self._compute_()
-      center = self.two_sigma[ibin].value
-      err    = self.two_sigma[ibin].error
+      center = self.two_sigma_[ibin].value
+      err    = self.two_sigma_[ibin].error
       return center - err, center + err
 
+   @property
    def nbins(self):
       self._compute_()
-      return self.median.GetNbinsX()
+      return self.median_.GetNbinsX()
 
    def json(self):
       self._compute_()
       jret = []
-      for idx in xrange(1, self.nbins()+1):
+      for idx in xrange(1, self.nbins+1):
          jbin = {
             'median' : self.median_value(idx),
             'one_sigma' : {'range' : self.one_sigma_range(idx)},
             'two_sigma' : {'range' : self.two_sigma_range(idx)},
-            'label' : self.median.GetXaxis().GetBinLabel(idx),
-            'low_edge' : self.median.GetXaxis().GetBinLowEdge(idx),
-            'up_edge' : self.median.GetXaxis().GetBinUpEdge(idx),
+            'label' : self.median_.GetXaxis().GetBinLabel(idx),
+            'low_edge' : self.median_.GetXaxis().GetBinLowEdge(idx),
+            'up_edge' : self.median_.GetXaxis().GetBinUpEdge(idx),
             }
 
          jbin['one_sigma']['val'] = max(
