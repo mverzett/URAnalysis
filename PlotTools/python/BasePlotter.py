@@ -140,18 +140,18 @@ class BasePlotter(object):
         
         # For the statistics box:
         ROOT.gStyle.SetOptFile(0)
-        ROOT.gStyle.SetOptStat(1110) # To display the mean and RMS:   SetOptStat("mr")
+        #ROOT.gStyle.SetOptStat(1110) # To display the mean and RMS:   SetOptStat("mr")
         ROOT.gStyle.SetStatColor(ROOT.kWhite)
         ROOT.gStyle.SetStatFont(42)
-        ROOT.gStyle.SetStatFontSize(0.025)
+        ROOT.gStyle.SetStatFontSize(0.027)
         ROOT.gStyle.SetStatTextColor(1)
         ROOT.gStyle.SetStatFormat("6.4g")
         ROOT.gStyle.SetStatBorderSize(1)
         ROOT.gStyle.SetStatH(0.1)
         ROOT.gStyle.SetStatW(0.15)
         # ROOT.gStyle.SetStatStyle(Style_t style = 1001)
-        # ROOT.gStyle.SetStatX(Float_t x = 0)
-        # ROOT.gStyle.SetStatY(Float_t y = 0)
+        ROOT.gStyle.SetStatX(0.93)
+        ROOT.gStyle.SetStatY(0.86)
         
         # Margins:
         ROOT.gStyle.SetPadTopMargin(0.1)
@@ -432,7 +432,8 @@ class BasePlotter(object):
     @staticmethod
     def set_graph_style(graph, markerstyle, linecolor):
         graph.UseCurrentStyle()
-        graph.SetMarkerStyle(markerstyle)
+        if markerstyle != 0:
+            graph.SetMarkerStyle(markerstyle)
         graph.SetMarkerColor(linecolor)
         graph.SetLineColor(linecolor)
         
@@ -446,8 +447,12 @@ class BasePlotter(object):
             canvasname = 'c' + histo.GetName()
             create_and_write_canvas(canvasname, linestyle, markerstyle, color, logscalex, logscaley, histo)
             
-    def create_and_write_canvas_single(self, cname, linestyle, markerstyle, color, logscalex, logscaley, histo, write=True):
-        c = plotting.Canvas(name=cname)
+    def create_and_write_canvas_single(self, linestyle, markerstyle, color, logscalex, logscaley, histo, write=True, cname=''):
+        if cname == '':
+            canvasname = 'c' + histo.GetName()
+        else:
+            canvasname = cname
+        c = plotting.Canvas(name=canvasname)
         self.set_canvas_style(c, logscalex, logscaley)
         self.set_histo_style(histo, linestyle, markerstyle, color)
         if linestyle != 0 or markerstyle == 0:
@@ -552,8 +557,15 @@ class BasePlotter(object):
         histos[0].Draw(plotoptions[0])
         yMin = histos[0].GetMinimum()
         yMax = histos[0].GetMaximum()
-        yMinNew = yMin + (yMax-yMin)/100000000
-        yMaxNew = yMax + (yMax-yMin)*0.2
+        if yMin > 0:
+            yMinNew = 0 + (yMax-yMin)/100000000
+            yMaxNew = yMax + (yMax-yMin)*0.2
+        elif yMin < 0 and yMax > 0:
+            yMinNew = yMin - (yMax-yMin)*0.2
+            yMaxNew = yMax + (yMax-yMin)*0.2
+        else:
+            yMinNew = yMin - (yMax-yMin)*0.2
+            yMaxNew = 0 - (yMax-yMin)/100000000
         histos[0].GetYaxis().SetRangeUser(yMinNew,yMaxNew)
         if stack == True:
             pad1.cd()
@@ -657,7 +669,7 @@ class BasePlotter(object):
                     if comparison == 'pull':
                         error = sqrt(binError1*binError1 + binError2*binError2)
                         if error != 0:
-                            result = (binContent1-binContent2)/error
+                            result = (binContent2-binContent1)/error
                         else:
                             result = 9999
                         histocomp.SetBinContent(ibin, result)
@@ -673,7 +685,7 @@ class BasePlotter(object):
                         histocomp.SetBinError(ibin,error)
                     elif comparison == 'diff':
                         if binContent1 != 0:
-                            result = (binContent1-binContent2)/binContent1
+                            result = (binContent2-binContent1)/binContent1
                             if binContent1-binContent2 != 0:
                                 error = sqrt(((binError1**2+binError2**2)/(binContent1-binContent2))**2+(binError1/binContent1)**2)*result
                             else:
@@ -777,24 +789,27 @@ class BasePlotter(object):
             c.Write()
         return c
     
-    @staticmethod
-    def create_and_write_canvas(cname, markerstyles, colors, logscalex, logscaley, graphs, write = True):
+    def create_and_write_graph_canvas(self, cname, markerstyles, colors, logscalex, logscaley, graphs, write = True):
         if len(graphs) == 0:
-            logging.error('create_and_write_canvas(): list of graphs is empty! Returning...')
+            logging.error('create_and_write_graph_canvas(): list of graphs is empty! Returning...')
             return 0
         
-        c = plotting.Canvas(cname)
-        set_canvas_style(c, logscalex, logscaley)
+        c = ROOT.TCanvas(cname,graphs[0].GetTitle())
+        self.set_canvas_style(c, logscalex, logscaley)
         c.SetRightMargin(c.GetRightMargin()*3.5)
         
         plotoptions = []
         
-        for i in range(0, len(graphs)+1):
-            set_graph_style(graphs[i], markerstyles[i], colors[i])
-            if i == 0:
-                plotoptions.append('A P')
+        for i in range(0, len(graphs)):
+            self.set_graph_style(graphs[i], markerstyles[i], colors[i])
+            if markerstyles[i] == 0:
+                plotoption = 'L'
             else:
-                plotoptions.append('P')
+                plotoption = 'P'
+            if i == 0:
+                plotoptions.append('A ' + plotoption)
+            else:
+                plotoptions.append(plotoption)
         
         c.cd()
         isFirst = True
@@ -872,7 +887,7 @@ class BasePlotter(object):
         nentries = len(objects)
         maxTextSize = 0
         if len(legend_definition.title) > maxTextSize:
-            maxTextSize = len(leg.title)
+            maxTextSize = len(legend_definition.title)
         if maxTextSize > 40:
             maxTextSize = 40
         for ientry in range(0, len(legend_definition.labels)):
