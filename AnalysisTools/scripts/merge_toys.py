@@ -17,10 +17,8 @@ from URAnalysis.Utilities.struct import Struct
 asrootpy = rootpy.asrootpy
 rootpy.log["/"].setLevel(rootpy.log.ERROR)
 rootpy.log["/rootpy"].setLevel(rootpy.log.ERROR)
-log = rootpy.log["/harvest_ctag"]
+log = rootpy.log["/merge_toys"]
 log.setLevel(rootpy.log.ERROR)
-ROOT.gStyle.SetOptTitle(0)
-ROOT.gStyle.SetOptStat(0)
 
 parser = ArgumentParser()
 parser.add_argument('output_file')
