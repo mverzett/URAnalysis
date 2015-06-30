@@ -1,11 +1,3 @@
-'''
-
-Base class which makes nice plots.
-Original Author: Evan K. Friis in FinalStateAnalysis
-Many adaptation and import by Mauro Verzetti
-
-'''
-
 import fnmatch
 import re
 import os
@@ -455,6 +447,27 @@ class BasePlotter(object):
         c = plotting.Canvas(name=canvasname)
         self.set_canvas_style(c, logscalex, logscaley)
         self.set_histo_style(histo, linestyle, markerstyle, color)
+        yMin = histo.GetBinContent(1)
+        yMax = histo.GetBinContent(1)
+        for ibin in range(1,histo.GetXaxis().GetNbins()+1):
+            value = histo.GetBinContent(ibin) + histo.GetBinError(ibin)
+            if value > yMax:
+                yMax = value
+            value = histo.GetBinContent(ibin) - histo.GetBinError(ibin)
+            if value < yMin:
+                yMin = value
+        
+        if yMin > 0:
+            yMinNew = 0 + (yMax-yMin)/100000000
+            yMaxNew = yMax + (yMax-yMinNew)*0.2
+        elif yMin < 0 and yMax > 0:
+            yMinNew = yMin - (yMax-yMin)*0.2
+            yMaxNew = yMax + (yMax-yMinNew)*0.2
+        else:
+            yMinNew = yMin - (yMax-yMin)*0.2
+            yMaxNew = 0 - (yMax-yMinNew)/100000000
+        histo.GetYaxis().SetRangeUser(yMinNew,yMaxNew)
+        
         if linestyle != 0 or markerstyle == 0:
             plotoptions = "hist"
         else:
@@ -473,6 +486,29 @@ class BasePlotter(object):
             return
         c = plotting.Canvas(name=cname)
         self.set_canvas_style(c, logscalex, logscaley)
+        
+        yMin = histos[0].GetBinContent(1)
+        yMax = histos[0].GetBinContent(1)
+        for histo in histos:
+            for ibin in range(1,histos[0].GetXaxis().GetNbins()+1):
+                value = histo.GetBinContent(ibin) + histo.GetBinError(ibin)
+                if value > yMax:
+                    yMax = value
+                value = histo.GetBinContent(ibin) - histo.GetBinError(ibin)
+                if value < yMin:
+                    yMin = value
+        
+        if yMin > 0:
+            yMinNew = 0 + (yMax-yMin)/100000000
+            yMaxNew = yMax + (yMax-yMinNew)*0.2
+        elif yMin < 0 and yMax > 0:
+            yMinNew = yMin - (yMax-yMin)*0.2
+            yMaxNew = yMax + (yMax-yMinNew)*0.2
+        else:
+            yMinNew = yMin - (yMax-yMin)*0.2
+            yMaxNew = 0 - (yMax-yMinNew)/100000000
+        histos[0].GetYaxis().SetRangeUser(yMinNew,yMaxNew)
+        
         plotoptions = []
         for i in range (0, len(histos)):
             self.set_histo_style(histos[i], linestyles[i], markerstyles[i], colors[i])
