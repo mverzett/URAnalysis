@@ -457,7 +457,7 @@ class BasePlotter(object):
             if value < yMin:
                 yMin = value
         
-        if yMin > 0:
+        if yMin >= 0:
             yMinNew = 0 + (yMax-yMin)/100000000
             yMaxNew = yMax + (yMax-yMinNew)*0.2
         elif yMin < 0 and yMax > 0:
@@ -498,7 +498,7 @@ class BasePlotter(object):
                 if value < yMin:
                     yMin = value
         
-        if yMin > 0:
+        if yMin >= 0:
             yMinNew = 0 + (yMax-yMin)/100000000
             yMaxNew = yMax + (yMax-yMinNew)*0.2
         elif yMin < 0 and yMax > 0:
@@ -604,7 +604,7 @@ class BasePlotter(object):
         
         #yMin = histos[0].GetMinimum()
         #yMax = histos[0].GetMaximum()
-        if yMin > 0:
+        if yMin >= 0:
             yMinNew = 0 + (yMax-yMin)/100000000
             yMaxNew = yMax + (yMax-yMinNew)*0.2
         elif yMin < 0 and yMax > 0:
