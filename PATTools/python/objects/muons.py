@@ -8,19 +8,19 @@ urSkimmedMuons = cms.EDFilter(
 customMuons = cms.Sequence(urSkimmedMuons)
 
 #trigger match
-from URAnalysis.PATTools.objects.trigger import trigger_paths, match_template
+#from URAnalysis.PATTools.objects.trigger import trigger_paths, match_template
 
-matchers = []
-mupaths = [i for i in trigger_paths if 'Mu' in i]
-for path in mupaths:
-   matcher_name = 'matchMuons%s' % path.replace('_','')
-   matchers.append(matcher_name)
-   globals()[matcher_name] = match_template.clone(
-      src = cms.InputTag('urSkimmedMuons'),
-      matchedCuts = cms.string('path("HLT_%s_v*") || type("TriggerMuon")' % path)
-      )
-   #print matcher_name, globals()[matcher_name].matchedCuts
-   customMuons *= globals()[matcher_name]
+#matchers = []
+#mupaths = [i for i in trigger_paths if 'Mu' in i]
+#for path in mupaths:
+#   matcher_name = 'matchMuons%s' % path.replace('_','')
+#   matchers.append(matcher_name)
+#   globals()[matcher_name] = match_template.clone(
+#      src = cms.InputTag('urSkimmedMuons'),
+#      matchedCuts = cms.string('path("HLT_%s_v*") || type("TriggerMuon")' % path)
+#      )
+#   #print matcher_name, globals()[matcher_name].matchedCuts
+#   customMuons *= globals()[matcher_name]
 
 muonIpInfo = cms.EDProducer(
    'PATMuonIpEmbedder',
@@ -34,12 +34,12 @@ customMuons *= muonIpInfo
 
 urMuons = cms.EDProducer(
    'PATMuonsEmbedder',
-   src = cms.InputTag('fixme'),
+   src = cms.InputTag('muonIpInfo'),
    trigMatches = cms.VInputTag(
-      cms.InputTag(i) for i in matchers
+ #     cms.InputTag(i) for i in matchers
       ),
    trigPaths = cms.vstring(
-      mupaths
+  #    mupaths
       ),
    floatMaps = cms.PSet(
       ipDXY = cms.InputTag("muonIpInfo:ipDXY"),
@@ -47,7 +47,8 @@ urMuons = cms.EDProducer(
       vz	  = cms.InputTag("muonIpInfo:vz"	 ),
       ip3D  = cms.InputTag("muonIpInfo:ip3D" ),
       ip3DS = cms.InputTag("muonIpInfo:ip3DS"),
-      )
+      missingInnerHits = cms.InputTag("muonIpInfo:missingInnerHits"),
+	  )
 )
 customMuons *= urMuons
 

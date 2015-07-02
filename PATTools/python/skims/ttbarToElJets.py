@@ -4,25 +4,25 @@ def skim(process, **collections):
    process.hiptElectrons = cms.EDFilter(
       "PATElectronSelector",
       src = cms.InputTag(collections['electrons']),
-      cut = cms.string('pt > 20 && abs(eta) < 2.5')
+      cut = cms.string('pt > 10 && abs(eta) < 2.5')
       )
 
    process.electronFilter = cms.EDFilter(
       "CandViewCountFilter",
       src = cms.InputTag('hiptElectrons'),
-      minNumber = cms.uint32(1)
+      minNumber = cms.uint32(0)
       )
 
    process.hiPtJets = cms.EDFilter(
       "PATJetSelector",
       src = cms.InputTag(collections['jets']),
-      cut = cms.string('pt > 20 && abs(eta) < 4')
+      cut = cms.string('pt > 20 && abs(eta) < 10')
       )
 
    process.jetFilter = cms.EDFilter(
       "CandViewCountFilter",
       src = cms.InputTag('hiPtJets'),
-      minNumber = cms.uint32(3)
+      minNumber = cms.uint32(0)
       )
 
    process.ttbarToElJets = cms.Sequence(

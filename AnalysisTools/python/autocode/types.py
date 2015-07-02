@@ -53,14 +53,17 @@ class BranchMeta(object):
          self.type = branch.GetTypeName()
          self.is_vector = True
       else:
-         root_type = self.name.split('/')[1]
+         print self.name, branch.GetListOfLeaves().At(0).GetTypeName()
+         self.type = branch.GetListOfLeaves().At(0).GetTypeName()
          self.is_vector = False
-         try:
-            self.type = BranchMeta.type_map[root_type]
-         except:
-            raise ValueError(
-               'Branch type, %s, does not match'
-               ' any known type!' % root_type)
+       #  root_type = self.name.split('/')[1]
+       #  self.is_vector = False
+       #  try:
+       #     self.type = BranchMeta.type_map[root_type]
+       #  except:
+       #     raise ValueError(
+       #        'Branch type, %s, does not match'
+       #        ' any known type!' % root_type)
 
    def cpp_var(self):
       'C++ variable'

@@ -6,7 +6,6 @@
   <use name="TrackingTools/Records"/>
   <use name="TrackingTools/IPTools"/>
   <use name="DataFormats/VertexReco"/>
-  <use name="URAnalysis/DataFormats"/>
   <use name="URAnalysis/PATTools"/>
   <use name="FWCore/PluginManager"/>
   <use name="FWCore/ParameterSet"/>

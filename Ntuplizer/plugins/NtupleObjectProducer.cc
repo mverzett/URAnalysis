@@ -89,17 +89,14 @@ void NtupleObjectProducer<EDObject>::analyze(const edm::Event& evt, const edm::E
 //PAT Includes                                                                                                                                               
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
-#include "URAnalysis/DataFormats/interface/TriggerEvent.h"
 
 //CMSSW does not like templates, so use typedefs
 typedef NtupleObjectProducer<GenEventInfoProduct> NtupleGenInfoProducer;
 typedef NtupleObjectProducer<reco::BeamSpot> NtupleBeamSpotProducer;
-typedef NtupleObjectProducer<ura::TriggerEvent> NtupleTriggerEventProducer;
 
 //define CMSSW plug-ins
 DEFINE_FWK_MODULE(NtupleGenInfoProducer);
 DEFINE_FWK_MODULE(NtupleBeamSpotProducer);
-DEFINE_FWK_MODULE(NtupleTriggerEventProducer);
 
 
 

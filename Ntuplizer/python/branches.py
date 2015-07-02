@@ -42,15 +42,7 @@ vertex_info = [
    make_branch_pset('dB'),
    make_branch_pset('ipDXY', 'userFloat("ipDXY")'),
    make_branch_pset('dz', 'userFloat("dz")'),
-]
-
-trigger = [
-   make_branch_pset(
-      i,#.replace('_',''),
-      'matching_path("HLT_%s_v*").accept' % i,
-      '/O'
-      )
-   for i in trigger_paths
+   make_branch_pset('nMissingInnerHits', 'userFloat("missingInnerHits")'),
 ]
 
 isolation = [
@@ -113,16 +105,17 @@ muon_specific.extend(
 
 
 btaggging = [
-   make_branch_pset('jetBProb', 'bDiscriminator("jetBProbabilityBJetTags")'),
-   make_branch_pset('jetProb', 'bDiscriminator("jetProbabilityBJetTags")'),
-   make_branch_pset('trkHiPur', 'bDiscriminator("trackCountingHighPurBJetTags")'),
-   make_branch_pset('trkHiEff', 'bDiscriminator("trackCountingHighEffBJetTags")'),
-   make_branch_pset('ssvHiEff', 'bDiscriminator("simpleSecondaryVertexHighEffBJetTags")'),
-   make_branch_pset('ssvHiPur', 'bDiscriminator("simpleSecondaryVertexHighPurBJetTags")'),
+   make_branch_pset('jetBProb', 'bDiscriminator("pfJetBProbabilityBJetTags")'),
+   make_branch_pset('jetProb', 'bDiscriminator("pfJetProbabilityBJetTags")'),
+   make_branch_pset('trkHiPur', 'bDiscriminator("pfTrackCountingHighPurBJetTags")'),
+   make_branch_pset('trkHiEff', 'bDiscriminator("pfTrackCountingHighEffBJetTags")'),
+   make_branch_pset('ssvHiEff', 'bDiscriminator("pfSimpleSecondaryVertexHighEffBJetTags")'),
+   make_branch_pset('ssvHiPur', 'bDiscriminator("pfSimpleSecondaryVertexHighPurBJetTags")'),
    #make_branch_pset('csv', 'bDiscriminator("combinedSecondaryVertexBJetTags")'),
-   make_branch_pset('csv', 'bDiscriminator("combinedSecondaryVertexV2BJetTags")'),
+   make_branch_pset('csv', 'bDiscriminator("pfCombinedSecondaryVertexV2BJetTags")'),
    #make_branch_pset('csvIncl', 'bDiscriminator("combinedInclusiveSecondaryVertexBJetTags")'),
-   make_branch_pset('csvIncl', 'bDiscriminator("combinedInclusiveSecondaryVertexV2BJetTags")'),
+   #make_branch_pset('csvIncl', 'bDiscriminator("combinedInclusiveSecondaryVertexV2BJetTags")'),
+   make_branch_pset('csvIncl', 'bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags")'),
    make_branch_pset('vtxMass' , 'userFloat("vtxMass")'),
    make_branch_pset('vtxNtracks' , 'userFloat("vtxNtracks")'),
    make_branch_pset('vtx3DVal' , 'userFloat("vtx3DVal")'),
@@ -181,8 +174,7 @@ ecal_cluster_specific = [
    make_branch_pset('sigmaIPhiIPhi', 'sigmaIphiIphi()'),
    #E3x3, SigmaIEtaIPhi
 
-   make_branch_pset('hcalDepth1OverEcalBc', 'hcalDepth1OverEcalBc()'),
-   make_branch_pset('hcalDepth2OverEcalBc', 'hcalDepth2OverEcalBc()'),
+   make_branch_pset('hadronicOverEM', 'hadronicOverEm()'),
 ]
 
 electron_specific = [
@@ -190,8 +182,9 @@ electron_specific = [
    make_branch_pset('ESCOverETrack', 'eSuperClusterOverP()'),
    make_branch_pset('DEtaSCTrk', 'deltaEtaSuperClusterTrackAtVtx()'),
    make_branch_pset('DPhiSCTrk', 'deltaPhiSuperClusterTrackAtVtx()'),
-   make_branch_pset('ecalEnergy', 'correctedEcalEnergy()'),
+   make_branch_pset('ecalEnergy', 'ecalEnergy()'),
    make_branch_pset('passConversionVeto', 'passConversionVeto()', '/O'),
+   #make_branch_pset('nMissingInnerHitsB', 'gsfTrack().hitPattern().numberOfHits(reco::HitPattern::MISSING_INNER_HITS)', '/I'),
 
    #topology info
    make_branch_pset('isEB', '', '/O'),
@@ -244,6 +237,7 @@ track_specific = [
    make_branch_pset('nPixelHits', 'hitPattern().numberOfValidPixelHits()', '/I'),
    make_branch_pset('nMissingHits', 'hitPattern().numberOfLostHits()', '/I'),
    make_branch_pset('nMissingInnerHits', 'trackerExpectedHitsInner().numberOfHits()', '/I'),
+   make_branch_pset('nMissingInnerHitsB', 'hitPattern().numberOfHits(reco::HitPattern::MISSING_INNER_HITS)', '/I'),
    make_branch_pset('nPixelLayers', 'hitPattern().pixelLayersWithMeasurement()', '/I'),
    make_branch_pset('nStripLayers', 'hitPattern().stripLayersWithMeasurement()', '/I'),
 ]
