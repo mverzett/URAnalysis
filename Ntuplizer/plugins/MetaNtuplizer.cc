@@ -55,7 +55,7 @@ public:
 
 
 private:
-  virtual void beginJob() override {}
+  virtual void beginJob() override;
   virtual void analyze(const edm::Event&, const edm::EventSetup&) override {}
   virtual void endJob() override;
 
@@ -87,13 +87,6 @@ MetaNtuplizer::MetaNtuplizer(const edm::ParameterSet& iConfig):
   string_dumped_(false),
   isMC_(iConfig.getParameter<bool>("isMC"))
 {
-  edm::Service<TFileService> fs;
-
-  meta_tree_ = fs->make<TTree>( "meta"  , "File Meta Information");
-  meta_tree_->Branch("run", &run_);
-  meta_tree_->Branch("lumi", &lumi_);
-  meta_tree_->Branch("processed", &processed_);
-
   //dump direct information
   to_json_.insert(std::make_pair<std::string, std::string>("tuple_commit", iConfig.getParameter<std::string>("commit"))); 
   to_json_.insert(std::make_pair<std::string, std::string>("tuple_user", iConfig.getParameter<std::string>("user"))); 
@@ -107,8 +100,17 @@ MetaNtuplizer::MetaNtuplizer(const edm::ParameterSet& iConfig):
 //
 
 // ------------ method called once each job just after ending the event loop  ------------
-void 
-MetaNtuplizer::endJob() 
+void MetaNtuplizer::beginJob()
+{
+  edm::Service<TFileService> fs;
+
+  meta_tree_ = fs->make<TTree>( "meta"  , "File Meta Information");
+  meta_tree_->Branch("run", &run_);
+  meta_tree_->Branch("lumi", &lumi_);
+  meta_tree_->Branch("processed", &processed_);
+}
+ 
+void MetaNtuplizer::endJob() 
 {
   edm::Service<TFileService> fs;
   fs->file().cd();

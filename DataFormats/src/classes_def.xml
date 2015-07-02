@@ -1,8 +1,0 @@
-<lcgdict>
-  <selection>
-    <class name="ura::TriggerEvent"/>
-    <class name="edm::Wrapper<ura::TriggerEvent>"/>
-    <class name="std::vector< ura::TriggerEvent::TrigInfo >"/>
-    <class name="ura::TriggerEvent::TrigInfo"/>
-  </selection>
-</lcgdict>

@@ -10,19 +10,19 @@ customElectrons = cms.Sequence(
 )
 
 #trigger match
-from URAnalysis.PATTools.objects.trigger import trigger_paths, match_template
+#from URAnalysis.PATTools.objects.trigger import trigger_paths, match_template
 
-matchers = []
-elpaths = [i for i in trigger_paths if 'Ele' in i]
-for path in elpaths:
-   matcher_name = 'matchElectrons%s' % path.replace('_','')
-   matchers.append(matcher_name)
-   globals()[matcher_name] = match_template.clone(
-      src = cms.InputTag('urSkimmedElectrons'),
-      matchedCuts = cms.string('path("HLT_%s_v*") || type("TriggerElectron")' % path)
-      )
-   customElectrons *= globals()[matcher_name]
-
+#matchers = []
+#elpaths = [i for i in trigger_paths if 'Ele' in i]
+#for path in elpaths:
+#   matcher_name = 'matchElectrons%s' % path.replace('_','')
+#   matchers.append(matcher_name)
+#   globals()[matcher_name] = match_template.clone(
+#      src = cms.InputTag('urSkimmedElectrons'),
+#      matchedCuts = cms.string('path("HLT_%s_v*") || type("TriggerElectron")' % path)
+#      )
+#   customElectrons *= globals()[matcher_name]
+#
 
 electronIpInfo = cms.EDProducer(
    'PATElectronIpEmbedder',
@@ -36,12 +36,12 @@ customElectrons *= electronIpInfo
 
 urElectrons = cms.EDProducer(
    'PATElectronsEmbedder',
-   src = cms.InputTag('fixme'),
+   src = cms.InputTag('electronIpInfo'),
    trigMatches = cms.VInputTag(
-      cms.InputTag(i) for i in matchers
+#      cms.InputTag(i) for i in matchers
       ),
    trigPaths = cms.vstring(
-      elpaths
+#      elpaths
       ),
    floatMaps = cms.PSet(
       ipDXY = cms.InputTag("electronIpInfo:ipDXY"),
@@ -49,6 +49,7 @@ urElectrons = cms.EDProducer(
       vz	  = cms.InputTag("electronIpInfo:vz"	 ),
       ip3D  = cms.InputTag("electronIpInfo:ip3D" ),
       ip3DS = cms.InputTag("electronIpInfo:ip3DS"),
+      missingInnerHits = cms.InputTag("electronIpInfo:missingInnerHits"),
       )
 )
 customElectrons *= urElectrons
