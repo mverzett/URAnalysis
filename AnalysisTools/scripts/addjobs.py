@@ -3,6 +3,7 @@
 import sys, os, time
 from glob import glob
 import re
+import ROOT
 
 allfiles = os.listdir('.')
 
@@ -36,10 +37,18 @@ for dir in jobdirs:
 
   print num, len(files)
   if num == len(files):
+    merger = ROOT.TFileMerger()
+    outfile = dir + '.root'
+    merger.OutputFile(outfile)
     files = [dir + '/' + f for f in files]
-    command = 'hadd ' + dir + '.root ' + ' '.join(files)
-    print command
-    os.system(command)
+    for tfile in files:
+      merger.AddFile(tfile, False) #why false? no clue, copied from old fwk                                                                                                    
+    if not merger.Merge():
+      raise RuntimeError('could not merge files into %s' % outfile)
+
+    ##command = 'hadd ' + dir + '.root ' + ' '.join(files)
+    ##print command
+    ##os.system(command)
   else:
     raise IOError('You asked to merge %i files, but only %i were found.'
                   ' Something must have gone wrong in the batch jobs.' % (num, len(files)))
