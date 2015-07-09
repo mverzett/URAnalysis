@@ -32,6 +32,6 @@ for sample in samples:
 if xsection == -1:
    logging.warning("Sample %s not found!" % sample_name)
 
-print meta_info['events']/xsection
+print meta_info['events']/float(xsection)
 
 
