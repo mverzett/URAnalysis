@@ -14,14 +14,27 @@ if len(sys.argv) < 3 or '-h' in sys.argv or '--help' in sys.argv:
 print_type = '--type' in sys.argv or '-t' in sys.argv
 #Open sample file
 import ROOT
+from pdb import set_trace
 ROOT.gROOT.SetBatch(True)
 tfile = ROOT.TFile.Open(sys.argv[-2])
 
 tree = tfile.Get(sys.argv[-1])
 #Get All the branches
 if print_type:
-    print '\n'.join(['%20s %20s' % (branch.GetTypeName() if hasattr(branch, 'GetTypeName') else branch.GetClassName(), branch.GetName()) \
-                         for branch in tree.GetListOfBranches()])
+    names = []
+    types = []
+    for branch in tree.GetListOfBranches():
+        names.append(branch.GetName())
+        if hasattr(branch, 'GetTypeName'):
+            types.append(branch.GetTypeName())
+        elif branch.GetClassName():
+            types.append(branch.GetClassName())
+        else:
+            types.append(branch.GetListOfLeaves().At(0).GetTypeName())
+    max_name = max(names, key=len)
+    max_type = max(types, key=len)
+    format = '%'+str(len(max_type))+'s   %'+str(len(max_name))+'s'
+    print '\n'.join([format % i for i in zip(types, names)])
 else:
     print '\n'.join([branch.GetName() for branch in tree.GetListOfBranches()])
 tfile.Close()
