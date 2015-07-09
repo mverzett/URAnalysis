@@ -41,6 +41,6 @@ pip install -U argparse
 echo "Installing pudb -- on screen interactive debugging"
 pip install -U pudb
 echo "Installing rootpy -- pyRoot done right"
-pip install -U rootpy
+pip install -e $fwk_location/external/src/rootpy
 
 popd
