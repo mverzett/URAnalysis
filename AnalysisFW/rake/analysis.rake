@@ -25,6 +25,7 @@ rule ".cfg" do |t|
   puts t.investigation
 end
 
+$external_opts=''
 rule ".root" => [ 
     # The analyzer executable
     proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "bin/\\1.exe")},
@@ -38,16 +39,26 @@ rule ".root" => [
   executable = File.basename(t.prerequisites[0])
   cfg = t.prerequisites[1]
   inputs = t.prerequisites[2]
-  sh "time #{executable} #{inputs} #{t.name} -c  #{cfg} --threads #{workers}"
+  sh "time #{executable} #{inputs} #{t.name} -c  #{cfg} --threads #{workers} #{$external_opts}"
 end
 
-task :analyze, [:analyzer] do |t, args|
+task :analyze, [:analyzer,:sample,:opts] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/*.txt").map{|x| File.basename(x).split('.')[0]}
+  if args.sample
+    regex = /#{args.sample}/
+    samples = samples.select{|x| x =~ regex}
+  end
+  if args.opts
+    $external_opts=args.opts
+  end
   rootfiles = samples.map{|x| "results/#{jobid}/#{bname}/#{x}.root"}
   task :runThis => rootfiles
   Rake::Task["runThis"].invoke
+  if args.opts
+    $external_opts=''
+  end
 end
 
 task :analyze_only, [:analyzer, :sample] do |t, args|
@@ -94,13 +105,23 @@ task :track_batch, [:submit_dir] do |t, args|
   sh "cp #{args.submit_dir}/*.root #{target_dir}/."
 end
 
-task :analyze_batch, [:analyzer] do |t, args|
+task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
+
+  samples = ''
+  if args.samples
+    samples="--samples=#{args.samples}"
+  end
+  opts = ''
+  if args.opts
+    opts="--opts='#{args.opts}'"
+  end
+
   task :runThisBatch => "bin/#{bname}.exe" do |u|
     submit_dir = "/uscms_data/d3/#{ENV['USER']}/BATCH_#{Time.now.to_i}_#{bname}"
     puts "Submitting to #{submit_dir}"
-    sh "jobsub #{submit_dir} #{bname}.exe"
+    sh "jobsub #{submit_dir} #{bname}.exe #{samples} #{opts}"
     Rake::Task["track_batch"].invoke(submit_dir)
   end
   Rake::Task["runThisBatch"].invoke

@@ -2,15 +2,27 @@
 import sys, os, time
 from pdb import set_trace
 from glob import glob
+from argparse import ArgumentParser
+import re
 
 swdir = os.path.realpath(os.environ['URA_PROJECT'])
 jobid = os.environ['jobid']
 inputdir = os.path.join(swdir, 'inputs')
 inputdir = os.path.join(inputdir, jobid)
 
-jobdir = sys.argv[1]
-exe = sys.argv[2]
-jobargs = sys.argv[3:]
+parser = ArgumentParser('submit analyzer to the batch queues')
+parser.add_argument('jobdir')
+parser.add_argument('executable')
+parser.add_argument('--opts', default='', help='options to be passed to the analyzer')
+parser.add_argument('--samples', nargs='*', help='samples to be analyze (full regex supported')
+
+args = parser.parse_args()
+
+jobdir = args.jobdir
+exe = args.executable
+jobargs = args.opts
+filters = [re.compile(i) for i in args.samples] \
+   if args.samples else [re.compile('.*')]
 
 #os.mkdir('Production_'+ time.strftime("%Y-%m-%d_%H:%M:%S", time.gmtime()))
 if os.path.isdir(jobdir):
@@ -36,6 +48,7 @@ minjobs = 40
 for sf in samplefiles:
   infile = os.path.join(inputdir, sf)
   sample = os.path.basename(sf).split('.txt')[0]
+  if not any(i.match(sample) for i in filters): continue
   jobpath = os.path.join(
           jobdir, 
           sample
@@ -58,7 +71,7 @@ Error = con_$(Process).stderr
 Arguments = {0} {1} {6}_out_$(Process).root --thread 1 --j $(Process) --J {3} {4}
 Queue {3}
 
-	""".format(exe, infile, '', numjobs, ' '.join(jobargs), transferfiles_config, sample)
+	""".format(exe, infile, '', numjobs, jobargs, transferfiles_config, sample)
   
   conf = open(os.path.join(jobpath, 'condor.jdl'), 'w')
   conf.write(condorfile)
