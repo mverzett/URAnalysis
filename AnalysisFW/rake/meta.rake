@@ -22,7 +22,8 @@ task :getmeta => Dir.glob("#{ENV['URA_PROJECT']}/inputs/#{ENV['jobid']}/*.txt").
 rule '.lumi' => '.meta.json' do |t|
   sample = File.basename(t.source).split('.')[0]
   if sample.start_with? 'data'
-    puts "WARNING data lumi and PU distribution still to be computed"
+    sh "json_extract.py #{t.source} #{t.source.sub(/\.meta\.json$/, '.run.json')} lumimap"
+    puts "WARNING data lumi and PU distribution still to be computed"    
   else
     sh "get_mc_lumi.py #{t.source} #{ENV['URA_PROJECT']}/samples.json > #{t.name}"
   end  
