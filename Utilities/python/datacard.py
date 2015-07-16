@@ -116,6 +116,7 @@ class DataCard(object):
                bkg_idx += 1
          mcsamples = dict(mcsamples)
 
+         #WRITE RATE FOR EACH SAMPLE/CATEGORY
          columns = ['header:%-30s']
          bin_line = ['bin']
          proc_num_line = ['process']
@@ -132,14 +133,27 @@ class DataCard(object):
                proc_num_line.append(mcsamples[sample])
                proc_name_line.append(sample)
                rate = shape.Integral()
-               category_yield += rate
                #keep the first 6 significant digits
-               mag  = max(int(math.log10(rate)), 0) if rate != 0 else 0
+               if rate <= 0:
+                  logging.error(
+                     'Sample %s in category %s has a negative'
+                     ' number of expected events! (%f) \n'
+                     'Clamping to zero' % (sample, category, rate)
+                     )
+                  shape.Reset()
+                  rate = 0.
+                  #raise ValueError(
+                  #   'Sample %s in category %s has a negative'
+                  #   ' number of expected events! (%f)' % (sample, category, rate)
+                  #   )
+               category_yield += rate
+               mag  = max(int(math.log10(abs(rate))), 0) if rate != 0 else 0
                float_format = '%.'+str(max(5-mag,0))+'f'
-               rate_line.append(float_format % shape.Integral())
+               rate_line.append(float_format % rate)
             if rate == 0:
                logging.warning("Category %s does not have any expected event!" % category)
 
+         #SYSTEMATICS TABLE
          sys_table = Table(*columns, show_title=False, show_header=False)
          sys_table.add_separator()
          sys_table.add_line(*bin_line)
