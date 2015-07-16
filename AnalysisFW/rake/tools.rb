@@ -128,12 +128,18 @@ def publish_pics(input_name, output_name)
   if not (File.directory? output_name)
     sh "mkdir #{output_name}"
   end
+  toy_dirs = /toy_\d+/
   Dir["#{input_name}/*"].each do |path|
+    if toy_dirs =~ path
+      next
+    end
     if File.directory? path
       bname = File.basename(path)
       newdir = "#{output_name}/#{bname}"
       publish_pics(path, newdir)
     elsif path.end_with? '.png'
+      `cp #{path} #{output_name}/.`
+    elsif path.end_with? '.raw_txt'
       `cp #{path} #{output_name}/.`
     end
   end
