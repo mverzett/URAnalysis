@@ -39,6 +39,7 @@ for dir in jobdirs:
   if num == len(files):
     merger = ROOT.TFileMerger()
     outfile = dir + '.root'
+    print 'merging into %s' % outfile
     merger.OutputFile(outfile)
     files = [dir + '/' + f for f in files]
     for tfile in files:
