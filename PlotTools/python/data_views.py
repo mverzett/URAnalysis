@@ -105,6 +105,9 @@ def data_views(files, lumifiles, styles, forceLumi=-1):
 
     for sample in histo_files.keys():
         raw_file = histo_files[sample]
+        if not sample in lumi_files:
+            log.error("-> lumi for sample %s not found! The sample will not be available!" % sample)
+            continue
         intlumi = lumi_files[sample]
         weight = 1
         if intlumi:
