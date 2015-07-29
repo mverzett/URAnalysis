@@ -33,4 +33,10 @@ def embed_meta(process, isMC):
             )
         process.storeMeta += process.storePU
         
+        process.weightedProcessedEvents = cms.EDProducer(
+            'WeightedEventCountProducer',
+            lhes = cms.InputTag('externalLHEProducer', '', 'LHE')
+            )
+        process.storeMeta += process.weightedProcessedEvents
+        
     return process.storeMeta
