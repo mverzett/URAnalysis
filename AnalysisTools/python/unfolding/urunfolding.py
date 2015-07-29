@@ -5,12 +5,14 @@ from URAnalysis.Utilities.rootbindings import ROOT
 import math
 import numpy.random
 import rootpy.io
+io = rootpy.io
+import rootpy.stats as stats
 from rootpy import asrootpy
 import rootpy.plotting as plotting
 from URAnalysis.Utilities.decorators import asrpy
 from URAnalysis.Utilities.roottools import spline2graph
 import uuid
-
+import os
 from rootpy import log
 log = log["/URUnfolding"]
 rootpy.log.basic_config_colorized()
@@ -118,6 +120,36 @@ class URUnfolding(object):
         scan.get_yaxis().SetTitle(mode)
         return self.unfolder.GetTau(), scan, best
 
+    def scan_tau(self, npoints, tmin, tmax, tfile_name=None):
+        #self.truth
+        tfile = False
+        if tfile_name is not None:
+            if not os.path.isdir(os.path.dirname(tfile_name)):
+                os.makedirs(os.path.dirname(tfile_name))
+            tfile = io.root_open(tfile_name, 'recreate')
+            tfile.WriteTObject(self.truth, 'truth')
+        avg_rel_unc  = plotting.Graph(npoints)
+        avg_rel_bias = plotting.Graph(npoints)
+        lstrt = math.log10(tmin)
+        lstop = math.log10(tmax)
+        lstep = (lstop - lstrt)/(npoints-1)
+        tvals = (10**(lstrt+lstep*i) for i in xrange(npoints))        
+            
+        for idx, tval in enumerate(tvals):
+            self.tau = tval
+            rel_uncs = self.relative_uncertainties
+            rel_bias = self.relative_biases
+            avg_rel_unc.SetPoint( idx, tval, sum(rel_uncs)/len(rel_uncs))
+            avg_rel_bias.SetPoint(idx, tval, sum(rel_bias)/len(rel_bias))
+            if tfile:
+                dname = 'pt_%i' % idx
+                tdir = tfile.mkdir(dname)
+                tdir.WriteTObject(self.unfolded, 'unfolded')
+                tdir.WriteTObject(stats.RealVar(tval), 'tau')
+        if tfile:
+            tfile.close()
+        return avg_rel_unc, avg_rel_bias
+
     @asrpy
     def DoScanLcurve(self, npoints, tau_min=0, tau_max=20):
         #reset unfolding (if any) since the method messes up with the output
@@ -216,6 +248,24 @@ class URUnfolding(object):
         self.DoUnfolding()
         return self.unfolder.GetBias(uuid.uuid4().hex)
 
+    @property
+    def relative_uncertainties(self):
+        return [bin.error/abs(bin.value) 
+                for bin in self.unfolded
+                if not bin.overflow]
+    
+    @property
+    def relative_biases(self):
+        unfolded = self.unfolded
+        truth = self.truth
+        ret = []
+        for bu, bt in zip(unfolded, truth):
+            if bu.overflow: continue
+            ret.append(
+                abs(bu.value - bt.value)/bt.value
+                )
+        return ret
+        
     def Generate(self, numevents):
         if (not hasattr(self,'gentruth')) or self.gentruth == 0:
             self.hmiss = ROOT.TH1D(self.truth)
