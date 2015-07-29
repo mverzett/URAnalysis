@@ -32,15 +32,18 @@ os.mkdir(jobdir)
 
 samplefiles = glob(os.path.join(inputdir, '*.txt'))
 
-transferdir = os.path.join(inputdir, 'INPUT')
-transferfiles = []
-if os.path.isdir(transferdir):
-	transferfiles = os.listdir(transferdir)
-
-transferfiles = [os.path.join(transferdir, tf) for tf in transferfiles]
+transferfiles = glob(
+        os.path.join(inputdir, 'INPUT', '*.*')
+)
+exe_cfg = os.path.join(
+        swdir,
+        os.path.basename(exe).replace('.exe', '.cfg')
+)
+transferfiles.append(
+        exe_cfg
+)
 
 transferfiles_config = ', '.join(transferfiles)
-
 
 filesperjob = 10
 minjobs = 40
