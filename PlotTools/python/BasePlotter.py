@@ -530,7 +530,10 @@ class BasePlotter(object):
             c.Write()
         return c
     
-    def create_and_write_canvas_with_comparison(self, cname, linestyles, markerstyles, colors, legend_definition, logscalex, logscaley, histos, write = True, comparison = 'pull', stack = False):
+    def create_and_write_canvas_with_comparison(self, cname, linestyles, markerstyles, colors, 
+                                                legend_definition, logscalex, logscaley, histos, 
+                                                write = True, comparison = 'pull', stack = False,
+                                                bottom_range=None):
         if len(histos) < 2:
             logging.warning('create_and_write_canvas_with_comparison(): Less than two histograms to compare! Returning.')
             return
@@ -766,11 +769,20 @@ class BasePlotter(object):
                     pad2.cd()
                     histocomp.Draw("e1")
                     if comparison == 'pull':
-                        histocomp.GetYaxis().SetRangeUser(-2.999,2.999)
+                        if bottom_range is None:
+                            histocomp.GetYaxis().SetRangeUser(-2.999,2.999)
+                        else:
+                            histocomp.GetYaxis().SetRangeUser(*bottom_range)
                     elif comparison == 'ratio':
-                        histocomp.GetYaxis().SetRangeUser(0.,1.999)
+                        if bottom_range is None:
+                            histocomp.GetYaxis().SetRangeUser(0.,1.999)
+                        else:
+                            histocomp.GetYaxis().SetRangeUser(*bottom_range)
                     elif comparison == 'diff':
-                        histocomp.GetYaxis().SetRangeUser(-0.499,0.499)
+                        if bottom_range is None:
+                            histocomp.GetYaxis().SetRangeUser(-0.499,0.499)
+                        else:
+                            histocomp.GetYaxis().SetRangeUser(*bottom_range)
                     histocomp.GetYaxis().SetNdivisions(505)
                     pad2.Update()
                 else:
