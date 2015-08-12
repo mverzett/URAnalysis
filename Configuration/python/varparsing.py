@@ -15,7 +15,7 @@ options.register(
    False,
    VarParsing.multiplicity.singleton,
    VarParsing.varType.bool,
-   'global tag to be used'
+   'Switch to MC production'
 )
 options.register(
    'reportEvery',
