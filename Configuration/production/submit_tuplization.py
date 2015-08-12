@@ -18,14 +18,14 @@ import os
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument('jobid', type=str, help='job id of the production')
-parser.add_argument('options', type=str, help='command-line arguments'
-                    ' to be passed to the configuration')
+parser.add_argument('--options', type=str, help='command-line arguments'
+                    ' to be passed to the configuration', default="")
 parser.add_argument('--njobs', type=int, help='how many jobs should I run?'
                     ' (-1 for one for each input file)', default=1000)
 parser.add_argument('--samples', dest='samples', type=str,
-                    nargs='+', help='Samples to run on, POSIX regex allowed')
+                    nargs='+', help='Samples to run on, POSIX regex allowed', default=["*"])
 parser.add_argument('--sample-def', dest='sample_def', type=str,
-                    help='json file containing the samples definition ')
+                    help='json file containing the samples definition ', default="%s/samples.json" % os.environ["URA_PROJECT"])
 parser.add_argument('--crab', dest='crab', type=int,
                     default=0, help='Version of crab to use')
 parser.add_argument('--local', dest='local', action='store_true',
