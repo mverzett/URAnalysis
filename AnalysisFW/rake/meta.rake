@@ -3,7 +3,7 @@ task :getfiles, [:inputdir] do |t, args|
   sh "mkdir -p inputs/#{jobid}"
   Dir.glob("#{args.inputdir}/*").each do |dir|
     sample = File.basename(dir)
-    sh "ls #{dir}/*.root > inputs/#{jobid}/#{sample}.txt"
+    sh "find #{dir} -name *.root > inputs/#{jobid}/#{sample}.txt"
   end
 end
 
