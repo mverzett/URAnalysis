@@ -2,6 +2,7 @@ import os
 import rootpy.io as io
 from URAnalysis.Utilities.struct import Struct
 from URAnalysis.Utilities.tables import Table
+import URAnalysis.Utilities.prettyjson as prettyjson
 import math
 import re
 from pdb import set_trace
@@ -52,6 +53,7 @@ class DataCard(object):
       else:
          self.signals = [re.compile(i) for i in signals]
       self.shape_sys_naming = re.compile(r'.*_.*(:?Down|Up)')
+      self.yields = {}
 
    def add_category(self, name):
       'adds a category'
@@ -72,12 +74,30 @@ class DataCard(object):
       'DEPRECATED! x.__setitem__(i, y) <==> x[i]=y'
       self.categories[name] = val
 
-   def save(self, name, directory=''):
+   def normalize_signals(self):
+      for cname, content in self.categories.iteritems():
+         for sample, histo in content.iteritems():
+            if any(j.match(sample) for j in self.signals): #if is signal
+               #check if the category already exists
+               if cname not in self.yields:
+                  self.yields[cname] = {}
+               
+               #check if sample already exists: in this case ignore
+               #this prevents screwing up the yields in case this 
+               #function is called multiple times.
+               if sample in self.yields[cname]:
+                  continue
+
+               #store integral an then normalize
+               self.yields[cname][sample] = histo.Integral()
+               histo.Scale(1./self.yields[cname][sample])
+
+   def save(self, filename, directory=''):
       'save(self, name, directory='') saves the datacard and the shape file'
       ##
       # Write datacard file
       ##
-      txt_name = os.path.join(directory, '%s.txt' % name)
+      txt_name = os.path.join(directory, '%s.txt' % filename)
       with open(txt_name, 'w') as txt:
          separator = '-'*40+'\n'
          ncategories = len(self.categories)
@@ -95,7 +115,7 @@ class DataCard(object):
          txt.write('kmax    *     number of nuisance parameters \n')
          #WHERE TO FIND THE SHAPES
          txt.write(separator)
-         txt.write('shapes * * %s.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC \n' % name)
+         txt.write('shapes * * %s.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC \n' % filename)
          #DATA COUNT IN EACH CATEGORY (FIXME: ASSUMES YOU HAVE DATA)
          txt.write(separator)
          max_cat_name = max(max(len(i) for i in self.categories), 11)+4
@@ -183,7 +203,7 @@ class DataCard(object):
       ##
       # Write shape file
       ##
-      shape_name = os.path.join(directory, '%s.root' % name)
+      shape_name = os.path.join(directory, '%s.root' % filename)
       with io.root_open(shape_name, 'recreate') as out:
          for name, cat in self.categories.iteritems():
             out.mkdir(name).cd()
@@ -191,6 +211,14 @@ class DataCard(object):
                shape.SetName(sample)
                shape.Write()
       logging.info('Written file %s' % shape_name)
+      ##
+      # if we normalized the signal to outsource the yields to a json file
+      # dump it too
+      ##
+      if self.yields:
+         json_name = os.path.join(directory, '%s.json' % filename)
+         with open(json_name, 'w') as txt:
+            txt.write(prettyjson.dumps(self.yields))
 
    def add_systematic(self, name, stype, categories, samples, value, unc=None):
       'add a systematic effect to a bunch of samples. POSIX regex supported'
