@@ -230,7 +230,7 @@ class Plotter(object):
         test_hists = []
         for mc_hist in tests:
             if isinstance(mc_hist, HistStack):
-                test_hists.append(sum(mc_hist.GetHists()))
+                test_hists.append(sum(mc_hist.hists))
                 quote_errors = False
             else:
                 test_hists.append(mc_hist)
@@ -251,19 +251,16 @@ class Plotter(object):
         first = True
         ratios = []
         for test_h in test_hists:
-            clone = test_h.clone()
+            clone = test_h.Clone()
             clone.markerstyle = 20
-            for ibin in range(1, nbins+1):
-                d_cont = data_hist.GetBinContent(ibin)
-                d_err  = data_hist.GetBinError(ibin)  
-
-                m_cont = clone.GetBinContent(ibin)
-                m_err  = clone.GetBinError(ibin)
-                
-                cont = m_cont / d_cont if d_cont else -10.*ratio_range
-                err  = m_err / d_cont if d_cont else 0.
-                clone.SetBinContent(ibin, cont)
-                clone.SetBinError(ibin, err)  
+            for dbin, cbin in zip(data_hist, clone):
+                if dbin.value:
+                    vratio = cbin.value / dbin.value
+                    cbin.value = vratio
+                    cbin.error = cbin.error / dbin.value
+                else:
+                    cbin.value = -10.*ratio_range
+                    cbin.error = 0.
 
             clone.Draw('ep' if first else 'ep same')
             clone.GetYaxis().SetTitle(ytitle)
@@ -271,7 +268,7 @@ class Plotter(object):
             ratios.append(clone)
 
         if ratio_range:
-            ratios[0].GetYaxis().SetRangeUser(10**(-ratio_range), 10**ratio_range)
+            ratios[0].GetYaxis().SetRangeUser(1.-ratio_range, 1+ratio_range)
 
         #reference line
         if not x_range:
@@ -522,4 +519,4 @@ class Plotter(object):
         if logy:
             self.pad.SetLogy()
         if show_ratio:
-            self.add_ratio_plot(data, mc_stack, xrange, ratio_range=0.2)
+            self.add_ratio_plot(data, mc_stack, x_range=xrange, ratio_range=0.2)
