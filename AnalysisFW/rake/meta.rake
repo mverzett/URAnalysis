@@ -3,13 +3,13 @@ task :getfiles, [:inputdir] do |t, args|
   sh "mkdir -p inputs/#{jobid}"
   Dir.glob("#{args.inputdir}/*").each do |dir|
     sample = File.basename(dir)
-    sh "ls #{dir}/*.root > inputs/#{jobid}/#{sample}.txt"
+    sh "find #{dir} -name *.root > inputs/#{jobid}/#{sample}.txt"
   end
 end
 
 rule '.meta.json' => [proc {|trgt| trgt.sub(/\.meta\.json$/, '.txt')}] do |t|
   sample = File.basename(t.source).split('.')[0]
-  workers = ENV.fetch('URA_NTHREADS', 4)
+  workers = ENV.fetch('URA_NTHREADS', 1)
   mc = '--mc-mode'
   if sample.start_with? 'data'
     mc = ''

@@ -42,6 +42,8 @@ class Job(object):
       from WMCore.Configuration import Configuration
       
       isData = self.name.startswith('data')
+      if not isData:
+          self.args+=" isMC=True"
       config = Configuration()
       config.section_("General")
       config.General.requestName = '%s_%s' % (self.id, self.name)
@@ -55,8 +57,8 @@ class Job(object):
       config.Data.unitsPerJob = 5
       config.Data.totalUnits = self.njobs
       if self.mask:
-         config.Data.lumimask = self.mask
-      config.Data.outLFN = os.path.join(
+         config.Data.lumiMask = self.mask
+      config.Data.outLFNDirBase = os.path.join(
          '/store/user/', 
          os.environ['USER'],
          self.id,
@@ -73,7 +75,8 @@ class Job(object):
 
    def save_as_crab2(self):
       isData = self.name.startswith('data')
-
+      if not isData:
+          self.args+=" isMC=True"
       cfg = Crab2Cfg('CMSSW', 'USER', 'CRAB', 'GRID')
       if isData:
          cfg.CMSSW.total_number_of_lumis=-1
