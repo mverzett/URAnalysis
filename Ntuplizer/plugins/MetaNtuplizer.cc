@@ -109,7 +109,8 @@ void MetaNtuplizer::beginJob()
   meta_tree_->Branch("run", &run_);
   meta_tree_->Branch("lumi", &lumi_);
   meta_tree_->Branch("processed", &processed_);
-  meta_tree_->Branch("processedWeighted", &processedWeighted_);
+  if(isMC_)
+    meta_tree_->Branch("processedWeighted", &processedWeighted_);
 }
  
 void MetaNtuplizer::endJob() 
@@ -141,13 +142,16 @@ MetaNtuplizer::endLuminosityBlock(edm::LuminosityBlock const& block, edm::EventS
 {
   edm::Handle<edm::MergeableCounter> counter;
   block.getByLabel("processedEvents", counter);
-  edm::Handle<edm::MergeableCounter> weightedCounter;
-  block.getByLabel("weightedProcessedEvents", weightedCounter);
-
+  if(isMC_)
+  {
+    edm::Handle<edm::MergeableCounter> weightedCounter;
+    block.getByLabel("weightedProcessedEvents", weightedCounter);
+  }
   lumi_ = block.luminosityBlock();
   run_ = block.run();
   processed_ = counter->value;
-  processedWeighted_ = weightedCounter->value;
+  if(isMC_)
+    processedWeighted_ = weightedCounter->value;
   meta_tree_->Fill();
 
   /*if(!string_dumped_)
