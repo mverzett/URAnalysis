@@ -109,8 +109,7 @@ void MetaNtuplizer::beginJob()
   meta_tree_->Branch("run", &run_);
   meta_tree_->Branch("lumi", &lumi_);
   meta_tree_->Branch("processed", &processed_);
-  if(isMC_)
-    meta_tree_->Branch("processedWeighted", &processedWeighted_);
+  meta_tree_->Branch("processedWeighted", &processedWeighted_);
 }
  
 void MetaNtuplizer::endJob() 
@@ -152,6 +151,8 @@ MetaNtuplizer::endLuminosityBlock(edm::LuminosityBlock const& block, edm::EventS
   processed_ = counter->value;
   if(isMC_)
     processedWeighted_ = weightedCounter->value;
+  else
+    processedWeighted_ = counter->value; // Yes, this duplicates information, but it is safer when you read the ntuples
   meta_tree_->Fill();
 
   /*if(!string_dumped_)
