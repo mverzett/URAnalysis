@@ -57,7 +57,7 @@ class Job(object):
       config.Data.unitsPerJob = 5
       config.Data.totalUnits = self.njobs
       if self.mask:
-         config.Data.lumimask = self.mask
+         config.Data.lumiMask = self.mask
       config.Data.outLFNDirBase = os.path.join(
          '/store/user/', 
          os.environ['USER'],
