@@ -142,9 +142,9 @@ MetaNtuplizer::endLuminosityBlock(edm::LuminosityBlock const& block, edm::EventS
 {
   edm::Handle<edm::MergeableCounter> counter;
   block.getByLabel("processedEvents", counter);
+  edm::Handle<edm::MergeableCounter> weightedCounter;
   if(isMC_)
   {
-    edm::Handle<edm::MergeableCounter> weightedCounter;
     block.getByLabel("weightedProcessedEvents", weightedCounter);
   }
   lumi_ = block.luminosityBlock();
