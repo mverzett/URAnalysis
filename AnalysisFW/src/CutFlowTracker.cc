@@ -1,5 +1,5 @@
 #include "CutFlowTracker.h"
-#include "TH1I.h"
+#include "TH1F.h"
 
 void CutFlowTracker::track(std::string pointname)
 {
@@ -25,7 +25,7 @@ void CutFlowTracker::track(std::string pointname)
 void CutFlowTracker::writeTo(TFile &file)
 {
 	file.cd();
-	TH1I histo("cut_flow", "cut_flow", npoints_, 0, npoints_);
+	TH1F histo("cut_flow", "cut_flow", npoints_, 0, npoints_);
 	TAxis *xax = histo.GetXaxis();
 	for(auto& point : cutflow_){
 		xax->SetBinLabel(point.second.first+1, point.first.c_str());
