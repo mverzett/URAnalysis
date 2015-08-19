@@ -65,7 +65,7 @@ private:
   // ----------member data ---------------------------
   TTree *meta_tree_;
   std::map<std::string, std::string> to_json_;
-  bool string_dumped_, isMC_;
+  bool string_dumped_, isMC_, useWeighted_, triedWeighted_;
   MonitorElement *pu_distro_;
   unsigned int lumi_;
   unsigned int run_;
@@ -88,6 +88,8 @@ MetaNtuplizer::MetaNtuplizer(const edm::ParameterSet& iConfig):
   string_dumped_(false),
   isMC_(iConfig.getParameter<bool>("isMC"))
 {
+  useWeighted_ = true;
+  triedWeighted_ = false;
   //dump direct information
   to_json_.insert(std::make_pair<std::string, std::string>("tuple_commit", iConfig.getParameter<std::string>("commit"))); 
   to_json_.insert(std::make_pair<std::string, std::string>("tuple_user", iConfig.getParameter<std::string>("user"))); 
@@ -142,17 +144,41 @@ MetaNtuplizer::endLuminosityBlock(edm::LuminosityBlock const& block, edm::EventS
   edm::Handle<edm::MergeableCounter> counter;
   block.getByLabel("processedEvents", counter);
   edm::Handle<edm::MergeableCounter> weightedCounter;
-  if(isMC_)
-  {
-    block.getByLabel("weightedProcessedEvents", weightedCounter);
-  }
+//   if(isMC_ && useWeighted_)
+//   {
+//     std::cout << "It is MC and I was asked to use weighted.\n";
+//     if(!triedWeighted_)
+//     {
+//       std::cout << "I never tried getting weighted events from LuminosityBlock\n";
+//       triedWeighted_ = true;
+//       try
+//       {
+// //         std::cout << "Trying getting weighted events from LuminosityBlock\n";
+//         block.getByLabel("weightedProcessedEvents", weightedCounter);
+//       }
+//       catch(const cms::Exception& e)
+//       {
+//         std::cout << "Caught an exception!\n";
+//         std::cout << "Setting use of weighted events to false and using the standard counter instead.\n";
+//         useWeighted_ = false;
+//         weightedCounter = counter;
+//       }
+//     }
+//     else
+//     {
+//       block.getByLabel("weightedProcessedEvents", weightedCounter);
+//     }
+//   }
+//   else
+//   {
+// //     std::cout << "Either it is not MC is I was asked not to use weighted.\nIn any case, using standard counter instead of weighted one.\n";
+//     weightedCounter = counter;
+//   }
+  block.getByLabel("weightedProcessedEvents", weightedCounter);
   lumi_ = block.luminosityBlock();
   run_ = block.run();
   processed_ = counter->value;
-  if(isMC_)
-    processedWeighted_ = weightedCounter->value;
-  else
-    processedWeighted_ = counter->value; // Yes, this duplicates information, but it is safer when you read the ntuples
+  processedWeighted_ = weightedCounter->value;
   meta_tree_->Fill();
 
   /*if(!string_dumped_)

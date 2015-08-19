@@ -43,7 +43,7 @@ private:
 
   long long int weightedEventsProcessedInLumi_;
   edm::InputTag lhes_;
-
+  bool computeWeighted_;
 };
 
 
@@ -54,9 +54,11 @@ using namespace std;
 
 
 WeightedEventCountProducer::WeightedEventCountProducer(const edm::ParameterSet& iConfig):
-    lhes_(iConfig.getParameter<edm::InputTag>("lhes"))
+    lhes_(iConfig.getParameter<edm::InputTag>("lhes")),
+    computeWeighted_(iConfig.getParameter<bool>("computeWeighted"))
 {
   produces<edm::MergeableCounter, edm::InLumi>();
+  std::cout << "computeWeighted_ is " << computeWeighted_ << std::endl;
 }
 
 
@@ -65,11 +67,18 @@ WeightedEventCountProducer::~WeightedEventCountProducer(){}
 
 void
 WeightedEventCountProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup){
-  edm::Handle<LHEEventProduct > lhes;
-  iEvent.getByLabel(lhes_, lhes);
-  float w = lhes->hepeup().XWGTUP;
-  short sign = (w > 0) ? 1 : ((w < 0) ? -1 : 0);
-  weightedEventsProcessedInLumi_+=sign;
+  if(computeWeighted_)
+  {
+    edm::Handle<LHEEventProduct > lhes;
+    iEvent.getByLabel(lhes_, lhes);
+    float w = lhes->hepeup().XWGTUP;
+    short sign = (w > 0) ? 1 : ((w < 0) ? -1 : 0);
+    weightedEventsProcessedInLumi_+=sign;
+  }
+  else
+  {
+    weightedEventsProcessedInLumi_++;
+  }
   return;
 }
 

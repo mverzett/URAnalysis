@@ -49,6 +49,7 @@ private:
   // ----------member data ---------------------------
   bool isMC_;
   edm::InputTag src_;
+  bool computeWeights_;
    
   std::vector<float> weights;     // Basically what is the position of this particle in the collection
   //std::vector< std::vector<float> > weights;     // Basically what is the position of this particle in the collection
@@ -57,7 +58,8 @@ private:
 // Constructor
 NtupleMCWeights::NtupleMCWeights(edm::ParameterSet iConfig): 
 	Obj2BranchBase(iConfig),
-	src_(iConfig.getParameter<edm::InputTag>("src"))
+	src_(iConfig.getParameter<edm::InputTag>("src")),
+	computeWeights_(iConfig.getParameter<bool>("computeWeighted"))
 	//weights(1)
 {
   // By having this class inherit from Obj2BranchBAse, we have access to our tree_, no need for TFileService
@@ -74,14 +76,21 @@ void
 NtupleMCWeights::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 	weights.clear();
-	edm::Handle<LHEEventProduct> lheinfo;
-	iEvent.getByLabel(src_, lheinfo);
-	for(size_t w = 0 ; w < lheinfo->weights().size() ; ++w)
-	{
-		//weights[0].push_back(lheinfo->weights()[w].wgt);
-		weights.push_back(lheinfo->weights()[w].wgt);
-		std::cout << w << " " << lheinfo->weights()[w].id << " " << lheinfo->weights()[w].wgt << std::endl;
-	} 
+  if(computeWeights_)
+  {
+    edm::Handle<LHEEventProduct> lheinfo;
+    iEvent.getByLabel(src_, lheinfo);
+    for(size_t w = 0 ; w < lheinfo->weights().size() ; ++w)
+    {
+      //weights[0].push_back(lheinfo->weights()[w].wgt);
+      weights.push_back(lheinfo->weights()[w].wgt);
+      // 		std::cout << w << " " << lheinfo->weights()[w].id << " " << lheinfo->weights()[w].wgt << std::endl;
+    } 
+  }
+  else
+  {
+    weights.push_back(1);
+  }
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
