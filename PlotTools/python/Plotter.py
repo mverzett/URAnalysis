@@ -185,9 +185,9 @@ class Plotter(object):
         nentries = entries if entries is not None else len(samples)
         legend = None
         if leftside:
-            legend = plotting.Legend(nentries, leftmargin=0.03, topmargin=0.05, rightmargin=0.65)
+            legend = plotting.Legend(nentries, leftmargin=0.03, topmargin=0.05, rightmargin=0.65, entryheight=0.03)
         else:
-            legend = plotting.Legend(nentries, rightmargin=0.07, topmargin=0.05, leftmargin=0.45)
+            legend = plotting.Legend(nentries, rightmargin=0.07, topmargin=0.05, leftmargin=0.45, entryheight=0.03)
         for sample in samples:
             legend.AddEntry(sample)
             ## if isinstance(sample, plotting.HistStack):
@@ -300,7 +300,7 @@ class Plotter(object):
             err_histo.Draw('pe2 same') #was pe
             self.keep.append(err_histo)
 
-        self.lower_pad.SetLogy()
+        #self.lower_pad.SetLogy()
         self.pad.cd()
         self.keep.extend(ratios)
         return None
@@ -519,4 +519,4 @@ class Plotter(object):
         if logy:
             self.pad.SetLogy()
         if show_ratio:
-            self.add_ratio_plot(data, mc_stack, x_range=xrange, ratio_range=0.2)
+            self.add_ratio_plot(data, mc_stack, x_range=xrange, ratio_range=ratio_range)
