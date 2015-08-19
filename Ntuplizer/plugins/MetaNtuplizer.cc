@@ -142,12 +142,17 @@ MetaNtuplizer::endLuminosityBlock(edm::LuminosityBlock const& block, edm::EventS
   edm::Handle<edm::MergeableCounter> counter;
   block.getByLabel("processedEvents", counter);
   edm::Handle<edm::MergeableCounter> weightedCounter;
-  block.getByLabel("weightedProcessedEvents", weightedCounter);
-
+  if(isMC_)
+  {
+    block.getByLabel("weightedProcessedEvents", weightedCounter);
+  }
   lumi_ = block.luminosityBlock();
   run_ = block.run();
   processed_ = counter->value;
-  processedWeighted_ = weightedCounter->value;
+  if(isMC_)
+    processedWeighted_ = weightedCounter->value;
+  else
+    processedWeighted_ = counter->value; // Yes, this duplicates information, but it is safer when you read the ntuples
   meta_tree_->Fill();
 
   /*if(!string_dumped_)
