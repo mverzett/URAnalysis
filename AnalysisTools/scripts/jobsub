@@ -71,10 +71,10 @@ WhenToTransferOutput = ON_EXIT
 Transfer_Input_Files = {5}
 Output = con_$(Process).stdout
 Error = con_$(Process).stderr
-Arguments = {0} {1} {6}_out_$(Process).root --thread 1 --j $(Process) --J {3} {4}
+Arguments = {0} {1} {6}_out_$(Process).root -c {7} --thread 1 --j $(Process) --J {3} {4}
 Queue {3}
 
-	""".format(exe, infile, '', numjobs, jobargs, transferfiles_config, sample)
+	""".format(exe, infile, '', numjobs, jobargs, transferfiles_config, sample, os.path.basename(exe_cfg))
   
   conf = open(os.path.join(jobpath, 'condor.jdl'), 'w')
   conf.write(condorfile)
