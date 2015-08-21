@@ -18,6 +18,13 @@ options.register(
    'Switch to MC production'
 )
 options.register(
+   'computeWeighted',
+   True,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+   'Computed weighted number of events for MC samples'
+)
+options.register(
    'reportEvery',
    100,
    VarParsing.multiplicity.singleton,

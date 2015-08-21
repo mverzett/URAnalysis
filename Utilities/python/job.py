@@ -29,7 +29,7 @@ class Job(object):
    with CRAB/batch
    '''
    def __init__(self, pycfg, jobid, simple_name, dbs_name,
-                pycfg_args, njobs, lumimask=''):
+                pycfg_args, njobs, lumimask='', computeWeighted=True):
       self.pycfg = pycfg
       self.name = simple_name 
       self.dbs_name    = dbs_name   
@@ -37,6 +37,7 @@ class Job(object):
       self.id       = jobid      
       self.args  = pycfg_args  
       self.mask = lumimask
+      self.computeWeighted = computeWeighted
 
    def save_as_crab(self):
       from WMCore.Configuration import Configuration
@@ -44,6 +45,10 @@ class Job(object):
       isData = self.name.startswith('data')
       if not isData:
           self.args+=" isMC=True"
+      if self.computeWeighted and not isData:
+          self.args+=" computeWeighted=True"
+      else:
+          self.args+=" computeWeighted=False"
       config = Configuration()
       config.section_("General")
       config.General.requestName = '%s_%s' % (self.id, self.name)
@@ -77,6 +82,10 @@ class Job(object):
       isData = self.name.startswith('data')
       if not isData:
           self.args+=" isMC=True"
+      if self.computeWeighted and not isData:
+          self.args+=" computeWeighted=True"
+      else:
+          self.args+=" computeWeighted=False"
       cfg = Crab2Cfg('CMSSW', 'USER', 'CRAB', 'GRID')
       if isData:
          cfg.CMSSW.total_number_of_lumis=-1

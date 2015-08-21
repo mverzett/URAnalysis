@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 import URAnalysis.Ntuplizer.branches as branches
 from URAnalysis.PATTools.objects.trigger import trigger_paths
 
-def make_ntuple(process, isMC, ntuple_seq_name='ntuple', **kwargs):
+def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwargs):
 	'''
 		Function to customize the process and add the Ntuple
 		production sequence as ntuple_seq_name (default 'ntuple').
@@ -175,7 +175,8 @@ def make_ntuple(process, isMC, ntuple_seq_name='ntuple', **kwargs):
 						)
 					),
 				branches = cms.VPSet(
-					)
+					),
+        computeWeighted = cms.bool(computeWeighted)
 				)
 		ntuple += process.MCWeights
 	

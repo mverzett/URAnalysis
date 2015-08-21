@@ -54,7 +54,7 @@ process.load("Configuration.StandardSequences.Services_cff")
 process.load('URAnalysis.Ntuplizer.MetaNtuplize_cfi')
 process.metaTree.isMC = cms.bool(options.isMC)
 process.meta = cms.Sequence(
-   meta.embed_meta(process, options.isMC) *
+   meta.embed_meta(process, options.isMC, options.computeWeighted) *
    process.metaTree
    )
 
@@ -72,6 +72,7 @@ custom_pat_sequence, collections = urpat.customize(
 ntuple_sequence, ntuple_end = ntuple.make_ntuple(
    process,
    options.isMC,
+   options.computeWeighted,
    **collections
    )
 

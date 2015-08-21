@@ -57,7 +57,8 @@ jobs = [
       sample.DBSName,
       args.options,
       args.njobs,
-      sample.__dict__.get('lumimask', '')
+      sample.__dict__.get('lumimask', ''),
+      sample.__dict__.get('computeWeighted', True)
       )
    for sample in to_submit
 ]
