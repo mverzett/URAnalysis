@@ -4,6 +4,8 @@
 #include <boost/program_options.hpp>
 #include <map>
 #include <string>
+#include <exception>
+#include <iostream>
 namespace opts = boost::program_options;
 
 /*
@@ -25,6 +27,19 @@ public:
   opts::basic_parsed_options<char> cfg_options() {return cfg_options_;};
 
   void setArgs(int argc, char** argv){argc_=argc; argv_=const_cast<char**>(argv);}
+
+	template<typename T>
+	T getCfgPar(std::string name) {
+		//makes better exception handling
+		try {
+			return vmap_[name].as<T>();
+		}
+		catch (std::exception& e) {
+			std::cerr << "Got " << e.what() << 
+				" trying to retrieve cfg parameter named: " << name << std::endl;
+			throw 42;
+		}
+	}
 
   // This must be a singleton
   static URParser& instance() {
