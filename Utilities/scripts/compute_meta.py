@@ -27,10 +27,12 @@ class LumiJson():
       #lumis are collapsed
       self.run_map = {}
       self.evts = 0
+      self.weightedevts = 0
       self.has_dupes = 0
       
-   def append(self, run, lumi, evts, filename):
+   def append(self, run, lumi, evts, weightedevts, filename):
       self.evts += evts
+      self.weightedevts += weightedevts
       if run not in self.run_map:
          self.run_map[run] = set([lumi])
       else:
@@ -81,6 +83,7 @@ class LumiJson():
    def dump(self, fname):
       json = {
          'events' : self.evts,
+         'weightedEvents' : self.weightedevts,
          'lumimap' : {}
          }
 
@@ -130,6 +133,7 @@ class Extractor(threading.Thread):
                   entry.run,
                   entry.lumi,
                   entry.processed,
+                  entry.processedWeighted,
                   fname
                   )
          tfile.Close()
