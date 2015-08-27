@@ -56,7 +56,9 @@ class TTBarXsecFittterWithJetsCategories(TTBarXsecFittter):
         TTBarXsecFittter.__init__(self)
         #super(TTBarXsecFittterWithJetsCategories, self).__init__()
         self.opts.add('yieldsJson', '')
-
+        self.available_vars = set()
+        self.regex = re.compile('^(?P<base_category>[A-Za-z0-9]+)_(?P<njets>\d+)Jets$')
+        
     def doParametersOfInterest(self):
         """Create POI and other parameters, and define the POI set."""
         with open(self.opts.yieldsJson) as jfile:
@@ -67,9 +69,8 @@ class TTBarXsecFittterWithJetsCategories(TTBarXsecFittter):
         #group categories according to bin number 
         #form a dict with {base category name : (category name, number of jets)} 
         groups = {}
-        regex = re.compile('^(?P<base_category>[A-Za-z0-9]+)_(?P<njets>\d+)Jets$')
         for category in categories:
-            m = regex.match(category)
+            m = self.regex.match(category)
             if not m:
                 raise ValueError('Category name %s did not match the regex!' % category)
             base = m.group('base_category')
@@ -84,6 +85,7 @@ class TTBarXsecFittterWithJetsCategories(TTBarXsecFittter):
         #  -- last ratio is (1 - sum(other ratios)), to avoid getting negative
         #     the last ratio is linked to the jet category w/ the most events
         for base, cats in groups.iteritems():
+            single_category = (len(cats) == 1)
             for signal in self.DC.signals:                
                 #make global SF, our REAL POI
                 global_sf = '%s_FullYield_%s' % (base, signal)
@@ -91,7 +93,11 @@ class TTBarXsecFittterWithJetsCategories(TTBarXsecFittter):
                 self.modelBuilder.doVar('%s[%f,0,%f]' % (global_sf, total_yield, total_yield*4)) #range between 0 and 4 times the total yield
                 pois.append(global_sf)
                 vars_created.append(global_sf)
-                
+                self.available_vars.add(global_sf)
+                #if there is only one category use directly the total yield
+                #nothing more to do here
+                if(single_category): continue
+
                 #sort categories according to the yields of this signal
                 yields_by_category = [(i, yields_json[i][signal]) for i in cats]
                 yields_by_category.sort(key=lambda x: x[1])
@@ -104,6 +110,7 @@ class TTBarXsecFittterWithJetsCategories(TTBarXsecFittter):
                     pois.append(cat_ratio)
                     ratio_names.append(cat_ratio)
                     vars_created.append(cat_ratio)
+                    self.available_vars.add(cat_ratio)
                 #make last ratio, does not create a POI
                 full_category, _ = yields_by_category[-1]
                 cat_ratio = '%sYieldRatio_%s' % (full_category, signal)
@@ -115,6 +122,7 @@ class TTBarXsecFittterWithJetsCategories(TTBarXsecFittter):
                         )
                     )
                 vars_created.append(cat_ratio)
+                self.available_vars.add(cat_ratio)
                 
                 for full_category, _ in yields_by_category:
                     cat_sf = '%sYield_%s' % (full_category, signal)
@@ -127,10 +135,26 @@ class TTBarXsecFittterWithJetsCategories(TTBarXsecFittter):
                             )
                         )
                     vars_created.append(cat_sf)
+                    self.available_vars.add(cat_sf)
         assert(len(vars_created) == len(set(vars_created)))
         self.modelBuilder.doSet('POI',','.join(pois))
                 
     def getYieldScale(self,bin,process):
+        if self.DC.isSignal[process]:
+            vyield = '%sYield_%s' % (bin, process) 
+            if vyield in self.available_vars:
+                return vyield
+            else:
+                m = self.regex.match(bin)
+                if not m:
+                    raise ValueError('Category name %s did not match the regex!' % category)
+                base = m.group('base_category')
+                fyield = '%s_FullYield_%s' % (base, process)
+                if fyield not in self.available_vars:
+                    raise ValueError('Something went horribly wrong with %s, %s' % (bin,process))
+                return fyield
+        else:
+            return 1    
         return '%sYield_%s' % (bin, process) if self.DC.isSignal[process] else 1 
 
 ttxsecfitterWJetCategories = TTBarXsecFittterWithJetsCategories()
