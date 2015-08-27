@@ -21,6 +21,14 @@ def embed_meta(process, isMC, computeWeighted):
         )
     process.storeMeta += process.processedEvents
 
+    process.weightedProcessedEvents = cms.EDProducer(
+        'WeightedEventCountProducer',
+        lhes = cms.InputTag('externalLHEProducer', '', 'LHE'),
+        computeWeighted = cms.bool(computeWeighted)
+        )
+    process.storeMeta += process.weightedProcessedEvents
+
+
     if isMC:
         process.load("Configuration.StandardSequences.Services_cff")
         process.storePU = cms.EDAnalyzer(
@@ -33,11 +41,5 @@ def embed_meta(process, isMC, computeWeighted):
             )
         process.storeMeta += process.storePU
         
-        process.weightedProcessedEvents = cms.EDProducer(
-            'WeightedEventCountProducer',
-            lhes = cms.InputTag('externalLHEProducer', '', 'LHE'),
-            computeWeighted = cms.bool(computeWeighted)
-            )
-        process.storeMeta += process.weightedProcessedEvents
         
     return process.storeMeta
