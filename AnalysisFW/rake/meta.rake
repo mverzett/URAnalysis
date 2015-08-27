@@ -35,6 +35,6 @@ task :proxy do |t|
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/*.txt").map{|x| File.basename(x).split('.')[0]}
   mc_samples = samples.select{|x| not x.start_with?('data')}
-  tfile = File.new(mc_samples[0], 'r').gets
+  tfile = File.new("inputs/#{jobid}/"+mc_samples[0]+".txt", 'r').gets.strip
   sh "make_tree_proxy.py #{tfile} Events"
 end
