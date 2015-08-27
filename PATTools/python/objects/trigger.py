@@ -8,8 +8,8 @@ trigger_paths = [
 'HLT_Ele27_WP85_Gsf',
 'HLT_DoubleEle33_CaloIdL_GsfTrkIdVL',
 'HLT_notexists',
-
-
+'HLT_Ele27_eta2p1_WPLoose_Gsf',
+'HLT_IsoMu24_eta2p1',
 'HLT_IsoMu27',
 'HLT_DoubleIsoMu17_eta2p1',
 ]
