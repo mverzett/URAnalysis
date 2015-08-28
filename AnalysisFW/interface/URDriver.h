@@ -25,6 +25,10 @@ Class to handle the analysis of Ntuples in a threaded way
 #include "ProgressBar.h"
 #include "TTreeCache.h"
 
+// Necessary to take a shell variable as cpp macro and transform it into a string
+#define TOSTRING(s) STRINGIFY(s)
+#define STRINGIFY(s) #s
+
 template<typename T>
 class AnalysisWorker: public Worker{
 public:
