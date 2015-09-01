@@ -32,16 +32,11 @@ os.mkdir(jobdir)
 
 samplefiles = glob(os.path.join(inputdir, '*.txt'))
 
-transferfiles = glob(
-        os.path.join(inputdir, 'INPUT', '*.*')
-)
 exe_cfg = os.path.join(
         swdir,
         os.path.basename(exe).replace('.exe', '.cfg')
 )
-transferfiles.append(
-        exe_cfg
-)
+transferfiles = [exe_cfg]
 
 transferfiles_config = ', '.join(transferfiles)
 
@@ -86,6 +81,10 @@ cd {0}
 source environment.sh
 cd $WORKINGDIR
 
+echo "copying external input files"
+mkdir -p inputs/$jobid
+cp -r $URA_PROJECT/inputs/$jobid/INPUT inputs/$jobid/.
+
 PA=$@
 PA=${{PA#* }}
 
@@ -93,6 +92,9 @@ EXE=$1
 
 pwd
 ls -lht
+ls -lht inputs/
+ls -lht inputs/$jobid
+ls -lhtinputs/$jobid/INPUT
 
 echo $EXE
 echo $PA
@@ -108,5 +110,5 @@ exit $exitcode
   conf.write(batch_job)
   conf.close()
   
-  os.system('cd ' + jobpath + ' && condor_submit condor.jdl')
+  #os.system('cd ' + jobpath + ' && condor_submit condor.jdl')
 
