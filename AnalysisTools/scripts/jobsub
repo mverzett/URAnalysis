@@ -110,5 +110,5 @@ exit $exitcode
   conf.write(batch_job)
   conf.close()
   
-  #os.system('cd ' + jobpath + ' && condor_submit condor.jdl')
+  os.system('cd ' + jobpath + ' && condor_submit condor.jdl')
 
