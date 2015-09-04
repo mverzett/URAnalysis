@@ -4,8 +4,7 @@ import os
 import rootpy.plotting.views as views
 import rootpy.plotting as plotting
 import rootpy.io as io
-from URAnalysis.PlotTools.data_views import data_views
-from URAnalysis.PlotTools.data_styles import data_styles
+from URAnalysis.PlotTools.data_views import get_best_style
 from URAnalysis.PlotTools.views.RebinView import RebinView
 from URAnalysis.Utilities.struct import Struct
 import URAnalysis.Utilities.prettyjson as prettyjson
@@ -16,6 +15,7 @@ from pdb import set_trace
 import logging
 import ROOT
 import uuid
+from itertools import izip_longest 
 
 ROOT.gROOT.SetBatch(True)
 
@@ -58,7 +58,7 @@ class BasePlotter(object):
     #def __init__(self, files, lumifiles, outputdir, 
                  #styles=data_styles, blinder=None, forceLumi=-1, 
                  #fileMapping=True):
-    def __init__(self):
+    def __init__(self, outputdir='./', defaults={}, styles={}):
         ''' Initialize the Plotter object
 
         Files should be a list of SAMPLE_NAME.root files.
@@ -68,6 +68,8 @@ class BasePlotter(object):
         If [blinder] is not None, it will be applied to the data view.
         '''
         self.set_style()
+        self.outputdir = outputdir
+        self.base_out_dir = outputdir
         self.canvas = plotting.Canvas(name='adsf', title='asdf')
         self.canvas.cd()
         self.pad    = plotting.Pad( 0., 0., 1., 1.) #ful-size pad 
@@ -75,6 +77,15 @@ class BasePlotter(object):
         self.pad.cd()
         self.lower_pad = None
         self.keep = []
+        self.defaults = defaults
+        self.styles = styles
+
+    def set_subdir(self, folder):
+        '''Sets the output to be written 
+        in a particular subdir'''
+        self.outputdir = '/'.join([self.base_out_dir, folder])
+        if not os.path.isdir(self.outputdir):
+            os.makedirs(self.outputdir)
 
     def set_style(self):
         # For the canvas:
@@ -399,27 +410,30 @@ class BasePlotter(object):
         p.SetMarkerStyle(3)
         
     @staticmethod
-    def set_histo_style(histo, linestyle, markerstyle, linecolor):
+    def set_histo_style(histo, **kwargs):
+        if 'linewidth' not in kwargs:
+            kwargs['linewidth'] = 2
         histo.UseCurrentStyle()
-        histo.SetLineWidth(2)
-        histo.SetLineStyle(linestyle)
-        histo.SetMarkerStyle(markerstyle)
-        histo.SetMarkerColor(linecolor)
-        histo.SetLineColor(linecolor)
+        for key, val in kwargs.iteritems:
+            setattr(histo, name, val)
         histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
         histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
         histo.SetStats(False)
+
+    def style_histo(self, histo, **kwargs):
+        'non static histo styling, uses default styles'
+        style = get_best_style(histo.title, self.styles)
+        style.update(kwargs)
+        BasePlotter.set_histo_style(histo, **style)
         
     @staticmethod
     def set_stack_histo_style(histo, color):
-        histo.UseCurrentStyle()
-        histo.SetLineWidth(1)
-        histo.SetMarkerColor(1)
-        histo.SetLineColor(1)
-        histo.SetFillColor(color)
-        histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
-        histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
-        histo.SetStats(False)
+        BasePlotter.set_histo_style(
+            histo, 
+            fillcolor=color,
+            linecolor=1,
+            linewidth=1
+            )
     
     @staticmethod
     def set_graph_style(graph, markerstyle, linecolor):
@@ -428,7 +442,15 @@ class BasePlotter(object):
             graph.SetMarkerStyle(markerstyle)
         graph.SetMarkerColor(linecolor)
         graph.SetLineColor(linecolor)
-        
+    
+    def create_stack(self, histos, styles=[]):
+        stack = plotting.HistStack()
+        for histo, style in izip_longest(histos, styles):
+            style = style if style else {}
+            self.style_histo(histo, **style)
+            stack.Add(histo)
+        return stack
+    
     @staticmethod
     def create_and_write_canvases(linestyle, markerstyle, color, logscalex, logscaley, histos):
         if len(histos) == 0:
@@ -438,7 +460,7 @@ class BasePlotter(object):
         for histo in histos:
             canvasname = 'c' + histo.GetName()
             create_and_write_canvas(canvasname, linestyle, markerstyle, color, logscalex, logscaley, histo)
-            
+    
     def create_and_write_canvas_single(self, linestyle, markerstyle, color, logscalex, logscaley, histo, write=True, cname=''):
         if cname == '':
             canvasname = 'c' + histo.GetName()
@@ -1137,10 +1159,56 @@ class BasePlotter(object):
         self.pad.cd()
         self.lower_pad = None
 
-    def save(self, filename, png=True, pdf=True, dotc=False, dotroot=False, json=False, verbose=False):
+    def save(self, filename, verbose=False, **inkwargs):
         ''' Save the current canvas contents to [filename] '''
+        kwargs = {
+            'png' : True, 'pdf' : True, 'dotc' : False, 
+            'dotroot' : False, 'json' : False
+            }
+        kwargs.update(
+            self.defaults['save'] if 'save' in self.defaults else {}
+            )
+        kwargs.update(
+            inkwargs
+            )
+        #
+        
         self.pad.Draw()
         self.canvas.Update()
+        if not os.path.exists(self.outputdir):
+            os.makedirs(self.outputdir)
+        if verbose:
+            print 'saving '+os.path.join(self.outputdir, filename) + '.png'
+        if kwargs['png']: self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.png')
+        if kwargs['pdf']: self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.pdf')
+        if kwargs['dotc']:
+            self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.C')
+        if kwargs['json']:
+            jdict = {}
+            for obj in self.keep:
+                if isinstance(obj, ROOT.TH1):
+                    jdict[obj.GetTitle()] = [obj.GetBinContent(1), obj.GetBinError(1)] 
+                if isinstance(obj, ROOT.THStack):
+                    jdict['hist_stack'] = {}
+                    for i in obj.GetHists():
+                        jdict['hist_stack'][i.GetTitle()] = [i.GetBinContent(1), i.GetBinError(1)]
+            with open(os.path.join(self.outputdir, filename) + '.json', 'w') as jout:
+                jout.write(prettyjson.dumps(jdict))
+        if kwargs['dotroot']:
+            logging.error(
+                'This functionality still has to be implemented '
+                'properly, due to the awsome ROOT "features"')
+            rfile = os.path.join(self.outputdir, filename) + '.root'
+            with io.root_open(rfile, 'recreate') as tfile:
+                #set_trace()
+                self.canvas.Write()
+                for obj in self.keep:
+                    if isinstance(obj, plotting.HistStack):
+                        for hist in obj.hists:
+                            hist.Write()
+                    obj.Write()
+            #self.keep = []
+            self.reset()
 
         if self.keep and self.lower_pad:
             #pass
