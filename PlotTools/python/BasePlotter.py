@@ -7,6 +7,7 @@ import rootpy.io as io
 from URAnalysis.PlotTools.data_views import get_best_style
 from URAnalysis.PlotTools.views.RebinView import RebinView
 from URAnalysis.Utilities.struct import Struct
+from URAnalysis.Utilities.quad import quad
 import URAnalysis.Utilities.prettyjson as prettyjson
 import sys
 from math import sqrt
@@ -28,10 +29,26 @@ def _monkey_patch_legend_draw(self, *args, **kwargs):
 plotting.Legend.Draw = _monkey_patch_legend_draw
 
 class LegendDefinition(object):
-    def __init__(self, title='', labels=[], position=''):
+    def __init__(self, title='', position='', *entries):
         self.title_ = title
-        self.labels_ = labels
         self.position_ = position
+        self.entries_ = entries
+        self.nentries_ = sum(
+        	len(i.hists) if isinstance(i, plotting.HistStack) else 1 
+        	for i in entries
+        	)
+    
+    @property
+    def entries(self):
+    	return self.entries_
+    
+    @entries.setter
+    def entries(self, entries):
+    	self.entries_ = entries
+        self.nentries_ = sum(
+        	len(i.hists) if isinstance(i, plotting.HistStack) else 1 
+        	for i in entries
+        	)
         
     @property
     def title(self):
@@ -51,7 +68,84 @@ class LegendDefinition(object):
     @position.setter
     def position(self, position):
         self.position_=position 
-    
+
+    def make_legend(self):
+        # Create the legend Set the legend position according to LegendDefinition::position variable
+        pad = ROOT.gPad
+        padLeftMargin = pad.GetLeftMargin()
+        padRightMargin = pad.GetRightMargin()
+        padTopMargin = pad.GetTopMargin()
+        padBottomMargin = pad.GetBottomMargin()
+        plotWidth = 1. - (padLeftMargin + padRightMargin)
+        plotHeight = 1. - (padTopMargin + padBottomMargin)
+        maxTextSize = 0
+        if len(self.title) > maxTextSize:
+            maxTextSize = min(
+            	len(self.title),
+            	40
+            	)
+
+        legend = plotting.Legend(self.nentries_)
+        for entry in self.entries:
+        	#add entries manually because there is no fucking way to get the list of labels!
+        	if isinstance(entry, plotting.HistStack):
+        		for sub in entry:
+	        		legend.AddEntry(entry)
+	        		maxTextSize = max(
+	        			len(sub.title),
+	        			maxTextSize
+	        			)
+	        else:
+	        	legend.AddEntry(entry)
+	        	maxTextSize = max(
+	        		len(entry.title),
+	        		maxTextSize
+	        		)
+        	
+        if len(self.title) > 0:
+            self.nentries_ += 1
+        if  'e' in self.position.lower(): 
+            legX1 = (0.95-maxTextSize*0.015-0.1)*plotWidth + padLeftMargin
+            legX2 = 0.95*plotWidth + padLeftMargin
+        elif 'w' in self.position.lower():
+            legX1 = 0.05*plotWidth + padLeftMargin
+            legX2 = (0.05+maxTextSize*0.015+0.1)*plotWidth + padLeftMargin
+        else:
+            legX1 = 0.325*plotWidth + padLeftMargin
+            legX2 = 0.675*plotWidth + padLeftMargin
+        if 'n' in self.position or 'N' in self.position:
+            y1 = 0.95 - (0.1*self.nentries_)
+            if y1 < 0.5:
+                y1 = 0.5
+            legY1 = y1*plotHeight + padBottomMargin
+            legY2 = 0.95*plotHeight + padBottomMargin
+        elif 's' in self.position or 'S' in self.position:
+            y2 = 0.05 + (0.1*self.nentries_)
+            if y2 > 0.5:
+                y2 = 0.5
+            legY1 = 0.05*plotHeight + padBottomMargin
+            legY2 = y2*plotHeight + padBottomMargin
+        else:
+            y1 = 0.5 - (0.05*self.nentries_)
+            if y1 < 0.25:
+                y1 = 0.25
+            y2 = 0.5 + (0.05*self.nentries_)
+            if y2 > 0.75:
+                y2 = 0.75
+            legY1 = y1*plotHeight + padBottomMargin
+            legY2 = y2*plotHeight + padBottomMargin
+        
+        # Set generic options
+        legend.UseCurrentStyle()
+        legend.SetBorderSize(0)
+        legend.SetFillColor(0)
+        legend.SetFillStyle(0)
+        legend.SetTextFont(42)
+        legend.SetTextSize(0.045)
+                
+        pad.cd()
+        return legend
+
     
 
 class BasePlotter(object):
@@ -71,6 +165,7 @@ class BasePlotter(object):
         self.outputdir = outputdir
         self.base_out_dir = outputdir
         self.canvas = plotting.Canvas(name='adsf', title='asdf')
+        BasePlotter.set_canvas_style(self.canvas)
         self.canvas.cd()
         self.pad    = plotting.Pad( 0., 0., 1., 1.) #ful-size pad 
         self.pad.Draw()
@@ -411,18 +506,25 @@ class BasePlotter(object):
         
     @staticmethod
     def set_histo_style(histo, **kwargs):
+    	if not isinstance(histo, plotting.Hist):
+    		return
         if 'linewidth' not in kwargs:
             kwargs['linewidth'] = 2
         histo.UseCurrentStyle()
-        for key, val in kwargs.iteritems:
-            setattr(histo, name, val)
+        for key, val in kwargs.iteritems():
+            setattr(histo, key, val)
         histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
         histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
         histo.SetStats(False)
 
     def style_histo(self, histo, **kwargs):
-        'non static histo styling, uses default styles'
-        style = get_best_style(histo.title, self.styles)
+        '''non static histo styling, uses default styles, 
+        can be overridden by keyword args'''
+        if self.styles:
+        	style = get_best_style(histo.title, self.styles)
+        	style = style if style is not None else {}
+        else:
+	    	style = {}
         style.update(kwargs)
         BasePlotter.set_histo_style(histo, **style)
         
@@ -443,13 +545,57 @@ class BasePlotter(object):
         graph.SetMarkerColor(linecolor)
         graph.SetLineColor(linecolor)
     
-    def create_stack(self, histos, styles=[]):
+    @staticmethod
+    def _kwargs_to_styles_(kwargs, nhists):
+    	'''translates keyword arguments dict containing multiple styles
+    	into a list of styles. kwargs with list values are unpacked,
+    	kwargs with single value are used throughout'''
+    	klist = [{} for _ in range(nhists)]
+    	for key, value in kwargs.iteritems():
+    		if isinstance(value, list):
+    			for style, item in zip(style, value):
+    				style[key] = item
+    		else:
+    			for style in style:
+    				style[key] = value
+    	return klist
+    
+    def create_stack(self, *histos, **styles_kwargs):
+    	'''makes a HistStack out of provided histograms,
+    	styles them according to provided styles and default
+    	ones'''
         stack = plotting.HistStack()
+        styles = BasePlotter._kwargs_to_styles_(
+        	styles_kwargs, 
+        	len(histos)
+        	)
         for histo, style in izip_longest(histos, styles):
             style = style if style else {}
             self.style_histo(histo, **style)
             stack.Add(histo)
         return stack
+        
+    @staticmethod
+    def _get_y_range_(*histos):
+    	ymin = min(
+    		sum(i.hists).min() if isinstance(i, plotting.HistStack) else i.min()
+    		for i in histos
+    		)
+    	ymax = max(
+    		sum(i.hists).max() if isinstance(i, plotting.HistStack) else i.max()
+    		for i in histos
+    		)
+    	        
+        if ymin >= 0:
+            ymin = 0 + (ymax-ymin)/100000000
+            ymax = ymax + (ymax-ymin)*0.2
+        elif ymin < 0 and ymax > 0:
+            ymin = ymin - (ymax-ymax)*0.2
+            ymax = ymax + (ymax-ymin)*0.2
+        else:
+            ymin = ymin - (ymax-ymin)*0.2
+            ymax = 0 - (ymax-ymin)/100000000
+        return ymin, ymax
     
     @staticmethod
     def create_and_write_canvases(linestyle, markerstyle, color, logscalex, logscaley, histos):
@@ -932,6 +1078,142 @@ class BasePlotter(object):
             c.Write()
         return c
     
+    def plot(self, histo, legend_def=None, logx=False, logy=False, 
+    	logz=False, writeTo='', **style):
+    	BasePlotter.set_canvas_style(self.canvas, logx, logy, logz)
+    	self.pad.cd()
+    	self.style_histo(histo, style)
+    	histo.yaxis.range_user = BasePlotter._get_y_range_(histo)
+    	histo.Draw()
+    	self.keep.append(histo)
+    	if legend_def is not None:
+    		legend_def.entries = [histo]
+    		legend = legend_def.make_legend()
+    		legend.Draw()
+    		self.keep.append(legend)
+
+    	if writeTo:
+    		self.save(writeTo)
+    
+    def overlay(self, histos, legend_def=None, logx=False, logy=False, 
+    	logz=False, writeTo='', y_range=None, **styles_kw):
+    	BasePlotter.set_canvas_style(self.canvas, logx, logy, logz)
+    	styles = BasePlotter._kwargs_to_styles_(styles_kw, len(histos))
+    	first = True
+    	for histo, style in zip(histos, styles):
+    		self.style_histo(histo, **style)
+    		histo.Draw('' if first else 'same')
+    		if first:
+    			histo.yaxis.range_user = BasePlotter._get_y_range_(*histos) if y_range is None else y_range 
+    		first = False
+    		self.keep.append(histo)
+
+    	if legend_def is not None:
+    		legend_def.entries = [histo]
+    		legend = legend_def.make_legend()
+    		legend.Draw()
+    		self.keep.append(legend)
+
+    	if writeTo:
+    		self.save(writeTo)
+    	return None
+    	
+    def compare(self, ref, targets, method, **styles_kw):
+    	for target in targets:
+    		target.title = ''
+    		target.SetStats(False)
+    		for rbin, tbin in zip(ref, target):
+    			if method == 'pull':
+    				error = quad(rbin.error + tbin.error)
+    				tbin.value = (tbin.value-rbin.value)/error if error else 9999
+    				tbin.error = 0.01
+    			elif method == 'ratio':
+    				if rbin.value and tbin.value:
+    					result = tbin.value/rbin.value
+    					error  = quad((tbin.error/tbin.value), (rbin.error/rbin.value))
+    					tbin.value = result
+    					tbin.error = error
+    				else:
+    					tbin.value = 9999
+    					tbin.error = 1
+    			elif method == 'diff':
+    				if rbin.value:
+    					val = (tbin.value-rbin.value)/rbin.value
+    					if (tbin.value-rbin.value) != 0:
+    						err = sqrt(((rbin.error**2+tbin.error**2)/(rbin.value-rbin.value))**2+(rbin.error/rbin.value)**2)*val
+    					else:
+    						err = 9999
+    					tbin.value = val
+    					tbin.err = err
+                                else:
+                                    tbin.value = 9999
+                                    tbin.err = 1
+        
+        ylabels = {
+        	'pull' : 'Pull',
+        	'ratio': 'Ratio',
+        	'diff' : 'Difference'
+        	}
+        yranges = {
+        	'pull' : (-2.999,2.999),
+        	'ratio': (0.,1.999),
+        	'diff' : (-0.499,0.499)
+        	}
+        targets[0].yaxis.title = ylabels[method]
+        targets[0].yaxis.SetNdivisions(505)
+        styles_kw['drawstyle'] = 'e x0'
+        self.overlay(targets, y_range=yranges[method], **styles_kw)
+
+    def dual_pad_format():
+        self.canvas.cd()
+        self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
+        self.pad.SetPad(0, 0.33, 1., 1.)
+        self.pad.SetBottomMargin(0.001)
+        self.pad.Draw()
+        self.canvas.cd()
+        #create lower pad
+        self.lower_pad = plotting.Pad(0, 0., 1., 0.33)
+        self.set_canvas_style(self.lower_pad)
+        self.lower_pad.Draw()
+        self.lower_pad.cd()
+        self.pad.cd()
+        self.lower_pad.SetTopMargin(0.005)
+        self.lower_pad.SetGridy(True)
+        self.lower_pad.SetBottomMargin(self.lower_pad.GetBottomMargin()*3)
+        
+        labelSizeFactor1 = (pad1.GetHNDC()+pad2.GetHNDC()) / pad1.GetHNDC()
+        labelSizeFactor2 = (pad1.GetHNDC()+pad2.GetHNDC()) / pad2.GetHNDC()
+        return labelSizeFactor1, labelSizeFactor2
+    
+    def overlay_and_compare(self, reference, histos, method='pull', 
+    	legend_def=None, logx=False, logy=False, 
+    	logz=False, writeTo='', **styles_kw):
+    	labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
+    	self.pad.cd()
+    	self.overlay(
+    		[reference]+histos,
+    		legend_def=legend_def,
+    		logx=False, logy=False, 
+    		logz=False, **styles_kw
+    		)
+    	reference.Draw('same')
+    	reference.SetLabelSize(ROOT.gStyle.GetLabelSize()*labelSizeFactor1, "XYZ")
+        reference.SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor1, "XYZ")
+        reference.yaxis.SetTitleOffset(reference.yaxis.GetTitleOffset()/labelSizeFactor1)
+
+        self.lower_pad.cd()
+        to_compare = [
+        	sum(i.hists) if isinstance(i, Plotting.HistStack) else i.Clone()
+        	for i in histos
+        	]
+    	to_compare[0].SetLabelSize(ROOT.gStyle.GetLabelSize()*labelSizeFactor2, "XYZ")
+        to_compare[0].SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor2, "XYZ")
+        to_compare[0].yaxis.SetTitleOffset(to_compare[0].yaxis.GetTitleOffset()/labelSizeFactor2)
+
+        self.compare(reference, to_compare, method)
+        if writeTo:
+        	self.save(writeTo)
+    
     @staticmethod
     def create_and_write_canvas_3d(cname, ctitle, legend_definition, logscalex, logscaley, logscalez, phi, theta, histo, write = True):
         c = plotting.Canvas(cname)
@@ -954,83 +1236,7 @@ class BasePlotter(object):
         if write == True:
             c.Write()
         return c
-            
-    def plot_legend(self, c, objects, plotoptions, legend_definition):
-        # Create the legend
-        # Set the legend position according to LegendDefinition::position variable
-        legPosition = legend_definition.position
-        padLeftMargin = c.GetLeftMargin()
-        padRightMargin = c.GetRightMargin()
-        padTopMargin = c.GetTopMargin()
-        padBottomMargin = c.GetBottomMargin()
-        plotWidth = 1. - (padLeftMargin + padRightMargin)
-        plotHeight = 1. - (padTopMargin + padBottomMargin)
-        nentries = len(objects)
-        maxTextSize = 0
-        if len(legend_definition.title) > maxTextSize:
-            maxTextSize = len(legend_definition.title)
-        if maxTextSize > 40:
-            maxTextSize = 40
-        for ientry in range(0, len(legend_definition.labels)):
-            if len(legend_definition.labels[ientry]) > maxTextSize:
-                maxTextSize = len(legend_definition.labels[ientry])
-        if len(legend_definition.title) > 0:
-            nentries = nentries + 1
-        if  'e' in legPosition or 'E' in legPosition:
-            legX1 = (0.95-maxTextSize*0.015-0.1)*plotWidth + padLeftMargin
-            legX2 = 0.95*plotWidth + padLeftMargin
-        elif 'w' in legPosition or 'W' in legPosition:
-            legX1 = 0.05*plotWidth + padLeftMargin
-            legX2 = (0.05+maxTextSize*0.015+0.1)*plotWidth + padLeftMargin
-        else:
-            legX1 = 0.325*plotWidth + padLeftMargin
-            legX2 = 0.675*plotWidth + padLeftMargin
-        if 'n' in legPosition or 'N' in legPosition:
-            y1 = 0.95 - (0.1*nentries)
-            if y1 < 0.5:
-                y1 = 0.5
-            legY1 = y1*plotHeight + padBottomMargin
-            legY2 = 0.95*plotHeight + padBottomMargin
-        elif 's' in legPosition or 'S' in legPosition:
-            y2 = 0.05 + (0.1*nentries)
-            if y2 > 0.5:
-                y2 = 0.5
-            legY1 = 0.05*plotHeight + padBottomMargin
-            legY2 = y2*plotHeight + padBottomMargin
-        else:
-            y1 = 0.5 - (0.05*nentries)
-            if y1 < 0.25:
-                y1 = 0.25
-            y2 = 0.5 + (0.05*nentries)
-            if y2 > 0.75:
-                y2 = 0.75
-            legY1 = y1*plotHeight + padBottomMargin
-            legY2 = y2*plotHeight + padBottomMargin
-        legendoptions = []
-        for i in range(0, len(plotoptions)):
-            if 'e' in plotoptions[i] or 'P' in plotoptions[i]:
-                legendoptions.append('lp')
-            elif 'fill' in plotoptions[i]:
-                legendoptions.append('f')
-            else:
-                legendoptions.append('l')
-        
-        legend  = ROOT.TLegend(legX1,legY1, legX2, legY2, legend_definition.title, 'NDC')
-        
-        # Set generic options
-        legend.UseCurrentStyle()
-        legend.SetBorderSize(0)
-        legend.SetFillColor(0)
-        legend.SetFillStyle(0)
-        legend.SetTextFont(42)
-        legend.SetTextSize(0.045)
-          
-        for i in range(0, len(objects)):
-            legend.AddEntry(objects[i], legend_definition.labels[i], legendoptions[i])
-        
-        c.cd()
-        legend.Draw()
-        
+                    
     def plot_stack_legend(self, c, histo, stack, plotoptions, legend_definition):
         objects = []
         objects.append(histo)
