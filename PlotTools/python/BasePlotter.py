@@ -34,9 +34,9 @@ class LegendDefinition(object):
         self.position_ = position
         self.entries_ = entries
         self.nentries_ = sum(
-        	len(i.hists) if isinstance(i, plotting.HistStack) else 1 
-        	for i in entries
-        	)
+            len(i.hists) if isinstance(i, plotting.HistStack) else 1 
+            for i in entries
+            )
     
     @property
     def entries(self):
@@ -46,9 +46,9 @@ class LegendDefinition(object):
     def entries(self, entries):
     	self.entries_ = entries
         self.nentries_ = sum(
-        	len(i.hists) if isinstance(i, plotting.HistStack) else 1 
-        	for i in entries
-        	)
+            len(i.hists) if isinstance(i, plotting.HistStack) else 1 
+            for i in entries
+            )
         
     @property
     def title(self):
@@ -87,20 +87,20 @@ class LegendDefinition(object):
 
         legend = plotting.Legend(self.nentries_)
         for entry in self.entries:
-        	#add entries manually because there is no fucking way to get the list of labels!
-        	if isinstance(entry, plotting.HistStack):
-        		for sub in entry:
-	        		legend.AddEntry(entry)
-	        		maxTextSize = max(
-	        			len(sub.title),
-	        			maxTextSize
-	        			)
-	        else:
-	        	legend.AddEntry(entry)
-	        	maxTextSize = max(
-	        		len(entry.title),
-	        		maxTextSize
-	        		)
+            #add entries manually because there is no fucking way to get the list of labels!
+            if isinstance(entry, plotting.HistStack):
+                for sub in entry:
+                    legend.AddEntry(entry)
+                    maxTextSize = max(
+                        len(sub.title),
+                        maxTextSize
+                        )
+            else:
+                legend.AddEntry(entry)
+                maxTextSize = max(
+                    len(entry.title),
+                    maxTextSize
+                    )
         	
         if len(self.title) > 0:
             self.nentries_ += 1
