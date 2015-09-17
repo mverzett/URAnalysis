@@ -94,7 +94,7 @@ pwd
 ls -lht
 ls -lht inputs/
 ls -lht inputs/$jobid
-ls -lhtinputs/$jobid/INPUT
+ls -lht inputs/$jobid/INPUT
 
 echo $EXE
 echo $PA
