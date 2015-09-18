@@ -15,8 +15,9 @@ import os
 import rootpy.io as io
 from rootpy.plotting import views
 from pdb import set_trace
+import rootpy
 
-log = logging.getLogger("data_views")
+log = rootpy.log["/data_views"]
 
 def extract_sample(filename):
     ''' Get sample name from a path
