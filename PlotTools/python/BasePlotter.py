@@ -29,10 +29,11 @@ def _monkey_patch_legend_draw(self, *args, **kwargs):
 plotting.Legend.Draw = _monkey_patch_legend_draw
 
 class LegendDefinition(object):
-  def __init__(self, title='', position='', *entries):
+  def __init__(self, title='', position='', entries=[], labels=[]):
     self.title_ = title
-    self.position_ = position
+    self.position_ = position.lower()
     self.entries_ = entries
+    self.labels_ = labels
     self.nentries_ = sum(
       len(i.hists) if isinstance(i, plotting.HistStack) else 1 
       for i in entries
@@ -69,10 +70,10 @@ class LegendDefinition(object):
     return self.position_
   @position.setter
   def position(self, position):
-    self.position_=position 
+    self.position_=position.lower()
 
-  def make_legend(self):
-    # Create the legend Set the legend position according to LegendDefinition::position variable
+  @staticmethod
+  def ndc_coordinates(position, nchars, nlines):
     pad = ROOT.gPad
     padLeftMargin = pad.GetLeftMargin()
     padRightMargin = pad.GetRightMargin()
@@ -81,6 +82,36 @@ class LegendDefinition(object):
     plotWidth = 1. - (padLeftMargin + padRightMargin)
     plotHeight = 1. - (padTopMargin + padBottomMargin)
 
+    txt_width = nchars*0.023 #no reason for this factor other than "it works" 
+    entry_height = 0.040
+    txt_height = nlines*entry_height 
+
+    if 'e' in position: 
+      right = 0.98*plotWidth + padLeftMargin
+      left  = right - txt_width
+    elif 'w' in position:
+      left  = 0.02*plotWidth + padLeftMargin
+      right = left+txt_width
+    else:
+      left  = padLeftMargin + 0.5*plotWidth - 0.5*txt_width
+      right = left+txt_width
+
+    if 'n' in position:
+      top = 0.98*plotHeight + padBottomMargin
+      bottom = max(top-txt_height, 0)
+    elif 's' in position:
+      bottom = 0.02*plotHeight + padBottomMargin
+      top = min(bottom+txt_height, 1)
+    else:
+      #FIXME todo
+      bottom = padBottomMargin + plotHeight*0.5 - 0.5*txt_height
+      top    = bottom + txt_height
+
+    #print (position, nchars, nlines), (left, bottom, right, top)
+    return left, bottom, right, top
+
+  def make_legend(self):
+    # Create the legend Set the legend position according to LegendDefinition::position variable
     maxTextSize = 0
     if len(self.title) > maxTextSize:
       maxTextSize = min(
@@ -88,50 +119,39 @@ class LegendDefinition(object):
         40
         )
 
-    for entry in self.entries:
-      #add entries manually because there is no fucking way to get the list of labels!
-      if isinstance(entry, plotting.HistStack):
-        for sub in entry:
+    if not self.labels_ or any(i is None for i in self.labels_):
+      for entry in self.entries:
+        if isinstance(entry, plotting.HistStack):
+          for sub in entry:
+            maxTextSize = max(
+              len(sub.title),
+              maxTextSize
+              )
+        else:
           maxTextSize = max(
-            len(sub.title),
+            len(entry.title),
             maxTextSize
             )
-      else:
-        maxTextSize = max(
-          len(entry.title),
-          maxTextSize
-          )
+    else:
+      maxTextSize = max(maxTextSize, max(len(i) for i in self.labels_))
       
     if len(self.title) > 0:
       self.nentries_ += 1
-    txt_width = maxTextSize*0.035
-    entry_height = 0.040
-    txt_height = self.nentries_*entry_height*1.9 #no reason for this factor other than "it works"
-    if 'e' in self.position.lower(): 
-      l_margin = 0.99-txt_width
-      r_margin = 0.01
-    elif 'w' in self.position.lower():
-      l_margin = 0.01
-      r_margin = 0.99-txt_width
-    else:
-      l_margin = 0.5-(txt_width/2)
-      r_margin = 0.5-(txt_width/2)
-
-    if 'n' in self.position.lower():
-      t_margin = 0.01
-    elif 's' in self.position.lower():
-      t_margin = 0.99-txt_height
-    else:
-      t_margin = txt_height/2.
     
     legend = plotting.Legend(
-      self.nentries_, entrysep=0., margin=0.35, textfont=42, entryheight=entry_height,
-      leftmargin=l_margin, rightmargin=r_margin, topmargin=t_margin, textsize=0.035
+      self.nentries_, entrysep=0., margin=0.35, textfont=42, entryheight=0.04, textsize=0.035,
       )
+    legend.position = LegendDefinition.ndc_coordinates(self.position, maxTextSize, self.nentries_)
     if self.title:
       legend.SetHeader(self.title)
-    for entry in self.entries:
+
+    if not self.labels_ or any(i is None for i in self.labels_):
+      self.labels_ = [None for _ in self.entries]
+    for entry, label in zip(self.entries, self.labels_):
+      if label is None:
         legend.AddEntry(entry)
+      else:
+        legend.AddEntry(entry, label)
 
     # Set generic options
     legend.UseCurrentStyle()
@@ -139,26 +159,33 @@ class LegendDefinition(object):
     legend.SetFillColor(0)
     legend.SetFillStyle(0)
             
-    pad.cd()
     return legend
 
     
 
 class BasePlotter(object):
   def __init__(self, outputdir='./', defaults={}, styles={}):
-    ''' Initialize the Plotter object
+    ''' Initialize the BasePlotter 
 
-    Files should be a list of SAMPLE_NAME.root files.
-    Lumifiles should contain floats giving the effective luminosity of
-    each of the files.
+    outputdir is where histograms will be saved.
+    
+    defaults provides basic configuration of the plotter. Most of the options 
+    can be anyway overridden by the specific command in case one exception
+    to the general rule is needed. Available defaults:
+      - clone : (bool, default True) chooses the clone policy. If true histograms
+    will be cloned before being styled and drawn
+      - show_title : (bool, default False) shows the histogram title in the canvas
+      - name_canvas: (bool, default False) name the canvas after the histogram.name it is drawn inside
+      - save: (dict, default {'png' : True, 'pdf' : True, 'dotc' : False, 
+          'dotroot' : False, 'json' : False} set the formats to which save the canvas
 
-    If [blinder] is not None, it will be applied to the data view.
+    styles provides the plotter a look-up table of styles to be applied to the histograms in
+    the form key : style. Key is a POSIX regular expression that is matched to the 
+    histogram title.
     '''
-    self.set_style()
     self.outputdir = outputdir
     self.base_out_dir = outputdir
-    self.canvas = plotting.Canvas(name='adsf', title='asdf')
-    BasePlotter.set_canvas_style(self.canvas)
+    self.canvas = plotting.Canvas(800, 800, name='adsf', title='asdf')
     self.canvas.cd()
     self.pad    = plotting.Pad( 0., 0., 1., 1.) #ful-size pad 
     self.pad.Draw()
@@ -167,8 +194,11 @@ class BasePlotter(object):
     self.keep = []
     self.defaults = defaults
     self.styles = styles
+    self.label_factor = None
+    BasePlotter.set_canvas_style(self.canvas)
+    self.set_style()
 
-  def set_subdir(self, folder):
+  def set_subdir(self, folder=''):
     '''Sets the output to be written 
     in a particular subdir'''
     self.outputdir = '/'.join([self.base_out_dir, folder])
@@ -223,6 +253,7 @@ class BasePlotter(object):
     
     # For the statistics box:
     ROOT.gStyle.SetOptFile(0)
+    ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetStatColor(ROOT.kWhite)
     ROOT.gStyle.SetStatFont(42)
     ROOT.gStyle.SetStatFontSize(0.027)
@@ -241,7 +272,8 @@ class BasePlotter(object):
     ROOT.gStyle.SetPadRightMargin(0.035)
     
     # For the Global title:
-    ROOT.gStyle.SetOptTitle(1)
+    opt = int(self.defaults['show_title']) if 'show_title' in self.defaults else 0
+    ROOT.gStyle.SetOptTitle(opt)
     ROOT.gStyle.SetTitleFont(42)
     ROOT.gStyle.SetTitleColor(1)
     ROOT.gStyle.SetTitleTextColor(1)
@@ -478,6 +510,7 @@ class BasePlotter(object):
       kwargs['linewidth'] = 2
     if 'name' in kwargs:
       kwargs['title'] = kwargs['name']
+      del kwargs['name']
     histo.UseCurrentStyle()
     for key, val in kwargs.iteritems():
       setattr(histo, key, val)
@@ -495,6 +528,17 @@ class BasePlotter(object):
       style = {}
     style.update(kwargs)
     BasePlotter.set_histo_style(histo, **style)
+    if self.label_factor is not None:
+      label_size = ROOT.gStyle.GetTitleSize()*self.label_factor
+      if isinstance(histo, plotting.HistStack):
+        for i in histo.hists:
+          i.SetLabelSize(label_size, "XYZ")
+          i.SetTitleSize(label_size, "XYZ")
+          i.yaxis.SetTitleOffset(i.yaxis.GetTitleOffset()/self.label_factor)
+      else:
+        histo.SetLabelSize(label_size, "XYZ")
+        histo.SetTitleSize(label_size, "XYZ")
+        histo.yaxis.SetTitleOffset(histo.yaxis.GetTitleOffset()/self.label_factor)
       
   @staticmethod
   def set_stack_histo_style(histo, color):
@@ -518,20 +562,27 @@ class BasePlotter(object):
     '''translates keyword arguments dict containing multiple styles
     into a list of styles. kwargs with list values are unpacked,
     kwargs with single value are used throughout'''
-    klist = [{} for _ in range(nhists)]
+    styles = [{} for _ in range(nhists)]
     for key, value in kwargs.iteritems():
       if isinstance(value, list):
-        for style, item in zip(style, value):
+        for style, item in zip(styles, value):
           style[key] = item
       else:
-        for style in style:
+        for style in styles:
           style[key] = value
-    return klist
+    return styles
   
   def create_stack(self, *histos, **styles_kwargs):
     '''makes a HistStack out of provided histograms,
     styles them according to provided styles and default
     ones'''
+    sort  = True
+    histos = list(histos)
+    if 'sort' in styles_kwargs:
+      sort = styles_kwargs['sort']  
+      del styles_kwargs['sort']
+    if sort:
+      histos.sort(key=lambda x: x.Integral())
     stack = plotting.HistStack()
     styles = BasePlotter._kwargs_to_styles_(
       styles_kwargs, 
@@ -545,12 +596,27 @@ class BasePlotter(object):
       
   @staticmethod
   def _get_y_range_(*histos):
+    def __get_min__(obj):
+      if isinstance(obj, plotting.HistStack):
+        return sum(obj.hists).min() 
+      elif isinstance(obj, ROOT.TGraph):
+        return obj.GetYmin()
+      else:
+        return obj.min()
+    def __get_max__(obj):
+      if isinstance(obj, plotting.HistStack):
+        return sum(obj.hists).max() 
+      elif isinstance(obj, ROOT.TGraph):
+        return obj.GetYmax()
+      else:
+        return obj.max()
+
     ymin = min(
-      sum(i.hists).min() if isinstance(i, plotting.HistStack) else i.min()
+      __get_min__(i)
       for i in histos
       )
     ymax = max(
-      sum(i.hists).max() if isinstance(i, plotting.HistStack) else i.max()
+      __get_max__(i)
       for i in histos
       )
             
@@ -823,7 +889,7 @@ class BasePlotter(object):
         histocomp.GetYaxis().SetRangeUser(0.,1.999)
       elif comparison == 'diff':
         histocomp.GetYaxis().SetRangeUser(-0.499,0.499)
-      histocomp.GetYaxis().SetNdivisions(505)
+      histocomp.GetYaxis().SetNdivisions(510)
       pad1.cd()
       self.plot_stack_legend(pad1, histos[0], histostack, plotoptions, legend_definition)            
       pad1.Update()
@@ -918,7 +984,6 @@ class BasePlotter(object):
               histocomp.GetYaxis().SetRangeUser(-0.499,0.499)
             else:
               histocomp.GetYaxis().SetRangeUser(*bottom_range)
-          histocomp.GetYaxis().SetNdivisions(505)
           pad2.Update()
         else:
           pad2.cd()
@@ -1044,17 +1109,43 @@ class BasePlotter(object):
       c.Write()
     return c
   
-  def plot(self, histo, legend_def=None, logx=False, logy=False, 
-    logz=False, writeTo='', **style):
+  def _get_defaulted_par_(self, key, kwargs, default):
+    ret = default
+    if key in kwargs:
+      do_clone = kwargs[key]
+      del kwargs[key]
+    elif key in self.defaults:
+      ret = self.defaults[key]
+    return ret, kwargs
+
+  def plot(self, hh, legend_def=None, logx=False, logy=False, 
+    logz=False, xtitle='', ytitle='', writeTo='', **kwargs):
+    '''plots a single histogram. rootpy styling can be passed as 
+    keyword args as the cloning policy (wether or not to clone the 
+    histo before styling it) with key "clone" (defaulted True) and assigning the 
+    canvas name by the key name_canvas (dedfaulted False)'''
+    do_clone, style = self._get_defaulted_par_('clone', kwargs, True)    
+    name_canvas, style = self._get_defaulted_par_('name_canvas', style, False)    
+
     BasePlotter.set_canvas_style(self.canvas, logx, logy, logz)
+    if name_canvas:
+      self.canvas.name = 'c'+hh.name
+
+    histo = hh.Clone() if do_clone else hh
     self.pad.cd()
-    self.style_histo(histo, style)
+    self.style_histo(histo, **style)
     y_range = BasePlotter._get_y_range_(histo)
     if isinstance(histo, plotting.HistStack):
       histo.SetMinimum(y_range[0])
       histo.SetMaximum(y_range[1])
     else:
       histo.yaxis.range_user = y_range
+    histo.Draw()
+    #after drawing because of stacks -.-'
+    if xtitle:
+      histo.xaxis.title = xtitle
+    if ytitle:
+      histo.yaxis.title = ytitle    
     histo.Draw()
     self.keep.append(histo)
     if legend_def is not None:
@@ -1065,15 +1156,35 @@ class BasePlotter(object):
 
     if writeTo:
       self.save(writeTo)
+    return histo
   
-  def overlay(self, histos, legend_def=None, logx=False, logy=False, 
-    logz=False, writeTo='', y_range=None, **styles_kw):
-    BasePlotter.set_canvas_style(self.canvas, logx, logy, logz)
+  def overlay(
+    self, hhs, legend_def=None, logx=False, logy=False, 
+    logz=False, writeTo='', y_range=None, xtitle='', ytitle='', 
+    yaxis_divisions=None, **kwargs):
+    '''Overlays multiple histograms. rootpy styling can be passed as 
+    keyword args as the cloning policy (wether or not to clone the 
+    histo before styling it) with key "clone". The styling passed as list are 
+    applied one per histogram, styles with single value are used for every 
+    histogram'''
+    do_clone, styles_kw = self._get_defaulted_par_('clone', kwargs, True)
+    histos = [i.Clone() if do_clone else i for i in hhs] #clone to avoid messing up
+
+    ROOT.gPad.SetLogx(logx)
+    ROOT.gPad.SetLogy(logy)
+    ROOT.gPad.SetLogz(logz)
+
     styles = BasePlotter._kwargs_to_styles_(styles_kw, len(histos))
     first = True
     for histo, style in zip(histos, styles):
       self.style_histo(histo, **style)
+      if yaxis_divisions is not None:
+        histo.yaxis.SetNdivisions(yaxis_divisions)
       histo.Draw('' if first else 'same')
+      #after drawing because of stacks -.-'
+      histo.xaxis.title = xtitle if xtitle else histo.xaxis.title
+      histo.yaxis.title = ytitle if ytitle else histo.yaxis.title
+      ROOT.gPad.Modified()
       if first:
         y_range = BasePlotter._get_y_range_(*histos) if y_range is None else y_range 
         if isinstance(histo, plotting.HistStack):
@@ -1094,13 +1205,14 @@ class BasePlotter(object):
       self.save(writeTo)
     return None
     
-  def compare(self, ref, targets, method, **styles_kw):
+  def compare(self, ref, targets, method, xtitle='', ytitle='', **styles_kw):
     for target in targets:
       target.title = ''
       target.SetStats(False)
+      #set comparison values depending on method
       for rbin, tbin in zip(ref, target):
         if method == 'pull':
-          error = quad(rbin.error + tbin.error)
+          error = quad(rbin.error, tbin.error)
           tbin.value = (tbin.value-rbin.value)/error if error else 9999
           tbin.error = 0.01
         elif method == 'ratio':
@@ -1125,6 +1237,7 @@ class BasePlotter(object):
             tbin.value = 9999
             tbin.err = 1
       
+      #set comparison labels
       ylabels = {
         'pull' : 'Pull',
         'ratio': 'Ratio',
@@ -1135,12 +1248,12 @@ class BasePlotter(object):
         'ratio': (0.,1.999),
         'diff' : (-0.499,0.499)
         }
-      targets[0].yaxis.title = ylabels[method]
-      targets[0].yaxis.SetNdivisions(505)
       styles_kw['drawstyle'] = 'e x0'
-      self.overlay(targets, y_range=yranges[method], **styles_kw)
+      self.overlay(
+        targets, y_range=yranges[method], xtitle=xtitle, 
+        yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
 
-  def dual_pad_format():
+  def dual_pad_format(self):
     self.canvas.cd()
     self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
     self.pad.SetPad(0, 0.33, 1., 1.)
@@ -1157,36 +1270,36 @@ class BasePlotter(object):
     self.lower_pad.SetGridy(True)
     self.lower_pad.SetBottomMargin(self.lower_pad.GetBottomMargin()*3)
     
-    labelSizeFactor1 = (pad1.GetHNDC()+pad2.GetHNDC()) / pad1.GetHNDC()
-    labelSizeFactor2 = (pad1.GetHNDC()+pad2.GetHNDC()) / pad2.GetHNDC()
-    return labelSizeFactor1, labelSizeFactor2
+    labelSizeFactor1 = (self.pad.GetHNDC()+self.lower_pad.GetHNDC()) / self.pad.GetHNDC()
+    labelSizeFactor2 = (self.pad.GetHNDC()+self.lower_pad.GetHNDC()) / self.lower_pad.GetHNDC()
+    mm = min(labelSizeFactor1, labelSizeFactor2)
+    return labelSizeFactor1/mm, labelSizeFactor2/mm
   
-  def overlay_and_compare(self, reference, histos, method='pull', 
-    legend_def=None, logx=False, logy=False, 
+  def overlay_and_compare(self, histos, reference, method='pull', 
+    legend_def=None, logx=False, logy=False, xtitle='', ytitle='',
     logz=False, writeTo='', **styles_kw):
     labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
     self.pad.cd()
+    self.label_factor = labelSizeFactor1
+
     self.overlay(
-      [reference]+histos,
+      histos+[reference],
       legend_def=legend_def,
       logx=False, logy=False, 
-      logz=False, **styles_kw
+      logz=False, ytitle=ytitle,
+      **styles_kw
       )
-    reference.Draw('same')
-    reference.SetLabelSize(ROOT.gStyle.GetLabelSize()*labelSizeFactor1, "XYZ")
-    reference.SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor1, "XYZ")
-    reference.yaxis.SetTitleOffset(reference.yaxis.GetTitleOffset()/labelSizeFactor1)
 
     self.lower_pad.cd()
+    self.label_factor = labelSizeFactor2
     to_compare = [
-      sum(i.hists) if isinstance(i, Plotting.HistStack) else i.Clone()
+      sum(i.hists) if isinstance(i, plotting.HistStack) else i.Clone()
       for i in histos
       ]
-    to_compare[0].SetLabelSize(ROOT.gStyle.GetLabelSize()*labelSizeFactor2, "XYZ")
-    to_compare[0].SetTitleSize(ROOT.gStyle.GetTitleSize()*labelSizeFactor2, "XYZ")
-    to_compare[0].yaxis.SetTitleOffset(to_compare[0].yaxis.GetTitleOffset()/labelSizeFactor2)
+    self.compare(
+      reference.Clone(), to_compare, method, xtitle=xtitle, 
+      ytitle=ytitle, **styles_kw)
 
-    self.compare(reference, to_compare, method)
     if writeTo:
       self.save(writeTo)
   
@@ -1259,11 +1372,6 @@ class BasePlotter(object):
         ret.SetParLimits(par.num, par.bounds[1], par.bounds[2])
     return ret
 
-
-
-
-
-
   def add_legend(self, samples, leftside=True, entries=None):
       ''' Build a legend using samples.
 
@@ -1308,24 +1416,26 @@ class BasePlotter(object):
 
 
 
-  def make_text_box(self, text, position='top-right'):
+  def make_text_box(self, text, position='NE'):
       '''Adds a text box in the main pad'''
-      look_up_positions = {
-          'top-right'    : (0.73, 0.67, 0.96, 0.92),
-          'top-left'     : (0.16, 0.67, 0.39, 0.92),
-          'bottom-right' : (0.73, 0.15, 0.96, 0.4),
-          'bottom-left'  : (0.16, 0.15, 0.39, 0.4),
-          }
-      p = look_up_positions[position] if isinstance(position, str) \
-                       else position
+      #FIXME make width smart depending on the text width
+      max_line_len = max(len(i) for i in text.split('\n'))
+      nlines = len(text.split('\n'))
+      p = LegendDefinition.ndc_coordinates(position.lower(), max_line_len, nlines) \
+         if isinstance(position, str) \
+         else position
+      
       stat_box = ROOT.TPaveText(p[0], p[1], p[2], p[3], 'NDC')
       for line in text.split('\n'):
-          print line
           stat_box.AddText(line)
       
       #Set some graphics options not to suck
+      stat_box.UseCurrentStyle()
+      stat_box.SetTextAlign(32)
       stat_box.SetFillColor(0)
-      stat_box.SetBorderSize(1)
+      stat_box.SetBorderSize(0)
+      stat_box.SetMargin(0.)
+      stat_box.SetTextSize(0.037)        
       return stat_box
 
   def reset(self):
@@ -1334,14 +1444,16 @@ class BasePlotter(object):
       del self.pad
       del self.lower_pad
       self.keep = []
-      self.canvas = plotting.Canvas(name='adsf', title='asdf')
+      self.canvas = plotting.Canvas(800, 800, name='adsf', title='asdf')
+      BasePlotter.set_canvas_style(self.canvas)
       self.canvas.cd()
-      self.pad    = plotting.Pad('up', 'up', 0., 0., 1., 1.) #ful-size pad
+      self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
       self.pad.Draw()
       self.pad.cd()
       self.lower_pad = None
+      self.label_factor = None
 
-  def save(self, filename, verbose=False, **inkwargs):
+  def save(self, filename=None, verbose=False, **inkwargs):
       ''' Save the current canvas contents to [filename] '''
       kwargs = {
           'png' : True, 'pdf' : True, 'dotc' : False, 
@@ -1354,8 +1466,10 @@ class BasePlotter(object):
           inkwargs
           )
       #
+      if filename is None:
+        filename = self.canvas.name
       
-      self.pad.Draw()
+      #self.pad.Draw()
       self.canvas.Update()
       if not os.path.exists(self.outputdir):
           os.makedirs(self.outputdir)
@@ -1382,44 +1496,14 @@ class BasePlotter(object):
               'properly, due to the awsome ROOT "features"')
           rfile = os.path.join(self.outputdir, filename) + '.root'
           with io.root_open(rfile, 'recreate') as tfile:
-              #set_trace()
               self.canvas.Write()
               for obj in self.keep:
                   if isinstance(obj, plotting.HistStack):
                       for hist in obj.hists:
                           hist.Write()
                   obj.Write()
-          #self.keep = []
-          self.reset()
 
-      if self.keep and self.lower_pad:
-          #pass
-          self.reset()
-      else:
-          # Reset keeps
-          self.keep = []
-      # Reset logx/y
-      self.canvas.SetLogx(False)
-      self.canvas.SetLogy(False)
-      
-  def plot(self, sample, path, drawopt='', rebin=None, styler=None, xaxis='', xrange=None):
-      ''' Plot a single histogram from a single sample.
-
-      Returns a reference to the histogram.
-      '''
-      view = self.views[sample]['view']
-      if rebin:
-          view = self.rebin_view(view, rebin)
-      histo = view.Get(path)
-      if xrange:
-          histo.GetXaxis().SetRange(xrange[0], xrange[1])
-      if styler:
-          styler(histo)
-      histo.Draw(drawopt)
-      histo.GetXaxis().SetTitle(xaxis)
-      self.keep.append(histo)
-      return histo
-  
+      self.reset()
   
 if __name__ == '__main__':
   #from rootpy.io import root_open
