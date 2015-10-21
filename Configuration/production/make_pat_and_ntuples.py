@@ -16,6 +16,10 @@ process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = options.reportEvery
 process.MessageLogger.cerr.FwkSummary.reportEvery = options.reportEvery
 
+process.load('Configuration.StandardSequences.Services_cff')
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
+process.GlobalTag.globaltag = 'FIXME'
+
 process.options = cms.untracked.PSet(wantSummary=cms.untracked.bool(True))
 process.maxEvents = cms.untracked.PSet(
    input = cms.untracked.int32(
@@ -44,6 +48,7 @@ collections = {
    'jets' : 'slimmedJets',
    'vertices' : 'offlineSlimmedPrimaryVertices',
    'METs' : 'slimmedMETs',
+   'NoHFMETs' : 'slimmedMETsNoHF', #???
    'genParticles' : 'prunedGenParticles',
 }
 
@@ -58,6 +63,9 @@ process.meta = cms.Sequence(
    process.metaTree
    )
 
+#HF Noise Filter
+process.load('CommonTools.RecoAlgos.HBHENoiseFilterResultProducer_cfi')
+process.HBHENoiseFilterResultProducer.minZeros = cms.int32(99999) 
 
 #from pdb import set_trace
 #set_trace()
@@ -94,6 +102,7 @@ for skim in skim_sequences:
       path_name,
       cms.Path(
          process.meta *
+         process.HBHENoiseFilterResultProducer *
          getattr(process, skim) *
          custom_pat_sequence *
          ntuple_sequence *
