@@ -58,6 +58,8 @@ class RebinView(views._FolderView):
             title = histogram.title,
             **histogram.decorators
         )
+        new_histo.xaxis.title = histogram.xaxis.title
+        new_histo.yaxis.title = histogram.yaxis.title
 
         #check that new bins don't overlap on old edges
         for x in bin_arrayx:
