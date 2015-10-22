@@ -30,8 +30,8 @@ echo "Installing yolk -- python package management"
 pip install -U yolk
 echo "Installing ipython -- better interactive python"
 pip install -U ipython
-#echo "Installing termcolor -- colors terminal"
-#pip install -U termcolor
+echo "Installing termcolor -- colors terminal"
+pip install -U termcolor
 echo "Installing uncertainties -- awesome error propagation package"
 pip install -U uncertainties
 echo "Install progressbar -- progressbar function"

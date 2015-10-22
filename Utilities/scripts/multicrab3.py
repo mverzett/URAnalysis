@@ -4,6 +4,13 @@ import os
 from glob import glob
 import subprocess
 from argparse import ArgumentParser
+from pdb import set_trace
+try:
+   from termcolor import colored
+except ImportError:
+   print 'Suppressing colored terminal output, run "pip install -U termcolor" to have it there!'
+   def colored(txt, *args, **kwargs):
+      return txt
 
 parser = ArgumentParser(description='wraps crab commands and executes them on mutiple tasks, still needs all the cfgs to me made separately by something else (like our outmated cfg generation)')
 tasks = {'submit', 'status', 'kill'}
@@ -40,11 +47,26 @@ elif args.task == 'status':
          out, _ = proc.communicate()
          lines = out.split('\n')
          #extract the info we care about
-         lines = lines[lines.index('')+1:]
-         lines = lines[:lines.index('')]
+         try:
+            lines = lines[lines.index('')+1:]
+            lines = lines[:lines.index('')]
+         except ValueError:
+            set_trace()
          #make it look nice
          lines = [i.replace('Jobs status:','').replace('\t','') for i in lines]
-         print '\t%s:\t %s' % (task, ', '.join(lines))
+         coloured_lines = []
+         for line in lines:
+            if line.startswith('running'):
+               coloured_lines.append(colored(line,'grey'))
+            elif line.startswith('finished'):
+               coloured_lines.append(colored(line,'green'))
+            elif line.startswith('transferring'):
+               coloured_lines.append(colored(line,'blue'))
+            elif line.startswith('transferred'):
+               coloured_lines.append(colored(line,'cyan'))
+            else:
+               coloured_lines.append(colored(line,'red'))
+         print '\t%s:\t %s' % (task, ', '.join(coloured_lines))
       else:
          print '\t%s:\t -- status polling failed --'
 elif args.task == 'kill':
