@@ -13,6 +13,7 @@
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/InputTag.h"
 
 // Include DQM core
 #include <DQMServices/Core/interface/DQMStore.h>
@@ -43,7 +44,8 @@ public:
   };
 
   explicit PUDistributionProducer(const edm::ParameterSet& cfg):
-    binning_( cfg.getParameter<edm::ParameterSet>("binning") )
+    binning_( cfg.getParameter<edm::ParameterSet>("binning") ),
+    src_( cfg.getParameter<edm::InputTag>("src") )
   {}
   ~PUDistributionProducer(){}
 
@@ -54,6 +56,7 @@ public:
 private:
   MonitorElement* pu_distribution_;
   hinfo binning_;
+  edm::InputTag src_;
 };
 
 void PUDistributionProducer::bookHistograms(DQMStore::IBooker & ibooker, edm::Run const & iRun, edm::EventSetup const & iSetup)
@@ -64,7 +67,7 @@ void PUDistributionProducer::bookHistograms(DQMStore::IBooker & ibooker, edm::Ru
 void PUDistributionProducer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   edm::Handle< std::vector<PileupSummaryInfo> > pu_info;
-  iEvent.getByLabel("addPileupInfo", pu_info);
+  iEvent.getByLabel(src_, pu_info);
 
   //from https://twiki.cern.ch/twiki/bin/view/CMS/PileupMCReweightingUtilities#Calling_the_Function_to_get_an_E
   for(std::vector<PileupSummaryInfo>::const_iterator PVI = pu_info->begin(); PVI != pu_info->end(); ++PVI) 
@@ -72,8 +75,8 @@ void PUDistributionProducer::analyze(const edm::Event& iEvent, const edm::EventS
     int BX = PVI->getBunchCrossing();
     if(BX == 0) 
       { 
-	pu_distribution_->Fill( PVI->getTrueNumInteractions() );
-	break;
+        pu_distribution_->Fill( PVI->getTrueNumInteractions() );
+        break;
       }
     }
 }

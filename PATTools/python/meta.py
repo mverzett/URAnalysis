@@ -37,7 +37,8 @@ def embed_meta(process, isMC, computeWeighted):
                 nbins = cms.int32(100),
                 min   = cms.double(0),
                 max   = cms.double(100),
-                )
+                ),
+            src = cms.InputTag('slimmedAddPileupInfo')
             )
         process.storeMeta += process.storePU
         

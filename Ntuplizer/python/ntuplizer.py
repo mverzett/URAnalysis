@@ -185,7 +185,7 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 				src = cms.InputTag(
 					kwargs.get(
 						'PUInfos',
-						'addPileupInfo'
+						'slimmedAddPileupInfo'
 						)
 					),
 				branches = cms.VPSet(

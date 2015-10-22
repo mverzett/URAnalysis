@@ -18,7 +18,7 @@ process.MessageLogger.cerr.FwkSummary.reportEvery = options.reportEvery
 
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
-process.GlobalTag.globaltag = 'FIXME'
+process.GlobalTag.globaltag = options.globalTag
 
 process.options = cms.untracked.PSet(wantSummary=cms.untracked.bool(True))
 process.maxEvents = cms.untracked.PSet(
@@ -59,7 +59,7 @@ process.load("Configuration.StandardSequences.Services_cff")
 process.load('URAnalysis.Ntuplizer.MetaNtuplize_cfi')
 process.metaTree.isMC = cms.bool(options.isMC)
 process.meta = cms.Sequence(
-   meta.embed_meta(process, options.isMC, options.computeWeighted) *
+   meta.embed_meta(process, options.isMC, options.computeWeighted and options.isMC) *
    process.metaTree
    )
 
