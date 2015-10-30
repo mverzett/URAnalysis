@@ -78,7 +78,8 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 			branches = cms.VPSet(
 				branches.kinematics +
 				branches.jet_specific +
-				branches.btaggging
+				branches.btaggging +
+        branches.jet_specific_mc
 				)
 			)
 	ntuple += process.jets
@@ -150,7 +151,6 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 	#  MC Only
 	#############
 	if isMC:
-		process.jets.branches.extend(branches.jet_specific_mc)
 		#FIXME: add it!
 		process.genInfo = cms.EDAnalyzer(
 				'NtupleGenInfoProducer',
