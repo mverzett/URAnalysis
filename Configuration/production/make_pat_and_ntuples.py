@@ -62,6 +62,7 @@ process.meta = cms.Sequence(
    meta.embed_meta(process, options.isMC, options.computeWeighted and options.isMC) *
    process.metaTree
    )
+process.metaTree.globalTag=process.GlobalTag.globaltag
 
 #HF Noise Filter
 process.load('CommonTools.RecoAlgos.HBHENoiseFilterResultProducer_cfi')
