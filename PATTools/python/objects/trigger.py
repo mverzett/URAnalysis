@@ -5,19 +5,19 @@ import FWCore.ParameterSet.Config as cms
 ###
 
 trigger_paths = [
-'HLT_Ele27_eta2p1_WPLoose_Gsf'
-'HLT_DoubleIsoMu17_eta2p1'
-'HLT_notexists'
-'HLT_Ele27_WP85_Gsf'
-'HLT_IsoMu24_eta2p1'
-'HLT_IsoMu20_eta2p1'
-'HLT_DoubleEle33_CaloIdL_GsfTrkIdVL'
-'HLT_IsoMu22'
-'HLT_IsoMu20'
-'HLT_IsoMu27'
-'HLT_Ele27_eta2p1_WP75_Gsf'
-'HLT_Ele22_eta2p1_WP75_Gsf'
-'HLT_Ele22_eta2p1_WPLoose_Gsf'
+   'HLT_Ele27_eta2p1_WPLoose_Gsf',
+   'HLT_DoubleIsoMu17_eta2p1',
+   'HLT_notexists',
+   'HLT_Ele27_WP85_Gsf',
+   'HLT_IsoMu24_eta2p1',
+   'HLT_IsoMu20_eta2p1',
+   'HLT_DoubleEle33_CaloIdL_GsfTrkIdVL',
+   'HLT_IsoMu22',
+   'HLT_IsoMu20',
+   'HLT_IsoMu27',
+   'HLT_Ele27_eta2p1_WP75_Gsf',
+   'HLT_Ele22_eta2p1_WP75_Gsf',
+   'HLT_Ele22_eta2p1_WPLoose_Gsf',
 ]
 
 #match_template = cms.EDProducer(
