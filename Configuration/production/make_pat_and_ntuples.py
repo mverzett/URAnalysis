@@ -52,7 +52,10 @@ collections = {
    'genParticles' : 'prunedGenParticles',
 }
 
-skim_sequences = urskims.add_skims(process, **collections)
+if not options.noSkim:
+   skim_sequences = urskims.add_skims(process, **collections)
+else:
+   skim_sequences = []
 
 #store meta
 process.load("Configuration.StandardSequences.Services_cff")
@@ -91,28 +94,38 @@ process.schedule = cms.Schedule()
 #shared modules do not get rerun
 #https://hypernews.cern.ch/HyperNews/CMS/get/edmFramework/3416/1.html
 
-for skim in skim_sequences:
-   path_name = skim+'Path0'
-   #assure to make NEW path name
-   idx = 1
-   while hasattr(process, path_name):
-      path_name = path_name[:-1]+str(idx)
-      idx += 1
-   setattr(
-      process,
-      path_name,
-      cms.Path(
-         process.meta *
-         process.HBHENoiseFilterResultProducer *
-         getattr(process, skim) *
-         custom_pat_sequence *
-         ntuple_sequence *
-         ntuple_end
+if skim_sequences:
+   for skim in skim_sequences:
+      path_name = skim+'Path0'
+      #assure to make NEW path name
+      idx = 1
+      while hasattr(process, path_name):
+         path_name = path_name[:-1]+str(idx)
+         idx += 1
+      setattr(
+         process,
+         path_name,
+         cms.Path(
+            process.meta *
+            process.HBHENoiseFilterResultProducer *
+            getattr(process, skim) *
+            custom_pat_sequence *
+            ntuple_sequence *
+            ntuple_end
+            )
          )
+      process.schedule.append(
+         getattr(process, path_name)
+         )
+else:
+   process.passThroughPath = cms.Path(
+      process.meta *
+      process.HBHENoiseFilterResultProducer *
+      custom_pat_sequence *
+      ntuple_sequence *
+      ntuple_end
       )
-   process.schedule.append(
-      getattr(process, path_name)
-      )
+   process.schedule.append(process.passThroughPath)
 
 ## process.end = cms.EndPath(
 ##    ntuple_end

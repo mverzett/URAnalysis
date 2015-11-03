@@ -25,6 +25,13 @@ options.register(
    'Computed weighted number of events for MC samples'
 )
 options.register(
+   'noSkim',
+   False,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+   'Do not apply any skim to the sample'
+)
+options.register(
    'reportEvery',
    100,
    VarParsing.multiplicity.singleton,
