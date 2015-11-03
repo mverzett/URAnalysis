@@ -40,6 +40,7 @@ def rescue(jdl, nrescue, to_rescue):
       os.path.dirname(jdl),
       'condor.rescue%i.jdl' % nrescue
       )
+   print "rescue %i -- rescuing %i jobs from sample %s" % (nrescue, len(to_rescue), os.path.basename(os.path.dirname(jdl)))
    with open(rescuer, 'w') as rescue:
       rescue.write(''.join(header_lines))
       for ijob in to_rescue:
