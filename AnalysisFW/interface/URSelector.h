@@ -43,6 +43,16 @@ class URSelector
     }
 
     template<typename T>
+    void addCfgParameter(const std::string parameterName, const std::string description, T def_value)
+    {
+      URParser& parser = URParser::instance();
+      opts::options_description& options = parser.optionGroup(getName().c_str(), getName() + " options.\n", URParser::CFG);
+      Logger::log().debug() << "URSelector::addCfgParameter() - adding cfg option " << getName()+"."+parameterName << ".\n";
+      options.add_options() 
+        ((getName()+"."+parameterName).c_str(), opts::value< T >()->default_value(def_value), description.c_str());
+    }
+
+    template<typename T>
     T getCfgParameter(const std::string parameterName)
     {
       URParser& parser = URParser::instance();
