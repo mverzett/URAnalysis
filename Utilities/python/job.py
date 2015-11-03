@@ -29,7 +29,7 @@ class Job(object):
    with CRAB/batch
    '''
    def __init__(self, pycfg, jobid, simple_name, dbs_name,
-                pycfg_args, njobs, lumimask='', computeWeighted=True):
+                pycfg_args, njobs=None, lumimask=''):
       self.pycfg = pycfg
       self.name = simple_name 
       self.dbs_name    = dbs_name   
@@ -37,17 +37,9 @@ class Job(object):
       self.id       = jobid      
       self.args  = pycfg_args  
       self.mask = lumimask
-      self.computeWeighted = computeWeighted
 
    def save_as_crab(self, subdir=''):
-      
       isData = self.name.startswith('data')
-      if not isData:
-          self.args+=" isMC=True"
-      if self.computeWeighted and not isData:
-          self.args+=" computeWeighted=True"
-      else:
-          self.args+=" computeWeighted=False"
       config_template = '''from WMCore.Configuration import Configuration
 config = Configuration()
 config.section_('General')
@@ -58,10 +50,9 @@ config.JobType.pluginName = 'Analysis'
 config.JobType.pyCfgParams = {PARS!r}
 config.section_('Data')
 config.Data.inputDataset = {DATASET!r}
-config.Data.unitsPerJob = 5
+config.Data.unitsPerJob = 30
 config.Data.outLFNDirBase = {OUTLNF!r}
 config.Data.splitting = {SPLITTING!r}
-config.Data.totalUnits = {NJOBS}
 config.section_('Site')
 config.Site.storageSite = {STORAGE!r}
 '''
@@ -77,12 +68,13 @@ config.Site.storageSite = {STORAGE!r}
             self.id,
             self.name
             ),
-         NJOBS=self.njobs,
          STORAGE=os.environ['URA_STORAGE_SITE'],
          SPLITTING='LumiBased' if isData else 'FileBased'
          )
       if self.mask:
-         config += 'config.Data.lumiMask = {!r}'.format(self.mask)
+         config += 'config.Data.lumiMask = {!r}\n'.format(self.mask)
+      if self.njobs:
+         config += 'config.Data.Data.totalUnits = {}\n'.format(self.njobs)
 
       crab_cfg_name = 'crab_%s_%s_cfg.py' % (self.id, self.name)
       with open(os.path.join(subdir, crab_cfg_name), 'w') as cfg:

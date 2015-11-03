@@ -19,12 +19,12 @@ import subprocess
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument('jobid', type=str, help='job id of the production')
+parser.add_argument('samples', type=str, nargs='*', 
+                    help='Samples to run on, POSIX regex allowed', default=["*"])
 parser.add_argument('--options', type=str, help='command-line arguments'
                     ' to be passed to the configuration', default="")
 parser.add_argument('--njobs', type=int, help='how many jobs should I run?'
-                    ' (-1 for one for each input file)', default=1000)
-parser.add_argument('--samples', dest='samples', type=str,
-                    nargs='+', help='Samples to run on, POSIX regex allowed', default=["*"])
+                    ' (-1 for one for each input file)', default=-1)
 parser.add_argument('--sample-def', dest='sample_def', type=str,
                     help='json file containing the samples definition ', default="%s/samples.json" % os.environ["URA_PROJECT"])
 parser.add_argument('--crab', dest='crab', type=int,
@@ -33,6 +33,19 @@ parser.add_argument('--local', dest='local', action='store_true',
                     default=False, help='Submit to local (NOT SUPPORTED YET)')
 
 args = parser.parse_args()
+
+def parse_pyargs(string):
+   'parses the pyargs and builds a dictionary'
+   args = string.split(' ')
+   return dict(
+      tuple(arg.split('=')) for arg in args
+      )
+
+def dump_pyargs(kwargs):
+   'geta a dictionary and dumps a string'
+   return ' '.join([
+         '%s=%s' % i for i in kwargs.iteritems()
+         ])
 
 if not (bool(args.crab) or args.local):
    raise ValueError('You did not specify how you want to run! (crab2/3 or local)')
@@ -69,23 +82,35 @@ to_submit = reduce(
    [fnselect(all_samples, pattern, key=lambda x: x.name) for pattern in args.samples],
    []
 )
+pyargs = parse_pyargs(args.options)
+
 #remove duplicate samples selected by multiple patterns
 
 to_submit = set(to_submit)
 
-jobs = [
-   Job(
-      '../make_pat_and_ntuples.py',
-      args.jobid,
-      sample.name,
-      sample.DBSName,
-      args.options,
-      args.njobs,
-      os.path.join(os.environ['URA_PROJECT'], sample['lumimask']) if 'lumimask' in sample else '',
-      sample.__dict__.get('computeWeighted', True)
+jobs = []
+
+for sample in to_submit:
+   opts = {}
+   if 'options' in sample:
+      opts = sample['options']
+   opts.update(pyargs)
+
+   isData = sample.name.startswith('data')
+   opts['isMC'] = 'True' if not isData else 'False'
+   opts['computeWeighted'] = 'True' if not isData else 'False'
+
+   jobs.append( 
+      Job(
+         '../make_pat_and_ntuples.py',
+         args.jobid,
+         sample.name,
+         sample.DBSName,
+         dump_pyargs(opts),
+         args.njobs if args.njobs > 0 else None,
+         os.path.join(os.environ['URA_PROJECT'], sample['lumimask']) if 'lumimask' in sample else '',
+         )
       )
-   for sample in to_submit
-]
 
 if args.crab == 3:
    crab_cfgs = [job.save_as_crab(args.jobid) for job in jobs]
