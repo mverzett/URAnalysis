@@ -35,7 +35,7 @@ plotting.Legend.Draw = _monkey_patch_legend_draw
 
 class Plotter(object):
     def __init__(self, files, lumifiles, outputdir, 
-                 styles=data_styles, blinder=None, forceLumi=-1, 
+                 styles=data_styles, blinder=None, forceLumi=-1, lumi_scaling=1.,
                  fileMapping=True):
         ''' Initialize the Plotter object
 
@@ -47,7 +47,7 @@ class Plotter(object):
         '''
         self.outputdir = outputdir
         self.base_out_dir = outputdir
-        self.views = data_views(files, lumifiles, styles, forceLumi)
+        self.views = data_views(files, lumifiles, styles, forceLumi, lumi_scaling)
         self.canvas = plotting.Canvas(name='adsf', title='asdf')
         self.canvas.cd()
         self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
