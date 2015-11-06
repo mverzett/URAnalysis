@@ -4,6 +4,10 @@ from pdb import set_trace
 from glob import glob
 from argparse import ArgumentParser
 import re
+import URAnalysis.Utilities.prettyjson as prettyjson
+from URAnalysis.PlotTools.data_views import get_best_style, log #not for the same purpose, but the same mechanism
+#import rootpy
+log.setLevel(log.CRITICAL)
 
 swdir = os.path.realpath(os.environ['URA_PROJECT'])
 jobid = os.environ['jobid']
@@ -15,6 +19,7 @@ parser.add_argument('jobdir')
 parser.add_argument('executable')
 parser.add_argument('--opts', default='', help='options to be passed to the analyzer')
 parser.add_argument('--samples', nargs='*', help='samples to be analyze (full regex supported')
+parser.add_argument('--splitting', default='', help='samples to be analyze (full regex supported')
 
 args = parser.parse_args()
 
@@ -41,11 +46,15 @@ transferfiles = [exe_cfg]
 transferfiles_config = ', '.join(transferfiles)
 
 filesperjob = 10
-minjobs = 40
+splitting = None
+if args.splitting:
+  splitting = prettyjson.loads(open(args.splitting).read())
 
 for sf in samplefiles:
   infile = os.path.join(inputdir, sf)
   sample = os.path.basename(sf).split('.txt')[0]
+  if splitting:
+    filesperjob = get_best_style(sample, splitting)
   if not any(i.match(sample) for i in filters): continue
   jobpath = os.path.join(
           jobdir, 
@@ -55,9 +64,9 @@ for sf in samplefiles:
   infiledes = open(infile, 'r')
   numrootfiles = infiledes.read().count('.root')
   infiledes.close()
-  numjobs = max(numrootfiles/filesperjob, minjobs)
+  numjobs = max(numrootfiles/filesperjob, 1)
   numjobs = numjobs if numrootfiles > numjobs else numrootfiles
-  print sf, numjobs
+  print "submitting sample %s in %d jobs, ~1 every %d" % (sample, numjobs, filesperjob)
 
   condorfile ="""universe = vanilla
 Executable = batch_job.sh
