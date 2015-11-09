@@ -13,6 +13,8 @@ trigger_paths = [
    'HLT_IsoMu20_eta2p1',
    'HLT_DoubleEle33_CaloIdL_GsfTrkIdVL',
    'HLT_IsoMu22',
+   'HLT_IsoMu18',
+   'HLT_IsoTkMu20',
    'HLT_IsoMu20',
    'HLT_IsoMu27',
    'HLT_Ele27_eta2p1_WP75_Gsf',
