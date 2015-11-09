@@ -77,6 +77,8 @@ class LumiJson():
             prev = lumi
       if block[0] != lumi:
          block.append(lumi)
+      if len(block) == 1:
+         block.append(block[0])
       collapsed.append(block)
       return collapsed
 

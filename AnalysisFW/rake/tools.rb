@@ -32,7 +32,7 @@ def compile_string(includes, libs, src, trgt)
     fnal_include="-I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/include/ -I/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/lhapdf6/6.1.5/include"
     fnal_libs="-L/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/boost/1.57.0/lib/ -L/cvmfs/cms.cern.ch/#{ENV['SCRAM_ARCH']}/external/lhapdf6/6.1.5/lib"
   end
-  return "g++ -g -std=c++11 -Wl,--no-as-needed #{fnal_include} #{includes.map{|x| '-I'+x}.join(' ')} `root-config --cflags` `root-config --libs` -lMinuit #{fnal_libs} -lLHAPDF -lboost_program_options #{libs.join(' ')} #{src} -o #{trgt} -D\"INPUTSDIR=inputs/#{$jobid}/INPUT/\""
+  return "g++ -g -std=c++11 -Wl,--no-as-needed #{fnal_include} #{includes.map{|x| '-I'+x}.join(' ')} `root-config --cflags` `root-config --libs` -lMinuit #{fnal_libs} -lLHAPDF -lboost_program_options -lboost_filesystem #{libs.join(' ')} #{src} -o #{trgt} -D\"INPUTSDIR=inputs/#{$jobid}/INPUT/\""
 end
      
 
@@ -126,7 +126,7 @@ end
 
 def publish_pics(input_name, output_name)
   if not (File.directory? output_name)
-    sh "mkdir #{output_name}"
+    sh "mkdir -p #{output_name}"
   end
   toy_dirs = /toy_\d+/
   Dir["#{input_name}/*"].each do |path|

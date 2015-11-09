@@ -4,6 +4,7 @@ import sys, os, time
 from glob import glob
 import re
 import ROOT
+from pdb import set_trace
 
 allfiles = os.listdir('.')
 
@@ -25,7 +26,10 @@ for dir in jobdirs:
 
   #check for errors in job processing
   for stdout in stdouts:
-    last_line = open(os.path.join(dir, stdout)).readlines()[-1]
+    try:
+      last_line = open(os.path.join(dir, stdout)).readlines()[-1]
+    except:
+      raise RuntimeError('Problem reading %s' % stdout)
     match = regex.match(last_line)
     if match:
       exitcode = int(match.group('exitcode'))

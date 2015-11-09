@@ -1,12 +1,15 @@
 #include "CutFlowTracker.h"
 #include "TH1F.h"
+#include "Logger.h"
 
 void CutFlowTracker::track(std::string pointname)
 {
 	if(!active_) return;
+  if(verbose_) Logger::log().debug() << pointname << std::endl;
+  float to_add = (weight_) ? *weight_ : 1.;
 	auto point = cutflow_.find(pointname);
 	if(point != cutflow_.end()){
-		point->second.second++;
+		point->second.second += to_add;
 	}
 	else {
 		cutflow_.insert( 
@@ -14,7 +17,7 @@ void CutFlowTracker::track(std::string pointname)
 				pointname,
 				std::make_pair(
 					npoints_,
-					1
+					to_add
 					)
 				)
 			);

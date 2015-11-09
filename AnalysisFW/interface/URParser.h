@@ -6,6 +6,7 @@
 #include <string>
 #include <exception>
 #include <iostream>
+#include "Logger.h"
 namespace opts = boost::program_options;
 
 /*
@@ -28,6 +29,24 @@ public:
 
   void setArgs(int argc, char** argv){argc_=argc; argv_=const_cast<char**>(argv);}
 
+  template<typename T>
+  void addCfgParameter(const std::string group, const std::string parameterName, const std::string description) {
+    URParser& parser = URParser::instance();
+    opts::options_description& options = parser.optionGroup(group.c_str(), group + " options.\n", Visibility::CFG);
+    Logger::log().debug() << "URParser::addCfgParameter() - adding cfg option " << group+"."+parameterName << ".\n";
+    options.add_options() 
+      ((group+"."+parameterName).c_str(), opts::value< T >(), description.c_str());
+  }
+  
+  template<typename T>
+  void addCfgParameter(const std::string group, const std::string parameterName, const std::string description, T def_value) {
+    URParser& parser = URParser::instance();
+    opts::options_description& options = parser.optionGroup(group.c_str(), group + " options.\n", Visibility::CFG);
+    Logger::log().debug() << "URParser::addCfgParameter() - adding cfg option " << group+"."+parameterName << ".\n";
+    options.add_options() 
+      ((group+"."+parameterName).c_str(), opts::value< T >()->default_value(def_value), description.c_str());
+  }
+
 	template<typename T>
 	T getCfgPar(std::string name) {
 		//makes better exception handling
@@ -40,6 +59,9 @@ public:
 			throw 42;
 		}
 	}
+
+	template<typename T>
+	T getCfgPar(std::string group, std::string name) { return getCfgPar<T>(group+"."+name);}
 
   // This must be a singleton
   static URParser& instance() {

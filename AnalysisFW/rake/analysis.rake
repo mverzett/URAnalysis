@@ -121,6 +121,9 @@ task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
   if args.opts
     opts="--opts='#{args.opts}'"
   end
+  if File.file?('splitting.json')
+    opts+='--splitting=splitting.json'
+  end
 
   task :runThisBatch => "bin/#{bname}.exe" do |u|
     submit_dir = "/uscms_data/d3/#{ENV['USER']}/BATCH_#{Time.now.to_i}_#{bname}"
