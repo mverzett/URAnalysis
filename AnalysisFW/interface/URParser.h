@@ -33,7 +33,6 @@ public:
   void addCfgParameter(const std::string group, const std::string parameterName, const std::string description) {
     URParser& parser = URParser::instance();
     opts::options_description& options = parser.optionGroup(group.c_str(), group + " options.\n", Visibility::CFG);
-    Logger::log().debug() << "URParser::addCfgParameter() - adding cfg option " << group+"."+parameterName << ".\n";
     options.add_options() 
       ((group+"."+parameterName).c_str(), opts::value< T >(), description.c_str());
   }
@@ -42,7 +41,6 @@ public:
   void addCfgParameter(const std::string group, const std::string parameterName, const std::string description, T def_value) {
     URParser& parser = URParser::instance();
     opts::options_description& options = parser.optionGroup(group.c_str(), group + " options.\n", Visibility::CFG);
-    Logger::log().debug() << "URParser::addCfgParameter() - adding cfg option " << group+"."+parameterName << ".\n";
     options.add_options() 
       ((group+"."+parameterName).c_str(), opts::value< T >()->default_value(def_value), description.c_str());
   }

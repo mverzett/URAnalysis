@@ -37,7 +37,6 @@ class URSelector
     {
       URParser& parser = URParser::instance();
       opts::options_description& options = parser.optionGroup(getName().c_str(), getName() + " options.\n", URParser::CFG);
-      Logger::log().debug() << "URSelector::addCfgParameter() - adding cfg option " << getName()+"."+parameterName << ".\n";
       options.add_options() 
         ((getName()+"."+parameterName).c_str(), opts::value< T >(), description.c_str());
     }
@@ -47,7 +46,6 @@ class URSelector
     {
       URParser& parser = URParser::instance();
       opts::options_description& options = parser.optionGroup(getName().c_str(), getName() + " options.\n", URParser::CFG);
-      Logger::log().debug() << "URSelector::addCfgParameter() - adding cfg option " << getName()+"."+parameterName << ".\n";
       options.add_options() 
         ((getName()+"."+parameterName).c_str(), opts::value< T >()->default_value(def_value), description.c_str());
     }
@@ -59,7 +57,6 @@ class URSelector
       std::string optionName = getName()+"."+parameterName;
 
       const T result = (parser.values())[optionName].as<T>();
-      Logger::log().debug() << "URSelector::getCfgParameter() - value of option " << optionName << " is " << result << ".\n";
       return result;
     }
 

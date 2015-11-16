@@ -70,9 +70,7 @@ void URParser::parseArguments()
 	  cfg_opts.add(it->second.value);
 
       cfg_options_ = parse_config_file(ifs, cfg_opts, true);
-      Logger::log().debug() << "URParser::parseArguments() : cfg_options_.options.size() = " << cfg_options_.options.size() << std::endl;
       store(cfg_options_, vmap_);
-      Logger::log().debug() << "URParser::parseArguments() : vmap_.size() = " << vmap_.size() << std::endl;
       notify(vmap_);
     }
   }

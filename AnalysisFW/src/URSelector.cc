@@ -68,7 +68,6 @@ void URSelector::registerConfiguration()
 
   for(auto it = cfgParameters_.options().begin(); it != cfgParameters_.options().end(); it++)
   {
-    Logger::log().debug() << "URSelector::registerConfiguration() - registering option " << (*it)->long_name().c_str() << ".\n";
     options.add(*it);
   }
   parser.parseArguments();

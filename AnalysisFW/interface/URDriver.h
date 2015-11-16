@@ -66,10 +66,12 @@ public:
 				} else {
 					Logger::log().error() << id_ << ": could not read the tree in " <<
 						input_file << " properly" << std::endl;
+          throw 42;
 				}
 			} else {
 				Logger::log().error() << id_ << ": could not open file" <<
 					input_file << " properly" << std::endl;
+        throw 42;
 			}
       file->Close();
       bar_.update();
@@ -225,12 +227,14 @@ public:
 							Logger::log().error() << ": could not read the tree in " <<
 								input_file << " properly" << std::endl;
 							file->Close();
+              throw 42;
 						}
 					} 
 					else 
 					{
 						Logger::log().error() << ": could not open file" <<
 							input_file << " properly" << std::endl;
+            throw 42;
 					}
 				}//while(counter < n_threads && !input_files.empty())
 						
