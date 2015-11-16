@@ -53,6 +53,8 @@ task :analyze, [:analyzer,:sample,:opts] do |t, args|
   if args.opts
     $external_opts=args.opts
   end
+  #remove meta tag if any
+  sh "rm -f results/#{jobid}/#{bname}/meta.info"
   rootfiles = samples.map{|x| "results/#{jobid}/#{bname}/#{x}.root"}
   task :runThis => rootfiles
   Rake::Task["runThis"].invoke
@@ -107,6 +109,7 @@ task :track_batch, [:submit_dir] do |t, args|
   target_dir = "results/#{ENV['jobid']}/#{analyzer}"
   sh "mkdir -p #{target_dir}"
   sh "cp #{args.submit_dir}/*.root #{target_dir}/."
+  sh "echo #{args.submit_dir} > #{target_dir}/meta.info"
 end
 
 task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
