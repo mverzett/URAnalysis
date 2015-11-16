@@ -82,7 +82,7 @@ while not escape:
          for log in stdouts:
             lines = open(log).readlines()
             last_line = lines[-1] if len(lines) else 'exit code: 999' #fake wrong exit code
-            match = regex.match(last_line)
+            match = regex.search(last_line)
             if match:
                exitcode = int(match.group('exitcode'))
                if exitcode != 0 :
@@ -90,8 +90,8 @@ while not escape:
                   if key not in failed_samples:
                      failed_samples[key] = []
                   failed_samples[key].append(os.path.basename(log))
-            else:
-               raise ValueError("cannot match %s with exit code regex!" % last_line)
+            else:               
+               raise ValueError("cannot match %s with exit code regex! in %s" % (last_line, log))
          if len(failed_samples) == 0:
             print " exiting..."
             escape = True
