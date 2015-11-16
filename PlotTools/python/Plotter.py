@@ -22,6 +22,7 @@ from rootpy.plotting.hist import HistStack
 from pdb import set_trace
 import logging
 import ROOT
+#from BasePlotter import BasePlotter
 
 ROOT.gROOT.SetBatch(True)
 
@@ -171,9 +172,11 @@ class Plotter(object):
                 )
         return mc_views
 
-    def make_stack(self, rebin=1, preprocess=None, folder='', sort=False):
+    def make_stack(self, rebin=1, preprocess=None, folder='', sort=False, postprocess=None):
         ''' Make a stack of the MC histograms '''
         mc_views =  self.mc_views(rebin, preprocess, folder)
+        if postprocess:
+            mc_views = [postprocess(i) for i in mc_views]
         return views.StackView(*mc_views, sorted=sort)
 
     def add_legend(self, samples, leftside=True, entries=None):
@@ -482,12 +485,12 @@ class Plotter(object):
         return self.get_wild_dir(view, dir_name).Get(base_name)
 
     def plot_mc_vs_data(self, folder, variable, rebin=1, xaxis='',
-                        leftside=True, xrange=None, preprocess=None,
+                        leftside=True, xrange=None, preprocess=None, postprocess=None,
                         show_ratio=False, ratio_range=0.2, sort=False,
                         logy=False):
         ''' Compare Monte Carlo to data '''
         #path = os.path.join(folder, variable)
-        mc_stack_view = self.make_stack(rebin, preprocess, folder, sort)
+        mc_stack_view = self.make_stack(rebin, preprocess, folder, sort, postprocess=postprocess)
         mc_stack = mc_stack_view.Get(variable)
         mc_stack.Draw()
         mc_stack.GetHistogram().GetXaxis().SetTitle(xaxis)
@@ -505,6 +508,8 @@ class Plotter(object):
                 self.rebin_view(data_view, rebin),
                 folder
                 )
+            if postprocess:
+                data_view = postprocess(data_view)
             data = data_view.Get(variable)
             data.Draw('same')
             self.keep.append(data)
