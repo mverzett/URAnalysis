@@ -5,11 +5,15 @@ from glob import glob
 import re
 import ROOT
 from pdb import set_trace
+from Queue import Queue
+from subprocess import Popen, PIPE
+import time
 
 allfiles = os.listdir('.')
 
 jobdirs = [d for d in allfiles if os.path.isdir(d)]
 regex = re.compile('exit code: (?P<exitcode>\d+)')
+tasks_queue = Queue()
 
 for dir in jobdirs:
   print dir
@@ -46,10 +50,11 @@ for dir in jobdirs:
     print 'merging into %s' % outfile
     merger.OutputFile(outfile)
     files = [dir + '/' + f for f in files]
-    for tfile in files:
-      merger.AddFile(tfile, False) #why false? no clue, copied from old fwk                                                                                                    
-    if not merger.Merge():
-      raise RuntimeError('could not merge files into %s' % outfile)
+    tasks_queue.put((outfile, files))
+    ## for tfile in files:
+    ##   merger.AddFile(tfile, False) #why false? no clue, copied from old fwk                                                                                                    
+    ## if not merger.Merge():
+    ##   raise RuntimeError('could not merge files into %s' % outfile)
 
     ##command = 'hadd ' + dir + '.root ' + ' '.join(files)
     ##print command
@@ -57,4 +62,47 @@ for dir in jobdirs:
   else:
     raise IOError('You asked to merge %i files, but only %i were found.'
                   ' Something must have gone wrong in the batch jobs.' % (num, len(files)))
+
+print "starting parallel merging..."
+tasks = []
+task_map = {}
+while not tasks_queue.empty():
+  running = [t for t in tasks if t.poll() is None]
+  done = [t for t in tasks if t.poll() is not None]
+  #check hadd success
+  if not all(i.returncode == 0 for i in done):
+    set_trace()
+    for t in done:
+      if t.returncode != 0:
+        out, err = t.communicate()
+        cmd = task_map[t]        
+        print 'Failed merging %s with error' % cmd[3]
+        print err
+        os.system('rm %s' % cmd[3])
+    raise RuntimeError('Some files failed to merge!')
+  if len(running) < 5:
+    out, infiles = tasks_queue.get()
+    cmd = ['hadd', '-O', '-f', out] + infiles
+    print ' '.join(cmd)
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    task_map[proc] = cmd
+    running.append(
+      proc
+      )
+  tasks = running
+  time.sleep(10)
+
+for t in tasks:
+  ret = t.wait()
+  if ret != 0:
+    out, err = t.communicate()
+    cmd = task_map[t]        
+    print 'Failed merging %s with error' % cmd[3]
+    print err
+    os.system('rm %s' % cmd[3])
+    raise RuntimeError('Some files failed to merge!')
+
+  
+        
+
 
