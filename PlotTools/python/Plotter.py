@@ -22,7 +22,7 @@ from rootpy.plotting.hist import HistStack
 from pdb import set_trace
 import logging
 import ROOT
-#from BasePlotter import BasePlotter
+from BasePlotter import BasePlotter
 
 ROOT.gROOT.SetBatch(True)
 
@@ -34,7 +34,7 @@ def _monkey_patch_legend_draw(self, *args, **kwargs):
     _original_draw(self, *args, **kwargs)
 plotting.Legend.Draw = _monkey_patch_legend_draw
 
-class Plotter(object):
+class Plotter(BasePlotter):
     def __init__(self, files, lumifiles, outputdir, 
                  styles=data_styles, blinder=None, forceLumi=-1, lumi_scaling=1.,
                  fileMapping=True):
@@ -46,22 +46,14 @@ class Plotter(object):
 
         If [blinder] is not None, it will be applied to the data view.
         '''
-        self.outputdir = outputdir
-        self.base_out_dir = outputdir
+        super(Plotter, self).__init__(outputdir)
         self.views = data_views(files, lumifiles, styles, forceLumi, lumi_scaling)
-        self.canvas = plotting.Canvas(name='adsf', title='asdf')
-        self.canvas.cd()
-        self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
-        self.pad.Draw()
-        self.pad.cd()
-        self.lower_pad = None
         if blinder:
             # Keep the unblinded data around if desired.
             self.views['data']['unblinded_view'] = self.views['data']['view']
             # Apply a blinding function
             self.views['data']['view'] = blinder(self.views['data']['view'])
         self.data = self.views['data']['view'] if 'data' in self.views else None
-        self.keep = []
         # List of MC sample names to use.  Can be overridden.
         self.mc_samples = [i for i in self.views if not i.startswith('data')]
 
@@ -86,52 +78,12 @@ class Plotter(object):
                 ret.extend(Plotter.map_dir_structure(directory.Get(keyname), subdirName))
         return ret
 
-    def set_subdir(self, folder):
-        '''Sets the output to be written 
-        in a particular subdir'''
-        self.outputdir = '/'.join([self.base_out_dir, folder])
-        if not os.path.isdir(self.outputdir):
-            os.makedirs(self.outputdir)
 
     @staticmethod
     def rebin_view(x, rebin):
         ''' Make a view which rebins histograms '''
         output = RebinView(x, rebin)
         return output
-
-    @staticmethod
-    def parse_formula(fcn_string, pars_string):
-        '''Parses a formula similar to a roofit workspace,
-        but uses root to make things little easier.
-        Produces a TF1
-        
-        Example: 
-        parse_formula(
-            "slope*x + constant", 
-            "slope[0,-1,1], constant[-1]"
-        )
-        produces a linear function with slope in [-1,1] 
-        initialized at 0 and a constant fixed at -1'''
-        pars       = []
-        formula    = fcn_string
-        for par_num, match in enumerate(re.finditer("(?P<name>\w+)(?P<boundaries>\[[^\]]+\]),? ?", pars_string)):
-            par        = Struct()
-            par.num    = par_num
-            par.name   = match.group('name')
-            par.bounds = eval( match.group('boundaries') )
-            formula    = formula.replace(par.name, '[%i]' % par.num)
-            pars.append(par)
-
-        ret = ROOT.TF1('ret', formula, 0, 200)
-        for par in pars:
-            ret.SetParName(par.num, par.name)
-            if len(par.bounds) == 1:
-                ret.FixParameter(par.num, par.bounds[0])
-            else:
-                ret.SetParameter(par.num, par.bounds[0])
-                ret.SetParLimits(par.num, par.bounds[1], par.bounds[2])
-        return ret
-
 
     def get_view(self, sample_pattern, key_name='view'):
         ''' Get a view which matches a pattern like "Zjets*"
@@ -207,105 +159,34 @@ class Plotter(object):
         self.keep.append(legend)
         return legend
 
-    def add_cms_blurb(self, sqrts, preliminary=True, lumiformat='%0.1f'):
-        ''' Add the CMS blurb '''
-        latex = ROOT.TLatex()
-        latex.SetNDC();
-        latex.SetTextSize(0.04);
-        latex.SetTextAlign(31);
-        latex.SetTextAlign(11);
-        label_text = "CMS"
-        if preliminary:
-            label_text += " Preliminary"
-        label_text += " %i TeV " % sqrts
-        label_text += (lumiformat + " fb^{-1}") % (
-            self.views['data']['intlumi']/1000.)
-        self.keep.append(latex.DrawLatex(0.18,0.96, label_text));
-
     def add_ratio_plot(self, data_hist, *tests, **kwargs):
         '''Adds a ratio plot under the main pad, with same x range'''
-
-        x_range = kwargs.get('x_range', None)
-        ratio_range = kwargs.get('ratio_range', 4)
-        quote_errors= kwargs.get('quote_errors', False)
-        ytitle = kwargs.get('ytitle', 'MC / data')
-
-        test_hists = []
-        for mc_hist in tests:
-            if isinstance(mc_hist, HistStack):
-                test_hists.append(sum(mc_hist.hists))
-                quote_errors = False
-            else:
-                test_hists.append(mc_hist)
-
-        #resize the canvas and the pad to fit the second pad
-        self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
-        self.canvas.cd()
-        self.pad.SetPad(0, 0.33, 1., 1.)
-        self.pad.Draw()
-        self.canvas.cd()
-        #create lower pad
-        self.lower_pad = plotting.Pad(0, 0., 1., 0.33)
-        self.lower_pad.Draw()
+        _, self.label_factor = self.dual_pad_format()
         self.lower_pad.cd()
+        x_range = kwargs.get('x_range', None)
+        xtitle  = kwargs.get('xtitle' , '')
+        quote_errors= kwargs.get('quote_errors', False)
 
-        nbins = data_hist.GetNbinsX()
-        #make ratio, but use only data errors
-        first = True
-        ratios = []
-        for test_h in test_hists:
-            clone = test_h.Clone()
-            clone.markerstyle = 20
-            for dbin, cbin in zip(data_hist, clone):
-                if dbin.value:
-                    vratio = cbin.value / dbin.value
-                    cbin.value = vratio
-                    cbin.error = cbin.error / dbin.value
-                else:
-                    cbin.value = -10.*ratio_range
-                    cbin.error = 0.
+        test_hists = [
+            sum(i.hists) if isinstance(i, HistStack) else i.Clone()
+            for i in tests
+            ]
+        if len(test_hists) > 1:
+            for histo in test_hists:
+                histo.markercolor = histo.fillcolor
 
-            clone.Draw('ep' if first else 'ep same')
-            clone.GetYaxis().SetTitle(ytitle)
-            first = False
-            ratios.append(clone)
+        self.compare(
+            data_hist.Clone(), test_hists, 'ratio', xtitle=xtitle, 
+            )
 
-        if ratio_range:
-            ratios[0].GetYaxis().SetRangeUser(1.-ratio_range, 1+ratio_range)
-
-        #reference line
-        if not x_range:
-            nbins = ratios[0].GetNbinsX()
-            x_range = (ratios[0].GetBinLowEdge(1), 
-                       ratios[0].GetBinLowEdge(nbins)+ratios[0].GetBinWidth(nbins))
-        else:
-            ratios[0].GetXaxis().SetRangeUser(*x_range)
+        if x_range is None:
+            x_range = [data_hist[0].x.high, data_hist[-1].x.low]
         ref_function = ROOT.TF1('f', "1.", *x_range)
         ref_function.SetLineWidth(3)
         ref_function.SetLineStyle(2)
         ref_function.Draw('same')
         self.keep.append(ref_function)
         
-        if quote_errors:
-            err_histo  = mc_hist.Clone() 
-            err_histo.SetMarkerStyle(0)
-            err_histo.SetLineColor(1)
-            err_histo.SetFillColor(1)
-
-            for ibin in range(1, nbins+1):
-                cont = err_histo.GetBinContent(ibin)
-                err  = err_histo.GetBinError(ibin)
-                err  = err/cont if cont else 0.
-
-                err_histo.SetBinContent(ibin, 0)
-                err_histo.SetBinError(  ibin, err)
-
-            err_histo.Draw('pe2 same') #was pe
-            self.keep.append(err_histo)
-
-        #self.lower_pad.SetLogy()
-        self.pad.cd()
-        self.keep.extend(ratios)
         return None
 
     def fit_shape(self, histo, model, x_range, fitopt='IRMENS'):
@@ -342,88 +223,6 @@ class Plotter(object):
             func_hist
         ])
         return tf1
-
-    def make_text_box(self, text, position='top-right'):
-        '''Adds a text box in the main pad'''
-        look_up_positions = {
-            'top-right'    : (0.73, 0.67, 0.96, 0.92),
-            'top-left'     : (0.16, 0.67, 0.39, 0.92),
-            'bottom-right' : (0.73, 0.15, 0.96, 0.4),
-            'bottom-left'  : (0.16, 0.15, 0.39, 0.4),
-            }
-        p = look_up_positions[position] if isinstance(position, str) \
-                         else position
-        stat_box = ROOT.TPaveText(p[0], p[1], p[2], p[3], 'NDC')
-        for line in text.split('\n'):
-            print line
-            stat_box.AddText(line)
-        
-        #Set some graphics options not to suck
-        stat_box.SetFillColor(0)
-        stat_box.SetBorderSize(1)
-        return stat_box
-
-    def reset(self):
-        '''hard graphic reset'''
-        del self.canvas
-        del self.pad
-        del self.lower_pad
-        self.keep = []
-        self.canvas = plotting.Canvas(name='adsf', title='asdf')
-        self.canvas.cd()
-        self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
-        self.pad.Draw()
-        self.pad.cd()
-        self.lower_pad = None
-
-    def save(self, filename, png=True, pdf=True, dotc=False, dotroot=False, json=False, verbose=False):
-        ''' Save the current canvas contents to [filename] '''
-        self.pad.Draw()
-        self.canvas.Update()
-        if not os.path.exists(self.outputdir):
-            os.makedirs(self.outputdir)
-        if verbose:
-            print 'saving '+os.path.join(self.outputdir, filename) + '.png'
-        if png: self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.png')
-        if pdf: self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.pdf')
-        if dotc:
-            self.canvas.SaveAs(os.path.join(self.outputdir, filename) + '.C')
-        if json:
-            jdict = {}
-            for obj in self.keep:
-                if isinstance(obj, ROOT.TH1):
-                    jdict[obj.GetTitle()] = [obj.GetBinContent(1), obj.GetBinError(1)] 
-                if isinstance(obj, ROOT.THStack):
-                    jdict['hist_stack'] = {}
-                    for i in obj.GetHists():
-                        jdict['hist_stack'][i.GetTitle()] = [i.GetBinContent(1), i.GetBinError(1)]
-            with open(os.path.join(self.outputdir, filename) + '.json', 'w') as jout:
-                jout.write(prettyjson.dumps(jdict))
-        if dotroot:
-            logging.error(
-                'This functionality still has to be implemented '
-                'properly, due to the awsome ROOT "features"')
-            rfile = os.path.join(self.outputdir, filename) + '.root'
-            with io.root_open(rfile, 'recreate') as tfile:
-                #set_trace()
-                self.canvas.Write()
-                for obj in self.keep:
-                    if isinstance(obj, plotting.HistStack):
-                        for hist in obj.hists:
-                            hist.Write()
-                    obj.Write()
-            #self.keep = []
-            self.reset()
-
-        if self.keep and self.lower_pad:
-            #pass
-            self.reset()
-        else:
-            # Reset keeps
-            self.keep = []
-        # Reset logx/y
-        self.canvas.SetLogx(False)
-        self.canvas.SetLogy(False)
         
     def plot(self, sample, path, drawopt='', rebin=None, styler=None, xaxis='', xrange=None):
         ''' Plot a single histogram from a single sample.
@@ -490,9 +289,15 @@ class Plotter(object):
                         logy=False):
         ''' Compare Monte Carlo to data '''
         #path = os.path.join(folder, variable)
+        labelSizeFactor1, labelSizeFactor2 = 1, 1
+        if show_ratio:
+            labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
+            self.label_factor = labelSizeFactor1
         mc_stack_view = self.make_stack(rebin, preprocess, folder, sort, postprocess=postprocess)
         mc_stack = mc_stack_view.Get(variable)
+        self.style_histo(mc_stack)
         mc_stack.Draw()
+        mc_stack.GetHistogram().GetYaxis().SetTitle('Events')
         mc_stack.GetHistogram().GetXaxis().SetTitle(xaxis)
         if xrange:
             mc_stack.GetXaxis().SetRangeUser(xrange[0], xrange[1])
@@ -511,6 +316,7 @@ class Plotter(object):
             if postprocess:
                 data_view = postprocess(data_view)
             data = data_view.Get(variable)
+            self.keep.append(data)
             data.Draw('same')
             self.keep.append(data)
             to_legend.append(data)
@@ -524,4 +330,5 @@ class Plotter(object):
         if logy:
             self.pad.SetLogy()
         if show_ratio:
+            self.label_factor = labelSizeFactor2
             self.add_ratio_plot(data, mc_stack, x_range=xrange, ratio_range=ratio_range)

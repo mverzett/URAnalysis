@@ -513,7 +513,12 @@ class BasePlotter(object):
       del kwargs['name']
     histo.UseCurrentStyle()
     for key, val in kwargs.iteritems():
-      setattr(histo, key, val)
+      if key == 'xtitle':
+        histo.xaxis.title = val
+      elif key =='ytitle':
+        histo.yaxis.title = val
+      else:        
+        setattr(histo, key, val)
     histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
     histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
     histo.SetStats(False)
@@ -521,11 +526,11 @@ class BasePlotter(object):
   def style_histo(self, histo, **kwargs):
     '''non static histo styling, uses default styles, 
     can be overridden by keyword args'''
+    #set_trace()
+    style = histo.decorators
     if self.styles:
-      style = get_best_style(histo.title, self.styles)
-      style = style if style is not None else {}
-    else:
-      style = {}
+      bstyle = get_best_style(histo.title, self.styles)
+      style.update(bstyle)
     style.update(kwargs)
     BasePlotter.set_histo_style(histo, **style)
     if self.label_factor is not None:
@@ -1254,21 +1259,22 @@ class BasePlotter(object):
         yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
 
   def dual_pad_format(self):
-    self.canvas.cd()
-    self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
-    self.pad.SetPad(0, 0.33, 1., 1.)
-    self.pad.SetBottomMargin(0.001)
-    self.pad.Draw()
-    self.canvas.cd()
-    #create lower pad
-    self.lower_pad = plotting.Pad(0, 0., 1., 0.33)
-    self.set_canvas_style(self.lower_pad)
-    self.lower_pad.Draw()
-    self.lower_pad.cd()
-    self.pad.cd()
-    self.lower_pad.SetTopMargin(0.005)
-    self.lower_pad.SetGridy(True)
-    self.lower_pad.SetBottomMargin(self.lower_pad.GetBottomMargin()*3)
+    if self.lower_pad is None:
+      self.canvas.cd()
+      self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
+      self.pad.SetPad(0, 0.33, 1., 1.)
+      self.pad.SetBottomMargin(0.001)
+      self.pad.Draw()
+      self.canvas.cd()
+      #create lower pad
+      self.lower_pad = plotting.Pad(0, 0., 1., 0.33)
+      self.set_canvas_style(self.lower_pad)
+      self.lower_pad.Draw()
+      self.lower_pad.cd()
+      self.pad.cd()
+      self.lower_pad.SetTopMargin(0.005)
+      self.lower_pad.SetGridy(True)
+      self.lower_pad.SetBottomMargin(self.lower_pad.GetBottomMargin()*3)
     
     labelSizeFactor1 = (self.pad.GetHNDC()+self.lower_pad.GetHNDC()) / self.pad.GetHNDC()
     labelSizeFactor2 = (self.pad.GetHNDC()+self.lower_pad.GetHNDC()) / self.lower_pad.GetHNDC()
@@ -1401,6 +1407,7 @@ class BasePlotter(object):
 
   def add_cms_blurb(self, sqrts, preliminary=True, lumiformat='%0.1f'):
       ''' Add the CMS blurb '''
+      self.pad.cd()
       latex = ROOT.TLatex()
       latex.SetNDC();
       latex.SetTextSize(0.04);
