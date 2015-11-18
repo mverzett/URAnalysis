@@ -36,6 +36,7 @@ args = parser.parse_args()
 
 def parse_pyargs(string):
    'parses the pyargs and builds a dictionary'
+   if not string: return {}
    args = string.split(' ')
    return dict(
       tuple(arg.split('=')) for arg in args
@@ -92,13 +93,13 @@ jobs = []
 
 for sample in to_submit:
    opts = {}
-   if 'options' in sample:
-      opts = sample['options']
-   opts.update(pyargs)
-
    isData = sample.name.startswith('data')
    opts['isMC'] = 'True' if not isData else 'False'
    opts['computeWeighted'] = 'True' if not isData else 'False'
+
+   if 'options' in sample:
+      opts.update(sample['options'])
+   opts.update(pyargs)
 
    jobs.append( 
       Job(
