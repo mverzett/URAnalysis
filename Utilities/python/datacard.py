@@ -90,7 +90,10 @@ class DataCard(object):
 
                #store integral an then normalize
                self.yields[cname][sample] = histo.Integral()
-               histo.Scale(1./self.yields[cname][sample])
+               if self.yields[cname][sample]:                  
+                  histo.Scale(1./self.yields[cname][sample])
+               else:
+                  logging.warning('No yield for %s in %s, skipping...' % (sample, cname))
 
    def save(self, filename, directory=''):
       'save(self, name, directory='') saves the datacard and the shape file'
