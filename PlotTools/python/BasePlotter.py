@@ -526,11 +526,11 @@ class BasePlotter(object):
   def style_histo(self, histo, **kwargs):
     '''non static histo styling, uses default styles, 
     can be overridden by keyword args'''
-    #set_trace()
     style = histo.decorators
     if self.styles:
       bstyle = get_best_style(histo.title, self.styles)
-      style.update(bstyle)
+      if bstyle:
+        style.update(bstyle)
     style.update(kwargs)
     BasePlotter.set_histo_style(histo, **style)
     if self.label_factor is not None:
