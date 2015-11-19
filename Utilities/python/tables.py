@@ -8,7 +8,11 @@ class Table(object):
       self.formats = []
       for i in columns:
          info = i.split(':')
-         if len(info) == 2:
+         if len(info) == 1:
+            self.alias.append(info[0])
+            self.names.append(info[0])
+            self.formats.append('%s')            
+         elif len(info) == 2:
             self.alias.append(info[0])
             self.names.append(info[0])
             self.formats.append(info[1])
