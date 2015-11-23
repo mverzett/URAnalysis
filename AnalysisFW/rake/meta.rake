@@ -29,7 +29,10 @@ rule '.lumi' => '.meta.json' do |t|
   end  
 end
 
-multitask :getlumi => Dir.glob("#{ENV['URA_PROJECT']}/inputs/#{ENV['jobid']}/*.txt").map{|x| x.sub('.txt','.lumi')}
+multitask :getlumi => Dir.glob("#{ENV['URA_PROJECT']}/inputs/#{ENV['jobid']}/*.txt").map{|x| x.sub('.txt','.lumi')} do |t|
+  sh "mkdir -p inputs/#{ENV['jobid']}/INPUT"
+  sh "cp inputs/#{ENV['jobid']}/*.meta.pu*.root inputs/#{ENV['jobid']}/INPUT/."
+end
 
 task :proxy do |t|
   jobid = ENV['jobid']
