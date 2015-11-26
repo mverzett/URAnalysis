@@ -9,7 +9,13 @@ from pdb import set_trace
 import logging
 
 from optparse import OptionParser
-from HiggsAnalysis.CombinedLimit.DatacardParser import addDatacardParserOptions, parseCard
+try:
+   from HiggsAnalysis.CombinedLimit.DatacardParser import addDatacardParserOptions, parseCard
+except ImportError:
+   def addDatacardParserOptions(*args, **kwargs):
+      raise RuntimeError("It was impossible to import HiggsAnalysis.CombinedLimit.DatacardParser,\n\n please move to CMSSW_7_1_5 and install the HiggsAnalysis-CombinedLimit package")
+   def parseCard(*args, **kwargs):
+      raise RuntimeError("It was impossible to import HiggsAnalysis.CombinedLimit.DatacardParser,\n\n please move to CMSSW_7_1_5 and install the HiggsAnalysis-CombinedLimit package")
 
 def load(path):
    """Loads a HiggsAnalysis.CombinedLimit.DataCard from the path of a txt file
