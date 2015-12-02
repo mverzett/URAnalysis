@@ -13,6 +13,7 @@
 #include <string>
 #include "URAnalysis/Ntuplizer/interface/EventTree.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/EDAnalyzer.h"
 
 namespace edm{
   class Event;

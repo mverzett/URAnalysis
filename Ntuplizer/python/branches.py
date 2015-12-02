@@ -98,9 +98,9 @@ muon_specific = [
    make_branch_pset('isStandAlone','isStandAloneMuon', '/O'),
 
    make_branch_pset('isLoose',  'isLooseMuon()',  '/O'),
-   make_branch_pset('isTight',  'isTightMuon()',  '/O'),
-   make_branch_pset('isSoft',   'isSoftMuon()',   '/O'),
-   make_branch_pset('isHighPt', 'isHighPtMuon()', '/O'),
+   ## make_branch_pset('isTight',  'isTightMuon()',  '/O'), THEY NEED A VTX TO WORK WITH!
+   ## make_branch_pset('isSoft',   'isSoftMuon()',   '/O'),
+   ## make_branch_pset('isHighPt', 'isHighPtMuon()', '/O'),
 ]
 muon_specific.extend(
    make_branch_pset(

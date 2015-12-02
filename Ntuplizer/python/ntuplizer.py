@@ -84,6 +84,18 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 			)
 	ntuple += process.jets
 
+	process.jets_tracks = cms.EDAnalyzer(
+			'NtupleJetTracksProducer',
+			src = cms.InputTag(
+				kwargs.get(
+					'jets',
+					'slimmedJets'
+					)
+				),
+      label = cms.string('jets'),
+			)
+	ntuple += process.jets_tracks
+
 	process.electrons = cms.EDAnalyzer(
 			'NtupleElectronsProducer',
 			src = cms.InputTag(
