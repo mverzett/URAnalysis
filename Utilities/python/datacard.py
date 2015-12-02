@@ -8,6 +8,30 @@ import re
 from pdb import set_trace
 import logging
 
+from optparse import OptionParser
+try:
+   from HiggsAnalysis.CombinedLimit.DatacardParser import addDatacardParserOptions, parseCard
+except ImportError:
+   def addDatacardParserOptions(*args, **kwargs):
+      raise RuntimeError("It was impossible to import HiggsAnalysis.CombinedLimit.DatacardParser,\n\n please move to CMSSW_7_1_5 and install the HiggsAnalysis-CombinedLimit package")
+   def parseCard(*args, **kwargs):
+      raise RuntimeError("It was impossible to import HiggsAnalysis.CombinedLimit.DatacardParser,\n\n please move to CMSSW_7_1_5 and install the HiggsAnalysis-CombinedLimit package")
+
+def load(path):
+   """Loads a HiggsAnalysis.CombinedLimit.DataCard from the path of a txt file
+   This is NOT the same as URA.Utilities.Datacard (the class defined in this same package)
+   This one is the one used by the fit, the URA one is used to write the txt file only.
+   They share the same package because of the obvious link they share"""
+   dummy = OptionParser()
+   addDatacardParserOptions(dummy)
+   opts, args = dummy.parse_args(['--X-allow-no-background'])
+
+   card = None
+   with open(path) as txt:
+      card = parseCard(txt, opts)
+   return card
+
+
 class Systematic(object):
    'Interface to systematics to be profiled in the fit'
    def __init__(self, stype, val=None, unc=None):
@@ -74,6 +98,20 @@ class DataCard(object):
       'DEPRECATED! x.__setitem__(i, y) <==> x[i]=y'
       self.categories[name] = val
 
+   @staticmethod
+   def remove_negative_bins(histo, keep_integral=True):
+      ret = histo.Clone()
+      integral = histo.Integral()
+      for bin in ret:
+         if bin.value < 0:
+            bin.value = 0
+            bin.error = 0
+      
+      if keep_integral and integral:
+         new_integral = ret.Integral()
+         ret.Scale(integral/new_integral if new_integral else 0.)
+      return ret
+
    def normalize_signals(self):
       for cname, content in self.categories.iteritems():
          for sample, histo in content.iteritems():
@@ -90,7 +128,10 @@ class DataCard(object):
 
                #store integral an then normalize
                self.yields[cname][sample] = histo.Integral()
-               histo.Scale(1./self.yields[cname][sample])
+               if self.yields[cname][sample]:                  
+                  histo.Scale(1./self.yields[cname][sample])
+               else:
+                  logging.warning('No yield for %s in %s, skipping...' % (sample, cname))
 
    def save(self, filename, directory=''):
       'save(self, name, directory='') saves the datacard and the shape file'
@@ -209,6 +250,7 @@ class DataCard(object):
             out.mkdir(name).cd()
             for sample, shape in cat.iteritems():
                shape.SetName(sample)
+               shape.SetTitle(sample)
                shape.Write()
       logging.info('Written file %s' % shape_name)
       ##
@@ -275,7 +317,7 @@ class DataCard(object):
                unc_name = '%s_%s_bin_%i' % (category, sample, idx)
                for postfix, shift in zip(['Up', 'Down'], [error, -1*error]):
                   shifted = shape.Clone()
-                  shifted.SetBinContent(idx, content+shift)
+                  shifted.SetBinContent(idx, max(content+shift, 0))
                   self.categories[category]['%s_%s%s' % (sample, unc_name, postfix)] = shifted
                self.add_systematic(unc_name, 'shape', category, sample, 1.00)
       logging.info(

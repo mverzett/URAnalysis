@@ -186,9 +186,11 @@ class BasePlotter(object):
     self.outputdir = outputdir
     self.base_out_dir = outputdir
     self.canvas = plotting.Canvas(800, 800, name='adsf', title='asdf')
+    self.set_canvas_style(self.canvas)
     self.canvas.cd()
     self.pad    = plotting.Pad( 0., 0., 1., 1.) #ful-size pad 
     self.pad.Draw()
+    self.set_canvas_style(self.pad)
     self.pad.cd()
     self.lower_pad = None
     self.keep = []
@@ -526,11 +528,11 @@ class BasePlotter(object):
   def style_histo(self, histo, **kwargs):
     '''non static histo styling, uses default styles, 
     can be overridden by keyword args'''
-    #set_trace()
     style = histo.decorators
     if self.styles:
       bstyle = get_best_style(histo.title, self.styles)
-      style.update(bstyle)
+      if bstyle:
+        style.update(bstyle)
     style.update(kwargs)
     BasePlotter.set_histo_style(histo, **style)
     if self.label_factor is not None:
@@ -1262,7 +1264,9 @@ class BasePlotter(object):
     if self.lower_pad is None:
       self.canvas.cd()
       self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
+      self.set_canvas_style(self.canvas)
       self.pad.SetPad(0, 0.33, 1., 1.)
+      self.set_canvas_style(self.pad)
       self.pad.SetBottomMargin(0.001)
       self.pad.Draw()
       self.canvas.cd()
@@ -1456,6 +1460,7 @@ class BasePlotter(object):
       self.canvas.cd()
       self.pad    = plotting.Pad(0., 0., 1., 1.) #ful-size pad
       self.pad.Draw()
+      BasePlotter.set_canvas_style(self.pad)
       self.pad.cd()
       self.lower_pad = None
       self.label_factor = None

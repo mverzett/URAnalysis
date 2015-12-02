@@ -37,11 +37,22 @@ os.mkdir(jobdir)
 
 samplefiles = glob(os.path.join(inputdir, '*.txt'))
 
+#the cfg of the executable we want to run
 exe_cfg = os.path.join(
         swdir,
         os.path.basename(exe).replace('.exe', '.cfg')
 )
-transferfiles = [exe_cfg]
+
+#external inputs: SFs, JEC and so forth
+externals = glob(
+        os.path.join(swdir, 'inputs', 'data', '*.*')
+)
+
+#external inputs, jobid specific: PU reweighting, TTSolver training (prob.root), ecc
+externals_jobid_specific = glob(
+        os.path.join(swdir, 'inputs', jobid, 'INPUT', '*.*')
+)
+transferfiles = [exe_cfg]+externals+externals_jobid_specific
 
 transferfiles_config = ', '.join(transferfiles)
 
@@ -90,10 +101,6 @@ cd {0}
 source environment.sh
 cd $WORKINGDIR
 
-echo "copying external input files"
-mkdir -p inputs/$jobid
-cp -r $URA_PROJECT/inputs/$jobid/INPUT inputs/$jobid/.
-
 PA=$@
 PA=${{PA#* }}
 
@@ -101,9 +108,6 @@ EXE=$1
 
 pwd
 ls -lht
-ls -lht inputs/
-ls -lht inputs/$jobid
-ls -lht inputs/$jobid/INPUT
 
 echo $EXE
 echo $PA

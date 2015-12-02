@@ -56,8 +56,15 @@ class URSelector
       URParser& parser = URParser::instance();
       std::string optionName = getName()+"."+parameterName;
 
-      const T result = (parser.values())[optionName].as<T>();
-      return result;
+      try {
+        const T result = (parser.values())[optionName].as<T>();
+        return result;
+      }
+      catch (std::exception& e) {
+        std::cerr << "Got " << e.what() << 
+          " trying to retrieve cfg parameter named: " << optionName << std::endl;
+        throw 42;
+      }
     }
 
     virtual void configure();
