@@ -46,14 +46,13 @@ def customize(process, isMC=True, **collections):
         process.customJets
         )
 
-    if isMC:
-        process.load("TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi")
-        process.customPAT += process.pseudoTop
-        collections['PSTjets'] = 'pseudoTop:jets'
-        collections['PSTleptons'] = 'pseudoTop:leptons'
-        collections['PSTs'] = 'pseudoTop'
-        collections['PSTneutrinos'] = 'pseudoTop:neutrinos'
-
+    ## if isMC:
+    ##     process.load("TopQuarkAnalysis.TopEventProducers.producers.pseudoTop_cfi")
+    ##     process.customPAT += process.pseudoTop
+    ##     collections['PSTjets'] = 'pseudoTop:jets'
+    ##     collections['PSTleptons'] = 'pseudoTop:leptons'
+    ##     collections['PSTs'] = 'pseudoTop'
+    ##     collections['PSTneutrinos'] = 'pseudoTop:neutrinos'
 
     return process.customPAT, collections
         

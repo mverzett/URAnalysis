@@ -45,7 +45,7 @@ NtupleDoubleProducer::NtupleDoubleProducer(edm::ParameterSet cfg):
   Obj2BranchBase(cfg),
   src_(cfg.getParameter<edm::InputTag>("src"))
 {
-  tree_.branch(prefix_+SEPARATOR+"value/D", &value_); 
+  tree_.branch(prefix_+SEPARATOR+"value", &value_, "value/D"); 
 }
 
 void NtupleDoubleProducer::analyze(const edm::Event& evt, const edm::EventSetup&)

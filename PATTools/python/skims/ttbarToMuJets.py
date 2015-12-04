@@ -4,13 +4,13 @@ def skim(process, **collections):
    process.hiptMuons = cms.EDFilter(
       "PATMuonSelector",
       src = cms.InputTag(collections['muons']),
-      cut = cms.string('pt > 10 && abs(eta) < 2.5')
+      cut = cms.string('pt > 20 && abs(eta) < 2.5')
       )
 
    process.muonFilter = cms.EDFilter(
       "CandViewCountFilter",
       src = cms.InputTag('hiptMuons'),
-      minNumber = cms.uint32(0)
+      minNumber = cms.uint32(1)
       )
 
    process.hiPtJets = cms.EDFilter(

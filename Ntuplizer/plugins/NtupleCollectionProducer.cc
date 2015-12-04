@@ -87,6 +87,8 @@ void NtupleCollectionProducer<EDObject>::analyze(const edm::Event& evt, const ed
   edm::Handle< std::vector<EDObject> > handle;
   evt.getByLabel(src_, handle);
 
+  if(!handle.isValid()) return;
+
   size_t size = handle->size();
   //std::cout << "got " << src_ << " with size: " << size << std::endl;
   for(auto&& branch : branches_)

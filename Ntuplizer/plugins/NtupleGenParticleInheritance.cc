@@ -86,6 +86,7 @@ NtupleGenParticleInheritance::analyze(const edm::Event& iEvent, const edm::Event
   
   edm::Handle<reco::CandidateView> GenParticles;
   iEvent.getByToken(srcToken_, GenParticles);
+	if(!GenParticles.isValid()) return;
   
   // We need to make a first pass to be able to find the mothers later:
   std::vector<const reco::Candidate *> cands;

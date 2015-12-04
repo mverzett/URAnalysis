@@ -67,6 +67,7 @@ private:
   std::map<std::string, std::string> to_json_;
   bool string_dumped_, isMC_, useWeighted_, triedWeighted_;
   MonitorElement *pu_distro_;
+  MonitorElement *pu_distro_w_;
   unsigned int lumi_;
   unsigned int run_;
   unsigned long long processed_;
@@ -124,6 +125,8 @@ void MetaNtuplizer::endJob()
     DQMStore& dqmStore = (*edm::Service<DQMStore>());
     pu_distro_ = dqmStore.get("PUDistribution");
     pu_distro_->getTH1F()->Write();
+    pu_distro_w_ = dqmStore.get("PUDistribution_w");
+    pu_distro_w_->getTH1F()->Write();
   }
 
   std::stringstream stream;

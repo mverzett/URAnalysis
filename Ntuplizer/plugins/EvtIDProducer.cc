@@ -38,9 +38,9 @@ EvtIDProducer::EvtIDProducer(edm::ParameterSet cfg):
   Obj2BranchBase(cfg)
 {
   //book fixed branches
-  tree_.branch("run/i", &run_);
-  tree_.branch("lumi/i", &lumi_);
-  tree_.branch("evt/l", &evt_);
+  tree_.branch("run", &run_, "run/i");
+  tree_.branch("lumi", &lumi_, "lumi/i");
+  tree_.branch("evt", &evt_, "evt/i");
 }
 
 void EvtIDProducer::analyze(const edm::Event& evt, const edm::EventSetup&)

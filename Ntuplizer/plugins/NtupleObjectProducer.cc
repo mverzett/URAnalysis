@@ -79,6 +79,8 @@ void NtupleObjectProducer<EDObject>::analyze(const edm::Event& evt, const edm::E
   edm::Handle< EDObject > handle;
   evt.getByLabel(src_, handle);
 
+  if(!handle.isValid()) return;
+
   for(auto&& branch : branches_)
     {
       branch->fill(*handle);

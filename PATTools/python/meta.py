@@ -38,7 +38,8 @@ def embed_meta(process, isMC, computeWeighted):
                 min   = cms.double(0),
                 max   = cms.double(100),
                 ),
-            src = cms.InputTag('slimmedAddPileupInfo')
+            src = cms.InputTag('slimmedAddPileupInfo'),
+            weightsSrc = cms.InputTag('externalLHEProducer'),
             )
         process.storeMeta += process.storePU
         

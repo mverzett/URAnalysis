@@ -55,7 +55,8 @@ isolation = [
 ]
 
 genjet_specific = [
-   make_branch_pset('invisibleEnergy', 'invisibleEnergy()')
+   make_branch_pset('invisibleEnergy', 'invisibleEnergy()'),
+   make_branch_pset('pdgId', 'pdgId()')
 ]
 
 #Mu ID/Iso variables available at https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
@@ -190,7 +191,7 @@ ecal_cluster_specific = [
    #make_branch_pset('e2x5'),
    make_branch_pset('e5x5'),
    make_branch_pset('sigmaIEtaIEta', 'sigmaIetaIeta()'),
-   make_branch_pset('full5x5SigmaIEtaIEta', 'full5x5_sigmaIetaIeta()'),
+   make_branch_pset('full5x5_sigmaIEtaIEta', 'full5x5_sigmaIetaIeta()'),
    make_branch_pset('sigmaIPhiIPhi', 'sigmaIphiIphi()'),
    #E3x3, SigmaIEtaIPhi
 
@@ -278,7 +279,7 @@ track_specific = [
    make_branch_pset('nMissingHits', 'hitPattern().numberOfLostHits()', '/I'),
    make_branch_pset('nMissingInnerHits', 'trackerExpectedHitsInner().numberOfHits()', '/I'),
    make_branch_pset('nMissingInnerHitsB', 'hitPattern().numberOfHits(reco::HitPattern::MISSING_INNER_HITS)', '/I'),
-   make_branch_pset('nMissingTrackerHits', 'hitPattern().numberOfLostTrackerHits(reco::HitPattern::MISSING_INNER_HITS)', '/I'),
+   #make_branch_pset('nMissingTrackerHits', 'hitPattern().numberOfLostTrackerHits(reco::HitPattern::MISSING_INNER_HITS)', '/I'), # should be the same as previous one
    make_branch_pset('nPixelLayers', 'hitPattern().pixelLayersWithMeasurement()', '/I'),
    make_branch_pset('nStripLayers', 'hitPattern().stripLayersWithMeasurement()', '/I'),
 ]
