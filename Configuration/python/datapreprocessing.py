@@ -1,11 +1,11 @@
 import FWCore.ParameterSet.Config as cms
+from CondCore.DBCommon.CondDBSetup_cfi import *
 
 def preprocess(process):
    '''pre-processing function for MC'''
    ################
    #Database for JEC
    process.load("CondCore.DBCommon.CondDBCommon_cfi")
-   from CondCore.DBCommon.CondDBSetup_cfi import *
    process.jec = cms.ESSource("PoolDBESSource",
          CondDBSetup,
          connect = cms.string('sqlite:Summer15_25nsV6_DATA.db'),
@@ -95,9 +95,8 @@ def preprocess(process):
    process.patPFMetT2CorrNoHFv2.jetCorrLabelRes = cms.InputTag("L3Absolute")
    process.patPFMetT2SmearCorrNoHFv2.jetCorrLabelRes = cms.InputTag("L3Absolute")
 
-   del getattr(process,"slimmedMETsv2").caloMET
-   del getattr(process,"slimmedMETsNoHFv2").caloMET
-
+   if hasattr(process.slimmedMETsv2, 'caloMET'): del process.slimmedMETsv2.caloMET
+   if hasattr(process.slimmedMETsNoHFv2, 'caloMET'): del process.slimmedMETsNoHFv2.caloMET
    
    ###################################
    #      THIS HAS TO BE ALWAYS KEPT!

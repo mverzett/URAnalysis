@@ -29,7 +29,7 @@ class Job(object):
    with CRAB/batch
    '''
    def __init__(self, pycfg, jobid, simple_name, dbs_name,
-                pycfg_args, njobs=None, lumimask=''):
+                pycfg_args, njobs=None, externals=[], lumimask=''):
       self.pycfg = pycfg
       self.name = simple_name 
       self.dbs_name    = dbs_name   
@@ -37,6 +37,7 @@ class Job(object):
       self.id       = jobid      
       self.args  = pycfg_args  
       self.mask = lumimask
+      self.externals = externals
 
    def save_as_crab(self, subdir=''):
       isData = self.name.startswith('data')
@@ -75,6 +76,8 @@ config.Site.storageSite = {STORAGE!r}
          config += 'config.Data.lumiMask = {!r}\n'.format(self.mask)
       if self.njobs:
          config += 'config.Data.Data.totalUnits = {}\n'.format(self.njobs)
+      if self.externals:
+         config += 'config.JobType.inputFiles = {0!r}'.format(self.externals)
 
       crab_cfg_name = 'crab_%s_%s_cfg.py' % (self.id, self.name)
       with open(os.path.join(subdir, crab_cfg_name), 'w') as cfg:
