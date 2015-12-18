@@ -38,7 +38,8 @@ private:
   virtual void clear(){
     trk_max_pt_.clear(); 
     trk_min_pt_.clear(); 
-    trk_rms_pt_.clear();     
+    trk_rms_pt_.clear();
+    trk_avg_pt_.clear();
     trk_rms_dr_.clear(); 
   }
 
