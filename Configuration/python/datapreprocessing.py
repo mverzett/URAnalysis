@@ -70,7 +70,7 @@ def preprocess(process):
       )
    process.patPFMetTxyCorrv2.vertexCollection = cms.InputTag('offlineSlimmedPrimaryVertices')
    #process.slimmedMETsv2.t01Variation = cms.InputTag("slimmedMETs","","RECO")
-   process.slimmedMETsv2.t01Variation = cms.InputTag("slimmedMETs","","PAT")
+   process.slimmedMETsv2.t01Variation = cms.InputTag("slimmedMETs","")
 
    runMetCorAndUncFromMiniAOD(
       process,
@@ -81,7 +81,7 @@ def preprocess(process):
       jecUncFile=jetuncfile,
       )
    process.patPFMetTxyCorrNoHFv2.vertexCollection = cms.InputTag('offlineSlimmedPrimaryVertices')
-   process.slimmedMETsNoHFv2.t01Variation = cms.InputTag("slimmedMETsNoHF","","PAT")
+   process.slimmedMETsNoHFv2.t01Variation = cms.InputTag("slimmedMETsNoHF","")
    #
    #process.patPFMetT1T2Corrv2.jetCorrLabelRes = cms.InputTag("L3Absolute")
    #process.patPFMetT1T2SmearCorrv2.jetCorrLabelRes = cms.InputTag("L3Absolute")
