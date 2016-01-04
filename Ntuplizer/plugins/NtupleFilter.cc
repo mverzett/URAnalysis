@@ -57,10 +57,12 @@ class NtupleFilter : public Obj2BranchBase{
 		bool isMC_;
 		vector<string> triggerSelection_;
 		uint32_t currentrun;
+		edm::EDGetTokenT<edm::TriggerResults> srcTokenRECO;
+		edm::EDGetTokenT<edm::TriggerResults> srcTokenPAT;
 
 		vector<int> selectedBits;
 		vector<int> results;
-		int HBHE;
+		//int HBHE;
 
 };
 
@@ -70,13 +72,16 @@ NtupleFilter::NtupleFilter(edm::ParameterSet iConfig):
 	triggerSelection_(iConfig.getParameter<vector<string> >("filterSelection")),
 	currentrun(0)
 {
+    srcTokenRECO = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "RECO"));	
+    srcTokenPAT = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "PAT"));
+
 	results.resize(triggerSelection_.size());
 	selectedBits.resize(triggerSelection_.size());
 	for(size_t t = 0 ; t < triggerSelection_.size() ; ++t)
 	{
 		tree_.branch(prefix_+SEPARATOR+triggerSelection_[t], &(results[t]), (prefix_+SEPARATOR+triggerSelection_[t]+"/I").c_str()); 
 	}
-	tree_.branch(prefix_+SEPARATOR+"HBHEnew", &HBHE, (prefix_+SEPARATOR+"HBHEnew/I").c_str()); 
+	//tree_.branch(prefix_+SEPARATOR+"HBHEnew", &HBHE, (prefix_+SEPARATOR+"HBHEnew/I").c_str()); 
 }
 
 // Destructor
@@ -88,17 +93,17 @@ void NtupleFilter::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 {
 
 	edm::Handle<edm::TriggerResults> triggerBits;
-	edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
-	edm::Handle<bool> hbheres;
-	iEvent.getByLabel(edm::InputTag("HBHENoiseFilterResultProducer", "HBHENoiseFilterResult"), hbheres);
+	//edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
+	//edm::Handle<bool> hbheres;
+	//iEvent.getByLabel(edm::InputTag("HBHENoiseFilterResultProducer", "HBHENoiseFilterResult"), hbheres);
 
-	HBHE = (*hbheres) ? 1 : -1;
+	//HBHE = (*hbheres) ? 1 : -1;
 
 	//iEvent.getByLabel(triggerBits_, triggerBits);
-	iEvent.getByLabel(edm::InputTag("TriggerResults", "" , "PAT"), triggerBits);
+	iEvent.getByToken(srcTokenPAT, triggerBits);
 	if(!triggerBits.isValid())
 	{
-		iEvent.getByLabel(edm::InputTag("TriggerResults", "" , "RECO"), triggerBits);
+		iEvent.getByToken(srcTokenPAT, triggerBits);
 	}
 
 	if(iEvent.id().run() != currentrun)

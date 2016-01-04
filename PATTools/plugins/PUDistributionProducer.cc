@@ -42,12 +42,15 @@ public:
       min = config.getParameter<double>("min");
       max = config.getParameter<double>("max");
     }
+
   };
 
   explicit PUDistributionProducer(const edm::ParameterSet& cfg):
     binning_( cfg.getParameter<edm::ParameterSet>("binning") ),
     src_( cfg.getParameter<edm::InputTag>("src") ),
-    weights_src_( cfg.getParameter<edm::InputTag>("weightsSrc") )
+	srcToken_(consumes< std::vector<PileupSummaryInfo> >(src_)),
+    weights_src_( cfg.getParameter<edm::InputTag>("weightsSrc") ),
+	weights_srcToken_(consumes<LHEEventProduct>(weights_src_))
   {}
   ~PUDistributionProducer(){}
 
@@ -58,7 +61,10 @@ public:
 private:
   MonitorElement *pu_distribution_, *pu_distribution_w_;
   hinfo binning_;
-  edm::InputTag src_, weights_src_;
+  edm::InputTag src_;
+  edm::EDGetTokenT< std::vector<PileupSummaryInfo> > srcToken_;
+  edm::InputTag weights_src_;
+  edm::EDGetTokenT< LHEEventProduct > weights_srcToken_;
 };
 
 void PUDistributionProducer::bookHistograms(DQMStore::IBooker & ibooker, edm::Run const & iRun, edm::EventSetup const & iSetup)
@@ -70,9 +76,9 @@ void PUDistributionProducer::bookHistograms(DQMStore::IBooker & ibooker, edm::Ru
 void PUDistributionProducer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   edm::Handle< std::vector<PileupSummaryInfo> > pu_info;
-  iEvent.getByLabel(src_, pu_info);
+  iEvent.getByToken(srcToken_, pu_info);
 	edm::Handle<LHEEventProduct> lheinfo;
-  iEvent.getByLabel(weights_src_, lheinfo);
+  iEvent.getByToken(weights_srcToken_, lheinfo);
 	double weight = 1.;
 	if(lheinfo.isValid() && lheinfo->weights().size() > 0)
 	{

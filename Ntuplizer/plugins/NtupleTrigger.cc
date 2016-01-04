@@ -57,6 +57,8 @@ class NtupleTrigger : public Obj2BranchBase{
 		bool isMC_;
 		edm::InputTag triggerBits_;
 		edm::InputTag triggerPrescales_;
+		edm::EDGetTokenT<edm::TriggerResults> triggerBitsToken_;
+		edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescalesToken_;
 		vector<string> triggerSelection_;
 		uint32_t currentrun;
 
@@ -73,6 +75,8 @@ NtupleTrigger::NtupleTrigger(edm::ParameterSet iConfig):
 	triggerSelection_(iConfig.getParameter<vector<string> >("triggerSelection")),
 	currentrun(0)
 {
+	triggerBitsToken_ = consumes<edm::TriggerResults>(triggerBits_);
+	triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(triggerPrescales_);
 	results.resize(triggerSelection_.size());
 	selectedBits.resize(triggerSelection_.size());
 	for(size_t t = 0 ; t < triggerSelection_.size() ; ++t)
@@ -92,8 +96,8 @@ void NtupleTrigger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 	edm::Handle<edm::TriggerResults> triggerBits;
 	edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
 
-	iEvent.getByLabel(triggerBits_, triggerBits);
-	iEvent.getByLabel(triggerPrescales_, triggerPrescales);
+	iEvent.getByToken(triggerBitsToken_, triggerBits);
+	iEvent.getByToken(triggerPrescalesToken_, triggerPrescales);
 
 	if(iEvent.id().run() != currentrun)
 	{
@@ -107,7 +111,7 @@ void NtupleTrigger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 				if(names.triggerName(tn).find(triggerSelection_[tr]+"_v") != string::npos)
 				{
 					selectedBits[tr] = tn;
-					//cout << names.triggerName(tn) << " " << tn << endl;
+					cout << names.triggerName(tn) << " " << tn << endl;
 					break;
 				}
 			}

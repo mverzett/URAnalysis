@@ -37,14 +37,18 @@ public:
   void produce(edm::Event& evt, const edm::EventSetup& es);
 private:
   edm::InputTag src_;
+  edm::EDGetTokenT< edm::View<T> > srcToken_;
   edm::InputTag vtxSrc_;
+  edm::EDGetTokenT< reco::VertexCollection > vtxSrcToken_;
   ura::PATLeptonTrackVectorExtractor<T> trackExtractor_;
 };
 
 template<typename T>
 PATIpEmbedder<T>::PATIpEmbedder(const edm::ParameterSet& pset) {
   src_ = pset.getParameter<edm::InputTag>("src");
+  srcToken_ = consumes< edm::View<T> >(src_);
   vtxSrc_ = pset.getParameter<edm::InputTag>("vtxSrc");
+  vtxSrcToken_ = consumes< reco::VertexCollection >(vtxSrc_);
   produces< edm::ValueMap<float> >("ipDXY");
   produces< edm::ValueMap<float> >("dz"	);
   produces< edm::ValueMap<float> >("vz"	);
@@ -58,10 +62,10 @@ PATIpEmbedder<T>::PATIpEmbedder(const edm::ParameterSet& pset) {
 template<typename T>
 void PATIpEmbedder<T>::produce(edm::Event& evt, const edm::EventSetup& es) {
   edm::Handle<edm::View<T> > handle;
-  evt.getByLabel(src_, handle);
+  evt.getByToken(srcToken_, handle);
 
   edm::Handle<reco::VertexCollection> vertices;
-  evt.getByLabel(vtxSrc_, vertices);
+  evt.getByToken(vtxSrcToken_, vertices);
 
   const reco::Vertex& thePV = *vertices->begin();
 
