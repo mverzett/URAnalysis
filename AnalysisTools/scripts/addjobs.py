@@ -8,6 +8,16 @@ from pdb import set_trace
 from Queue import Queue
 from subprocess import Popen, PIPE
 import time
+from fnmatch import fnmatch
+from argparse import ArgumentParser
+
+parser = ArgumentParser(__doc__)
+parser.add_argument(
+   '--fastHadd', action='store_true',
+   help='Use DQM fastHadd instead of normal hadd. Gain speed, but works only on histograms'
+   )
+
+args = parser.parse_args()
 
 allfiles = os.listdir('.')
 
@@ -26,7 +36,8 @@ for dir in jobdirs:
   num =  int(info[0].split('Queue')[1].strip())
   files = os.listdir(dir)
   stdouts = [i for i in files if '.stdout' in i]
-  files = [f for f in files if ('%s_out_' % dir) in f]
+  pattern = '%s_out_*.%s' % (dir, 'dat' if args.fastHadd else 'root')
+  files = [f for f in files if fnmatch(f, pattern)]
 
   #check for errors in job processing
   for stdout in stdouts:
@@ -45,24 +56,25 @@ for dir in jobdirs:
 
   print num, len(files)
   if num == len(files):
-    merger = ROOT.TFileMerger()
     outfile = dir + '.root'
     print 'merging into %s' % outfile
-    merger.OutputFile(outfile)
     files = [dir + '/' + f for f in files]
-    tasks_queue.put((outfile, files))
-    ## for tfile in files:
-    ##   merger.AddFile(tfile, False) #why false? no clue, copied from old fwk                                                                                                    
-    ## if not merger.Merge():
-    ##   raise RuntimeError('could not merge files into %s' % outfile)
-
-    ##command = 'hadd ' + dir + '.root ' + ' '.join(files)
-    ##print command
-    ##os.system(command)
+    if args.fastHadd:
+      if len(files) > 1:
+        cmd = ['fastHadd', 'add', '-j', '10', '-o', '%s.dat' % dir]
+        cmd.extend(files)
+        os.system(' '.join(cmd))
+      else:
+        os.system('cp %s %s.dat' % (files[0], dir))
+      cmd = ['fastHadd', 'convert', '-o', '%s.root' % dir, '%s.dat' % dir]
+      os.system(' '.join(cmd))
+    else:
+      tasks_queue.put((outfile, files))
   else:
     raise IOError('You asked to merge %i files, but only %i were found.'
                   ' Something must have gone wrong in the batch jobs.' % (num, len(files)))
 
+if args.fastHadd: sys.exit(0)
 print "starting parallel merging..."
 tasks = []
 task_map = {}

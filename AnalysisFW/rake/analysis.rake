@@ -101,9 +101,10 @@ task :test, [:analyzer, :sample] do |t, args|
 end
 
 task :track_batch, [:submit_dir] do |t, args|
+  puts "running on #{ENV['HOST']}"
   sh "hold.py --check_correctness #{args.submit_dir}"
   Dir.chdir(args.submit_dir) do
-    sh 'addjobs.py'
+    sh 'addjobs.py --fastHadd'
   end
   analyzer = File.basename(args.submit_dir).split(/BATCH_\d+_/)[1]
   target_dir = "results/#{ENV['jobid']}/#{analyzer}"
@@ -113,6 +114,7 @@ task :track_batch, [:submit_dir] do |t, args|
 end
 
 task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
+  puts "running on #{ENV['HOST']}"
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
 
