@@ -200,6 +200,11 @@ class BasePlotter(object):
     BasePlotter.set_canvas_style(self.canvas)
     self.set_style()
 
+  def set_outdir(self, dirpath):
+    '''sets the base output directory'''
+    self.outputdir = dirpath
+    self.base_out_dir = dirpath
+
   def set_subdir(self, folder=''):
     '''Sets the output to be written 
     in a particular subdir'''
@@ -1302,10 +1307,18 @@ class BasePlotter(object):
 
     self.lower_pad.cd()
     self.label_factor = labelSizeFactor2
-    to_compare = [
-      sum(i.hists) if isinstance(i, plotting.HistStack) else i.Clone()
-      for i in histos
-      ]
+    constains_stack = any(isinstance(i, plotting.HistStack) for i in histos)
+    to_compare = []
+    if constains_stack:
+      #if there is a stack and something else (the sum histogram with the error) use that!
+      #otherwise use the stack
+      if len(histos) != 1:
+        to_compare = [i.Clone() for i in histos if not isinstance(i, plotting.HistStack)]
+      else:
+        to_compare = [sum(histos[0].hists)] 
+    else:
+      to_compare = [i.Clone() for i in histos]
+
     self.compare(
       reference.Clone(), to_compare, method, xtitle=xtitle, 
       ytitle=ytitle, **styles_kw)
