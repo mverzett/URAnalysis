@@ -18,11 +18,11 @@ parser.add_argument('--projectdir', type=str, help='project location where to co
 
 args = parser.parse_args()
 
-if not os.path.isfile(args.tfile_name):
-   raise ValueError('%s does not exist!' % args.tfile_name)
-
 import ROOT
 tfile = ROOT.TFile.Open(args.tfile_name)
+if not tfile:
+   raise ValueError('%s does not exist!' % args.tfile_name)
+
 tree  = tfile.Get(args.tree_path)
 if not tree:
    raise ValueError('%s does not exist!' % args.tree_path)
