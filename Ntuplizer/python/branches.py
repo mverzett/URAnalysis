@@ -39,6 +39,7 @@ kinematics = [
 ]
 
 vertex_info = [
+   ## make_branch_pset('dxy'),
    make_branch_pset('dB'),
    make_branch_pset('ipDXY', 'userFloat("ipDXY")'),
    make_branch_pset('dz', 'userFloat("dz")'),
@@ -54,9 +55,11 @@ isolation = [
 ]
 
 genjet_specific = [
-   make_branch_pset('invisibleEnergy', 'invisibleEnergy()')
+   make_branch_pset('invisibleEnergy', 'invisibleEnergy()'),
+   make_branch_pset('pdgId', 'pdgId()')
 ]
 
+#Mu ID/Iso variables available at https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
 muon_specific = [
    make_branch_pset('ECalEnergy', 'calEnergy().em'),
    make_branch_pset('HCalEnergy', 'calEnergy().had'),
@@ -67,6 +70,16 @@ muon_specific = [
    make_branch_pset('trackiso', 'trackIso'),
    make_branch_pset('ecaliso', 'ecalIso'),
    make_branch_pset('hcaliso', 'hcalIso'),
+
+   #PFIso04
+   make_branch_pset('pfChargedIso04', 'pfIsolationR04().sumChargedHadronPt'),
+   make_branch_pset('pfNeutralIso04', 'pfIsolationR04().sumNeutralHadronEt'),
+   make_branch_pset('pfPhotonIso04', 'pfIsolationR04().sumPhotonEt'),
+   make_branch_pset('pfPUIso04', 'pfIsolationR04().sumPUPt'),
+
+   #TrakIso
+   make_branch_pset('trkIso03', 'isolationR03().sumPt'),
+
 
    #global track attributes
    make_branch_pset('ptErr', '? globalTrack().isNonnull() ? globalTrack().ptError() : -1'),
@@ -85,10 +98,10 @@ muon_specific = [
    make_branch_pset('isPF'        ,'isPFMuon'        , '/O'),
    make_branch_pset('isStandAlone','isStandAloneMuon', '/O'),
 
-   make_branch_pset('isLoose',  'isLooseMuon',  '/O'),
-   #make_branch_pset('isTight',  'isTightMuon',  '/O'),
-   #make_branch_pset('isSoft',   'isSoftMuon',   '/O'),
-   #make_branch_pset('isHighPt', 'isHighPtMuon', '/O'),
+   make_branch_pset('isLoose',  'isLooseMuon()',  '/O'),
+   ## make_branch_pset('isTight',  'isTightMuon()',  '/O'), THEY NEED A VTX TO WORK WITH!
+   ## make_branch_pset('isSoft',   'isSoftMuon()',   '/O'),
+   ## make_branch_pset('isHighPt', 'isHighPtMuon()', '/O'),
 ]
 muon_specific.extend(
    make_branch_pset(
@@ -126,6 +139,13 @@ jet_specific = [
    make_branch_pset('e', 'energy'),
    make_branch_pset('area', 'jetArea'),
    make_branch_pset('mass', 'p4().mass()'),
+
+   #uncorrected values
+   make_branch_pset('uncorrPt' , 'correctedP4(0).pt()'),
+   make_branch_pset('uncorrEta', 'correctedP4(0).eta()'),
+   make_branch_pset('uncorrPhi', 'correctedP4(0).phi()'),
+   make_branch_pset('uncorrM'  , 'correctedP4(0).mass()'),
+   make_branch_pset('uncorrEnergy', 'correctedP4(0).energy()'),
 
    make_branch_pset('chargedHadronEnergyFraction'),  
    make_branch_pset('neutralHadronEnergyFraction'), 
@@ -171,12 +191,14 @@ ecal_cluster_specific = [
    #make_branch_pset('e2x5'),
    make_branch_pset('e5x5'),
    make_branch_pset('sigmaIEtaIEta', 'sigmaIetaIeta()'),
+   make_branch_pset('full5x5_sigmaIEtaIEta', 'full5x5_sigmaIetaIeta()'),
    make_branch_pset('sigmaIPhiIPhi', 'sigmaIphiIphi()'),
    #E3x3, SigmaIEtaIPhi
 
    make_branch_pset('hadronicOverEM', 'hadronicOverEm()'),
 ]
 
+#eid prescriptions at https://twiki.cern.ch/twiki/bin/view/CMS/TopEGM
 electron_specific = [
    make_branch_pset('r9'),
    make_branch_pset('ESCOverETrack', 'eSuperClusterOverP()'),
@@ -199,6 +221,25 @@ electron_specific = [
    make_branch_pset('isElectron', '', '/O'),
    make_branch_pset('ecalSeed', 'ecalDrivenSeed', '/O'),
    make_branch_pset('trackSeed', 'trackerDrivenSeed', '/O'),
+
+   #pre-computed electron ID 
+   make_branch_pset('eidCutLoose', 'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-loose")'),
+   make_branch_pset('eidCutMedium', 'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-medium")'),
+   make_branch_pset('eidCutTight', 'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-tight")'),
+   make_branch_pset('eidCutVeto', 'electronID("cutBasedElectronID-Spring15-25ns-V1-standalone-veto")'),
+
+   ##OLD 50ns eid
+   ##make_branch_pset('', 'electronID("cutBasedElectronID-Spring15-50ns-V1-standalone-loose")'),
+   ##make_branch_pset('', 'electronID("cutBasedElectronID-Spring15-50ns-V1-standalone-medium")'),
+   ##make_branch_pset('', 'electronID("cutBasedElectronID-Spring15-50ns-V1-standalone-tight")'),
+   ##make_branch_pset('', 'electronID("cutBasedElectronID-Spring15-50ns-V1-standalone-veto")'),
+
+   make_branch_pset('eidMVAWP80', 'electronID("mvaEleID-Spring15-25ns-nonTrig-V1-wp80")'),
+   make_branch_pset('eidMVAWP90', 'electronID("mvaEleID-Spring15-25ns-nonTrig-V1-wp90")'),
+
+   make_branch_pset('pfHadronIso' , 'pfIsolationVariables().sumChargedHadronPt'),
+   make_branch_pset('pfNeutralIso', 'pfIsolationVariables().sumNeutralHadronEt'),
+   make_branch_pset('pfPhotonIso' , 'pfIsolationVariables().sumPhotonEt'),
 ]
 electron_specific.extend(
    make_branch_pset(
@@ -229,7 +270,7 @@ photon_specific = [
 track_specific = [
    make_branch_pset('chi2'),
    make_branch_pset('ndof'),
-   make_branch_pset('dxy'),
+   make_branch_pset('dxy'), #???
    make_branch_pset('dxyError'),
    make_branch_pset('dz'),
    make_branch_pset('dzError'),
@@ -238,6 +279,7 @@ track_specific = [
    make_branch_pset('nMissingHits', 'hitPattern().numberOfLostHits()', '/I'),
    make_branch_pset('nMissingInnerHits', 'trackerExpectedHitsInner().numberOfHits()', '/I'),
    make_branch_pset('nMissingInnerHitsB', 'hitPattern().numberOfHits(reco::HitPattern::MISSING_INNER_HITS)', '/I'),
+   #make_branch_pset('nMissingTrackerHits', 'hitPattern().numberOfLostTrackerHits(reco::HitPattern::MISSING_INNER_HITS)', '/I'), # should be the same as previous one
    make_branch_pset('nPixelLayers', 'hitPattern().pixelLayersWithMeasurement()', '/I'),
    make_branch_pset('nStripLayers', 'hitPattern().stripLayersWithMeasurement()', '/I'),
 ]

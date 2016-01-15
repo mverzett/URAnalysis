@@ -37,6 +37,14 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 			)
 	ntuple += process.trigger
 
+	process.filter = cms.EDAnalyzer(
+			'NtupleFilter',
+			filterSelection = cms.vstring("Flag_goodVertices", "Flag_CSCTightHaloFilter", "Flag_trkPOGFilters", "Flag_trkPOG_logErrorTooManyClusters", "Flag_EcalDeadCellTriggerPrimitiveFilter", "Flag_ecalLaserCorrFilter", "Flag_trkPOG_manystripclus53X", "Flag_eeBadScFilter", "Flag_METFilters", "Flag_HBHENoiseFilter", "Flag_trkPOG_toomanystripclus53X", "Flag_hcalLaserEventFilter"),
+			branches = cms.VPSet(
+				)
+			)
+	ntuple += process.filter
+
 	process.rho = cms.EDAnalyzer(
 			'NtupleDoubleProducer',
 			src = cms.InputTag(
@@ -83,6 +91,18 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 				)
 			)
 	ntuple += process.jets
+
+	process.jets_tracks = cms.EDAnalyzer(
+			'NtupleJetTracksProducer',
+			src = cms.InputTag(
+				kwargs.get(
+					'jets',
+					'slimmedJets'
+					)
+				),
+      label = cms.string('jets'),
+			)
+	ntuple += process.jets_tracks
 
 	process.electrons = cms.EDAnalyzer(
 			'NtupleElectronsProducer',
@@ -147,76 +167,103 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 			)
 	ntuple += process.METs
 
+#	process.NoHFMETs = cms.EDAnalyzer(
+#			'NtupleMETUncertainty',
+#			src = cms.InputTag(
+#				kwargs.get(
+#					'NoHFMETs',
+#					'slimmedMETsNoHF'
+#					)
+#				),
+#			branches = cms.VPSet(
+#				branches.met_specific
+#				)
+#			)
+#	ntuple += process.NoHFMETs
+
 	#############
-	#  MC Only
+	#  MC Only info, on data will produce empty collections
 	#############
-	if isMC:
-		#FIXME: add it!
-		process.genInfo = cms.EDAnalyzer(
-				'NtupleGenInfoProducer',
-				src = cms.InputTag(
-					kwargs.get(
-						'genInfo',
-						'generator'
-						)
-					),
-				branches = cms.VPSet(
-					branches.geninfo_scpecific
-					)
-				)
-		ntuple += process.genInfo
-	
-		process.MCWeights = cms.EDAnalyzer(
-				'NtupleMCWeights',
-				src = cms.InputTag(
-					kwargs.get(
-						'MCWeigths',
-						'externalLHEProducer'
-						)
-					),
-				branches = cms.VPSet(
-					),
-        computeWeighted = cms.bool(computeWeighted)
-				)
-		ntuple += process.MCWeights
-	
-		process.PUInfos = cms.EDAnalyzer(
-				'NtuplePUInfoProducer',
-				src = cms.InputTag(
-					kwargs.get(
-						'PUInfos',
-						'slimmedAddPileupInfo'
-						)
-					),
-				branches = cms.VPSet(
-					branches.puinfo_specific
-					)
-				)
-		ntuple += process.PUInfos
-	
-		#genMET = cms.EDAnalyzer(
-		process.genParticles = cms.EDAnalyzer(
-			'NtupleGenParticlesProducer',
+	process.genInfo = cms.EDAnalyzer(
+			'NtupleGenInfoProducer',
 			src = cms.InputTag(
 				kwargs.get(
-					'genParticles',
-					'prunedGenParticles'
+					'genInfo',
+					'generator'
 					)
 				),
 			branches = cms.VPSet(
-				branches.kinematics +
-				branches.gen_particle_specific
+				branches.geninfo_scpecific
 				)
 			)
-		ntuple += process.genParticles
+	ntuple += process.genInfo
 	
-		###### pseudo top test!!
-		process.PSTjets = cms.EDAnalyzer(
+	process.MCWeights = cms.EDAnalyzer(
+			'NtupleMCWeights',
+			src = cms.InputTag(
+				kwargs.get(
+					'MCWeigths',
+					'externalLHEProducer'
+					)
+				),
+			branches = cms.VPSet(
+				),
+      computeWeighted = cms.bool(computeWeighted)
+			)
+	ntuple += process.MCWeights
+	
+	process.PUInfos = cms.EDAnalyzer(
+			'NtuplePUInfoProducer',
+			src = cms.InputTag(
+				kwargs.get(
+					'PUInfos',
+					'slimmedAddPileupInfo'
+					)
+				),
+			branches = cms.VPSet(
+				branches.puinfo_specific
+				)
+			)
+	ntuple += process.PUInfos
+	
+	#genMET = cms.EDAnalyzer(
+	process.genParticles = cms.EDAnalyzer(
+		'NtupleGenParticlesProducer',
+		src = cms.InputTag(
+			kwargs.get(
+				'genParticles',
+				'prunedGenParticles'
+				)
+			),
+		branches = cms.VPSet(
+			branches.kinematics +
+			branches.gen_particle_specific
+			)
+		)
+	ntuple += process.genParticles
+	
+	###### pseudo top test!!
+	process.PSTjets = cms.EDAnalyzer(
+		'NtupleGenJetsProducer',
+		src = cms.InputTag(
+			kwargs.get(
+				'PSTjets',
+				'pseudoTop:jets'
+				)
+			),
+		branches = cms.VPSet(
+			branches.kinematics +
+			branches.genjet_specific
+			)
+		)
+	ntuple += process.PSTjets
+	
+	process.PSTleptons = cms.EDAnalyzer(
 			'NtupleGenJetsProducer',
 			src = cms.InputTag(
 				kwargs.get(
-					'PSTjets',
-					'pseudoTop:jets'
+					'PSTleptons',
+					'pseudoTop:leptons'
 					)
 				),
 			branches = cms.VPSet(
@@ -224,75 +271,60 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 				branches.genjet_specific
 				)
 			)
-		ntuple += process.PSTjets
+	ntuple += process.PSTleptons
 	
-		process.PSTleptons = cms.EDAnalyzer(
-				'NtupleGenJetsProducer',
-				src = cms.InputTag(
-					kwargs.get(
-						'PSTleptons',
-						'pseudoTop:leptons'
-						)
-					),
-				branches = cms.VPSet(
-					branches.kinematics +
-					branches.genjet_specific
+	
+	process.PSTs = cms.EDAnalyzer(
+			'NtupleGenParticlesProducer',
+			src = cms.InputTag(
+				kwargs.get(
+					'PSTs',
+					'pseudoTop'
 					)
+				),
+			branches = cms.VPSet(
+				branches.kinematics +
+				branches.gen_particle_specific
 				)
-		ntuple += process.PSTleptons
+			)
+	ntuple += process.PSTs
 	
-	
-		process.PSTs = cms.EDAnalyzer(
-				'NtupleGenParticlesProducer',
-				src = cms.InputTag(
-					kwargs.get(
-						'PSTs',
-						'pseudoTop'
-						)
-					),
-				branches = cms.VPSet(
-					branches.kinematics +
-					branches.gen_particle_specific
+	process.PSTneutrinos = cms.EDAnalyzer(
+			'NtupleGenParticlesProducer',
+			src = cms.InputTag(
+				kwargs.get(
+					'PSTneutrinos',
+					'pseudoTop:neutrinos'
 					)
+				),
+			branches = cms.VPSet(
+				branches.kinematics +
+				branches.gen_particle_specific
 				)
-		ntuple += process.PSTs
+			)
+	ntuple += process.PSTneutrinos
 	
-		process.PSTneutrinos = cms.EDAnalyzer(
-				'NtupleGenParticlesProducer',
-				src = cms.InputTag(
-					kwargs.get(
-						'PSTneutrinos',
-						'pseudoTop:neutrinos'
-						)
-					),
-				branches = cms.VPSet(
-					branches.kinematics +
-					branches.gen_particle_specific
+	process.genPInheritance = cms.EDAnalyzer(
+			'NtupleGenParticleInheritance',
+			label = cms.string('genParticles'),
+			src = cms.InputTag('prunedGenParticles'),
+			)
+	ntuple += process.genPInheritance
+	
+	process.genjets = cms.EDAnalyzer(
+			'NtupleGenJetsProducer',
+			src = cms.InputTag(
+				kwargs.get(
+					'genjets',
+					'slimmedGenJets'
 					)
+				),
+			branches = cms.VPSet(
+				branches.kinematics +
+				branches.genjet_specific
 				)
-		ntuple += process.PSTneutrinos
-	
-		process.genPInheritance = cms.EDAnalyzer(
-				'NtupleGenParticleInheritance',
-				label = cms.string('genParticles'),
-				src = cms.InputTag('prunedGenParticles'),
-				)
-		ntuple += process.genPInheritance
-	
-		process.genjets = cms.EDAnalyzer(
-				'NtupleGenJetsProducer',
-				src = cms.InputTag(
-					kwargs.get(
-						'genjets',
-						'slimmedGenJets'
-						)
-					),
-				branches = cms.VPSet(
-					branches.kinematics +
-					branches.genjet_specific
-					)
-				)
-		ntuple += process.genjets
+			)
+	ntuple += process.genjets
 		
 	process.ntupleEnd = cms.EDAnalyzer('TreeFiller')
 	return ntuple, process.ntupleEnd

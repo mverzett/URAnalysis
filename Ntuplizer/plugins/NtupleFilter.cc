@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    URAnalysis/NtupleTrigger.cc
-// Class:      NtupleTrigger.cc
+// Package:    URAnalysis/NtupleFilter.cc
+// Class:      NtupleFilter.cc
 // 
-/**\class NtupleTrigger.cc NtupleTrigger.cc.cc URAnalysis/NtupleTrigger.cc/plugins/NtupleTrigger.cc.cc
+/**\class NtupleFilter.cc NtupleFilter.cc.cc URAnalysis/NtupleFilter.cc/plugins/NtupleFilter.cc.cc
 
 Description: Add inheritance information to GenParticles and store it in the URTree.
 The inheritance information (mom_index) consists in assigning an integer counter to each 
@@ -43,61 +43,68 @@ https://cmssdt.cern.ch/SDT/lxr/source/PhysicsTools/HepMCCandAlgos/plugins/Partic
 
 using namespace std;
 
-class NtupleTrigger : public Obj2BranchBase{
+class NtupleFilter : public Obj2BranchBase{
 	public:
 		/// default constructor
-		NtupleTrigger(edm::ParameterSet iConfig);
+		NtupleFilter(edm::ParameterSet iConfig);
 		/// default destructor
-		~NtupleTrigger();
+		~NtupleFilter();
 
 	private:
 		virtual void analyze(const edm::Event&, const edm::EventSetup&);
 
 		// ----------member data ---------------------------
 		bool isMC_;
-		edm::InputTag triggerBits_;
-		edm::InputTag triggerPrescales_;
-		edm::EDGetTokenT<edm::TriggerResults> triggerBitsToken_;
-		edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescalesToken_;
 		vector<string> triggerSelection_;
 		uint32_t currentrun;
+		edm::EDGetTokenT<edm::TriggerResults> srcTokenRECO;
+		edm::EDGetTokenT<edm::TriggerResults> srcTokenPAT;
 
 		vector<int> selectedBits;
 		vector<int> results;
+		//int HBHE;
 
 };
 
 // Constructor
-NtupleTrigger::NtupleTrigger(edm::ParameterSet iConfig): 
+NtupleFilter::NtupleFilter(edm::ParameterSet iConfig): 
 	Obj2BranchBase(iConfig),
-	triggerBits_(iConfig.getParameter<edm::InputTag>("trigger")),
-	triggerPrescales_(iConfig.getParameter<edm::InputTag>("prescales")),
-	triggerSelection_(iConfig.getParameter<vector<string> >("triggerSelection")),
+	triggerSelection_(iConfig.getParameter<vector<string> >("filterSelection")),
 	currentrun(0)
 {
-	triggerBitsToken_ = consumes<edm::TriggerResults>(triggerBits_);
-	triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(triggerPrescales_);
+    srcTokenRECO = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "RECO"));	
+    srcTokenPAT = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "PAT"));
+
 	results.resize(triggerSelection_.size());
 	selectedBits.resize(triggerSelection_.size());
 	for(size_t t = 0 ; t < triggerSelection_.size() ; ++t)
 	{
 		tree_.branch(prefix_+SEPARATOR+triggerSelection_[t], &(results[t]), (prefix_+SEPARATOR+triggerSelection_[t]+"/I").c_str()); 
 	}
+	//tree_.branch(prefix_+SEPARATOR+"HBHEnew", &HBHE, (prefix_+SEPARATOR+"HBHEnew/I").c_str()); 
 }
 
 // Destructor
-NtupleTrigger::~NtupleTrigger()
+NtupleFilter::~NtupleFilter()
 {
 }
 
-void NtupleTrigger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+void NtupleFilter::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
 	edm::Handle<edm::TriggerResults> triggerBits;
-	edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
+	//edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
+	//edm::Handle<bool> hbheres;
+	//iEvent.getByLabel(edm::InputTag("HBHENoiseFilterResultProducer", "HBHENoiseFilterResult"), hbheres);
 
-	iEvent.getByToken(triggerBitsToken_, triggerBits);
-	iEvent.getByToken(triggerPrescalesToken_, triggerPrescales);
+	//HBHE = (*hbheres) ? 1 : -1;
+
+	//iEvent.getByLabel(triggerBits_, triggerBits);
+	iEvent.getByToken(srcTokenPAT, triggerBits);
+	if(!triggerBits.isValid())
+	{
+		iEvent.getByToken(srcTokenPAT, triggerBits);
+	}
 
 	if(iEvent.id().run() != currentrun)
 	{
@@ -108,10 +115,10 @@ void NtupleTrigger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 			selectedBits[tr] = 0;
 			for(size_t tn = 0 ; tn < triggerBits->size() ; ++tn)
 			{
-				if(names.triggerName(tn).find(triggerSelection_[tr]+"_v") != string::npos)
+	cout << names.triggerName(tn) << " " << tn << endl;
+				if(names.triggerName(tn).find(triggerSelection_[tr]) != string::npos)
 				{
 					selectedBits[tr] = tn;
-					cout << names.triggerName(tn) << " " << tn << endl;
 					break;
 				}
 			}
@@ -128,14 +135,14 @@ void NtupleTrigger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 		}
 		if(triggerBits->accept(selectedBits[i]))
 		{
-			results[i] = triggerPrescales->getPrescaleForIndex(i); 
+			results[i] = 1; 
 		}
 		else
 		{
-			results[i] = triggerPrescales->getPrescaleForIndex(i)*-1; 
+			results[i] = -1; 
 		}
 	}
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
-DEFINE_FWK_MODULE(NtupleTrigger);
+DEFINE_FWK_MODULE(NtupleFilter);

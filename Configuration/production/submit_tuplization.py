@@ -91,6 +91,10 @@ to_submit = set(to_submit)
 
 jobs = []
 
+#JEC external files
+externals = ['URAnalysis/PATTools/data/Summer15_25nsV6_DATA.db']
+externals = [os.path.join(os.environ['CMSSW_BASE'],'src',i) for i in externals]
+
 for sample in to_submit:
    opts = {}
    isData = sample.name.startswith('data')
@@ -109,6 +113,7 @@ for sample in to_submit:
          sample.DBSName,
          dump_pyargs(opts),
          args.njobs if args.njobs > 0 else None,
+         externals,
          os.path.join(os.environ['URA_PROJECT'], sample['lumimask']) if 'lumimask' in sample else '',
          )
       )

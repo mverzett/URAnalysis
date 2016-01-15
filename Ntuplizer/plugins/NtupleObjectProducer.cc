@@ -46,13 +46,15 @@ private:
   virtual void debug(){for(auto&& branch : branches_) branch->debug();}
 
   edm::InputTag src_;
+  edm::EDGetTokenT<EDObject> srcToken_;
   std::vector< ObjExpression<EDObject>* > branches_;
 };
 
 template <class EDObject>
 NtupleObjectProducer<EDObject>::NtupleObjectProducer(edm::ParameterSet cfg):
   Obj2BranchBase(cfg),
-  src_(cfg.getParameter<edm::InputTag>("src"))
+  src_(cfg.getParameter<edm::InputTag>("src")),
+  srcToken_(consumes<EDObject>(src_))
 {
   std::vector< edm::ParameterSet > branches = cfg.getParameter<std::vector< edm::ParameterSet > >("branches");
   branches_.reserve(branches.size());
@@ -77,7 +79,9 @@ void NtupleObjectProducer<EDObject>::analyze(const edm::Event& evt, const edm::E
 {
   //
   edm::Handle< EDObject > handle;
-  evt.getByLabel(src_, handle);
+  evt.getByToken(srcToken_, handle);
+
+  if(!handle.isValid()) return;
 
   for(auto&& branch : branches_)
     {

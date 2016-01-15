@@ -39,7 +39,8 @@ public:
     name_(info.name)
   {
     //std::cout<<name_ <<": set branch to vals addr: " << &branch_val_ << std::endl;
-    branch_ = tree.branch(info.name+info.str_type, &branch_val_);
+    //branch_ = tree.branch(info.name+info.str_type, &branch_val_);
+    branch_ = tree.branch(info.name, &branch_val_, (info.name+info.str_type).c_str());
     //std::cout<<name_ <<": set branch to vals addr: " << &branch_val_ << std::endl;
   }
 

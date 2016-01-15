@@ -38,21 +38,23 @@ private:
   virtual void debug(){}
 
   edm::InputTag src_;
+  edm::EDGetTokenT<double> srcToken_;
   double value_;
 };
 
 NtupleDoubleProducer::NtupleDoubleProducer(edm::ParameterSet cfg):
   Obj2BranchBase(cfg),
-  src_(cfg.getParameter<edm::InputTag>("src"))
+  src_(cfg.getParameter<edm::InputTag>("src")),
+  srcToken_(consumes<double>(src_))
 {
-  tree_.branch(prefix_+SEPARATOR+"value/D", &value_); 
+  tree_.branch(prefix_+SEPARATOR+"value", &value_, "value/D"); 
 }
 
 void NtupleDoubleProducer::analyze(const edm::Event& evt, const edm::EventSetup&)
 {
   //
   edm::Handle< double > handle;
-  evt.getByLabel(src_, handle);
+  evt.getByToken(srcToken_, handle);
   value_ = *handle;
   //std::cout << "Filling with " << value_ << std::end
 }

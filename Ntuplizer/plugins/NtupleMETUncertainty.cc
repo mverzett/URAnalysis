@@ -36,6 +36,8 @@
 #include "URAnalysis/Ntuplizer/interface/ObjExpression.h" //defines the separator
 
 #include "DataFormats/PatCandidates/interface/MET.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/METReco/interface/PFMET.h"
 
 using namespace std;
 
@@ -52,13 +54,15 @@ private:
   // ----------member data ---------------------------
   bool isMC_;
   edm::InputTag src_;
-   
+  edm::EDGetTokenT<vector<pat::MET> > srcToken_;
+  
 	vector<float> metpx;
 	vector<float> metpy;
 	vector<float> metxunc;
 	vector<float> metyunc;
 	vector<float> metxuncjet;
 	vector<float> metyuncjet;
+
 };
 
 // Constructor
@@ -66,6 +70,7 @@ NtupleMETUncertainty::NtupleMETUncertainty(edm::ParameterSet iConfig):
 	Obj2BranchBase(iConfig),
 	src_(iConfig.getParameter<edm::InputTag>("src"))
 {
+  srcToken_ = consumes<vector<pat::MET> >(src_);
   // By having this class inherit from Obj2BranchBAse, we have access to our tree_, no need for TFileService
   // Book branches:
   tree_.branch(prefix_+SEPARATOR+"px", &metpx); 
@@ -90,7 +95,7 @@ void NtupleMETUncertainty::analyze(const edm::Event& iEvent, const edm::EventSet
 	metxuncjet.clear();
 	metyuncjet.clear();
 	edm::Handle<vector<pat::MET>> hmet;
-	iEvent.getByLabel(src_, hmet);
+	iEvent.getByToken(srcToken_, hmet);
 
 	const vector<pat::MET>& met = *hmet;
 
@@ -122,6 +127,39 @@ void NtupleMETUncertainty::analyze(const edm::Event& iEvent, const edm::EventSet
 		metyuncjet.push_back(sqrt(_metyuncjet)/2.);
 
 	}
+
+//edm::Handle<vector<pat::Electron> > els;
+//iEvent.getByLabel(edm::InputTag("slimmedElectrons"), els);
+
+//for(size_t i = 0 ; i < els->size() ; ++i)
+//{
+//	if(els->at(i).pt() > 30)
+//	{
+//		cout << els->at(i).chargedHadronIso() << " C " << els->at(i).pfIsolationVariables().sumChargedHadronPt << ", ";
+//		cout << els->at(i).neutralHadronIso() << " N " << els->at(i).pfIsolationVariables().sumNeutralHadronEt << ", ";
+//		cout << els->at(i).photonIso() << " P " << els->at(i).pfIsolationVariables().sumPhotonEt << endl;
+//	}
+//}
+
+
+//	edm::Handle<vector<reco::PFMET> > hnohfmet;
+//	iEvent.getByLabel(edm::InputTag("pfMet"), hnohfmet);
+//	//cout << (*hnohfmet)[0].px() << endl;
+//	metpx.push_back((*hnohfmet)[0].px());	
+//	metpy.push_back((*hnohfmet)[1].py());	
+//	metxunc.push_back(0.);
+//	metyunc.push_back(0.);
+//	metxuncjet.push_back(0.);
+//	metyuncjet.push_back(0.);
+//	edm::Handle<vector<reco::PFMET> > hnohfmetT1;
+//	iEvent.getByLabel(edm::InputTag("noHFPFMetT1"), hnohfmetT1);
+//	//cout << (*hnohfmetT1)[0].px() << endl;
+//	metpx.push_back((*hnohfmetT1)[0].px());	
+//	metpy.push_back((*hnohfmetT1)[1].py());	
+//	metxunc.push_back(0.);
+//	metyunc.push_back(0.);
+//	metxuncjet.push_back(0.);
+//	metyuncjet.push_back(0.);
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
