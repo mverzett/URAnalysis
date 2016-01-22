@@ -49,10 +49,13 @@ private:
   // ----------member data ---------------------------
   
   edm::InputTag src_;
+  edm::EDGetTokenT< collection > srcToken_;
   vInputTag float_maps_;
+  std::vector< edm::EDGetTokenT< edm::ValueMap<float> > > float_mapTokens_;
   vstring ufloat_names_;
   //vInputTag int_maps_;
   vInputTag trig_matches_;
+  std::vector< edm::EDGetTokenT< edm::Association<pat::TriggerObjectStandAloneCollection> > > trig_matchTokens_;
   vstring tring_paths_;
 };
 
@@ -70,19 +73,26 @@ private:
 //
 template<typename PATObject>
 PATEmbedder<PATObject>::PATEmbedder(const edm::ParameterSet& cfg):
-  src_(cfg.getParameter<edm::InputTag>("src")),
-  //float_maps_(cfg.getParameter<vInputTag>("floatMaps")),
-  //int_maps_(cfg.getParameter<vInputTag>("intMaps")),
-  trig_matches_(cfg.getParameter<vInputTag>("trigMatches")),
-  tring_paths_(cfg.getParameter<vstring>("trigPaths"))
+	src_(cfg.getParameter<edm::InputTag>("src")),
+	srcToken_(consumes< collection >(src_)),
+	//float_maps_(cfg.getParameter<vInputTag>("floatMaps")),
+	//int_maps_(cfg.getParameter<vInputTag>("intMaps")),
+	trig_matches_(cfg.getParameter<vInputTag>("trigMatches")),
+	tring_paths_(cfg.getParameter<vstring>("trigPaths"))
 {
-  edm::ParameterSet float_maps = cfg.getParameter<edm::ParameterSet>("floatMaps");
-  ufloat_names_ = float_maps.getParameterNames();
-  for(auto&& name : ufloat_names_){
-    float_maps_.push_back(float_maps.getParameter<edm::InputTag>(name));
-  }
+	edm::ParameterSet float_maps = cfg.getParameter<edm::ParameterSet>("floatMaps");
+	ufloat_names_ = float_maps.getParameterNames();
+	for(auto&& tag : trig_matches_)
+	{
+		trig_matchTokens_.push_back(consumes< edm::Association<pat::TriggerObjectStandAloneCollection> >(tag));
+	}
 
-  produces<collection>();
+	for(auto&& name : ufloat_names_){
+		float_maps_.push_back(float_maps.getParameter<edm::InputTag>(name));
+		float_mapTokens_.push_back(consumes< edm::ValueMap<float> >(float_maps_.back()));
+	}
+
+	produces<collection>();
 }
 
 
@@ -105,51 +115,51 @@ template<typename PATObject>
 void
 PATEmbedder<PATObject>::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  edm::Handle< collection > handle;
-  iEvent.getByLabel(src_, handle);
-
-  //get all trigger matches handles
-  std::vector< edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > > match_maps;
-  for(auto&& match : trig_matches_){
-    edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > i;
-    iEvent.getByLabel(match, i);
-    match_maps.push_back(i);
-  }
-
-  //get all user float handles
-  std::vector< edm::Handle< edm::ValueMap<float> > > float_maps;
-  for(auto&& tag : float_maps_){
-    edm::Handle< edm::ValueMap<float> > i;
-    iEvent.getByLabel(tag, i);
-    float_maps.push_back(i);
-  }
+//  edm::Handle< collection > handle;
+//  iEvent.getByToken(srcToken_, handle);
+//
+//  //get all trigger matches handles
+//  std::vector< edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > > match_maps;
+//  for(auto&& match : trig_matchTokens_){
+//    edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > i;
+//    iEvent.getByToken(match, i);
+//    match_maps.push_back(i);
+//  }
+//
+//  //get all user float handles
+//  std::vector< edm::Handle< edm::ValueMap<float> > > float_maps;
+//  for(auto&& token : float_mapTokens_){
+//    edm::Handle< edm::ValueMap<float> > i;
+//    iEvent.getByToken(token, i);
+//    float_maps.push_back(i);
+//  }
 
   //make new collection 
   std::unique_ptr<collection> output(new collection());
 
-  //loop over the object
-  for(size_t idx = 0; idx < handle->size(); idx++){
-    PATObject new_cand(handle->at(idx));
-    edm::Ref<collection> cand_ref(handle, idx);
-    //protection from multiple entries of the same trig object
-    //as in https://github.com/cms-sw/cmssw/blob/CMSSW_7_2_X/PhysicsTools/PatAlgos/plugins/PATTriggerMatchEmbedder.cc#L98
-    //std::set< TriggerObjectStandAloneRef > cachedRefs; 
-    auto path_it = tring_paths_.cbegin();
-    for(auto map_it = match_maps.cbegin(); map_it != match_maps.cend(); ++map_it, ++path_it){
-      const pat::TriggerObjectStandAloneRef trigRef( (**map_it)[cand_ref] );
-      int trig_match = (int) (trigRef.isNonnull() && trigRef.isAvailable());
-      new_cand.addUserInt(*path_it, trig_match);
-    }
-
-    auto name_it = ufloat_names_.cbegin();
-    for(auto map_it = float_maps.cbegin(); map_it != float_maps.cend(); ++map_it, ++name_it){
-      float value = (**map_it)[cand_ref];
-      new_cand.addUserFloat(*name_it, value);
-    }
-
-    //put new candidate
-    output->push_back(new_cand);
-  }
+//  //loop over the object
+//  for(size_t idx = 0; idx < handle->size(); idx++){
+//    PATObject new_cand(handle->at(idx));
+//    edm::Ref<collection> cand_ref(handle, idx);
+//    //protection from multiple entries of the same trig object
+//    //as in https://github.com/cms-sw/cmssw/blob/CMSSW_7_2_X/PhysicsTools/PatAlgos/plugins/PATTriggerMatchEmbedder.cc#L98
+//    //std::set< TriggerObjectStandAloneRef > cachedRefs; 
+//    auto path_it = tring_paths_.cbegin();
+//    for(auto map_it = match_maps.cbegin(); map_it != match_maps.cend(); ++map_it, ++path_it){
+//      const pat::TriggerObjectStandAloneRef trigRef( (**map_it)[cand_ref] );
+//      int trig_match = (int) (trigRef.isNonnull() && trigRef.isAvailable());
+//      new_cand.addUserInt(*path_it, trig_match);
+//    }
+//
+//    auto name_it = ufloat_names_.cbegin();
+//    for(auto map_it = float_maps.cbegin(); map_it != float_maps.cend(); ++map_it, ++name_it){
+//      float value = (**map_it)[cand_ref];
+//      new_cand.addUserFloat(*name_it, value);
+//    }
+//
+//    //put new candidate
+//    output->push_back(new_cand);
+//  }
 
   iEvent.put(std::move(output)); 
 }

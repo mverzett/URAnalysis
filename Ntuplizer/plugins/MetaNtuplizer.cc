@@ -42,6 +42,8 @@
 #include <iostream>
 #include <sstream> 
 
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+
 //
 // class declaration
 //
@@ -56,13 +58,16 @@ public:
 
 private:
   virtual void beginJob() override;
-  virtual void analyze(const edm::Event&, const edm::EventSetup&) override {}
+  virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() override;
 
   virtual void endRun(edm::Run const&, edm::EventSetup const&) override {}
   virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
   // ----------member data ---------------------------
+  edm::InputTag weights_src_;
+  edm::EDGetTokenT< LHEEventProduct > weights_srcToken_;
+
   TTree *meta_tree_;
   std::map<std::string, std::string> to_json_;
   bool string_dumped_, isMC_, useWeighted_, triedWeighted_;
@@ -70,8 +75,8 @@ private:
   MonitorElement *pu_distro_w_;
   unsigned int lumi_;
   unsigned int run_;
-  unsigned long long processed_;
-  long long processedWeighted_; 
+  unsigned long long processed_ = 0;
+  long long processedWeighted_ = 0; 
 };
 
 //
@@ -86,6 +91,8 @@ private:
 // constructors and destructor
 //
 MetaNtuplizer::MetaNtuplizer(const edm::ParameterSet& iConfig):
+  weights_src_(iConfig.getParameter<edm::InputTag>("weightsSrc") ),
+  weights_srcToken_(consumes<LHEEventProduct>(weights_src_)),
   string_dumped_(false),
   isMC_(iConfig.getParameter<bool>("isMC"))
 {
@@ -115,6 +122,21 @@ void MetaNtuplizer::beginJob()
   meta_tree_->Branch("processedWeighted", &processedWeighted_);
 }
  
+void MetaNtuplizer::analyze(const edm::Event& iEvent, const edm::EventSetup&)
+{
+	processed_++;
+	edm::Handle<LHEEventProduct> lheinfo;
+	iEvent.getByToken(weights_srcToken_, lheinfo);
+	double weight = 1.;
+	if(lheinfo.isValid() && lheinfo->weights().size() > 0)
+	{
+		weight = lheinfo->weights()[0].wgt;
+		//std::cout << weight << std::endl;
+	}
+	processedWeighted_ += (weight < 0. ? -1. : 1.);
+
+}
+
 void MetaNtuplizer::endJob() 
 {
   edm::Service<TFileService> fs;
@@ -144,9 +166,9 @@ void MetaNtuplizer::endJob()
 void 
 MetaNtuplizer::endLuminosityBlock(edm::LuminosityBlock const& block, edm::EventSetup const&)
 {
-  edm::Handle<edm::MergeableCounter> counter;
-  block.getByLabel("processedEvents", counter);
-  edm::Handle<edm::MergeableCounter> weightedCounter;
+//  edm::Handle<edm::MergeableCounter> counter;
+//  block.getByToken(counterToken_, counter);
+//  edm::Handle<edm::MergeableCounter> weightedCounter;
 //   if(isMC_ && useWeighted_)
 //   {
 //     std::cout << "It is MC and I was asked to use weighted.\n";
@@ -177,13 +199,14 @@ MetaNtuplizer::endLuminosityBlock(edm::LuminosityBlock const& block, edm::EventS
 // //     std::cout << "Either it is not MC is I was asked not to use weighted.\nIn any case, using standard counter instead of weighted one.\n";
 //     weightedCounter = counter;
 //   }
-  block.getByLabel("weightedProcessedEvents", weightedCounter);
+//  block.getByToken(counterWToken_, weightedCounter);
   lumi_ = block.luminosityBlock();
   run_ = block.run();
-  processed_ = counter->value;
-  processedWeighted_ = weightedCounter->value;
+  //processed_ = counter->value;
+  //processedWeighted_ = weightedCounter->value;
   meta_tree_->Fill();
-
+  processed_ = 0;
+  processedWeighted_ = 0;
   /*if(!string_dumped_)
     {
       string_dumped_ = true;

@@ -167,19 +167,19 @@ def make_ntuple(process, isMC, computeWeighted, ntuple_seq_name='ntuple', **kwar
 			)
 	ntuple += process.METs
 
-	process.NoHFMETs = cms.EDAnalyzer(
-			'NtupleMETUncertainty',
-			src = cms.InputTag(
-				kwargs.get(
-					'NoHFMETs',
-					'slimmedMETsNoHF'
-					)
-				),
-			branches = cms.VPSet(
-				branches.met_specific
-				)
-			)
-	ntuple += process.NoHFMETs
+#	process.NoHFMETs = cms.EDAnalyzer(
+#			'NtupleMETUncertainty',
+#			src = cms.InputTag(
+#				kwargs.get(
+#					'NoHFMETs',
+#					'slimmedMETsNoHF'
+#					)
+#				),
+#			branches = cms.VPSet(
+#				branches.met_specific
+#				)
+#			)
+#	ntuple += process.NoHFMETs
 
 	#############
 	#  MC Only info, on data will produce empty collections

@@ -115,7 +115,15 @@ echo $PA
 $EXE $PA 
 
 exitcode=$? 
+
+#EXPERIMENTAL!
+toutfile=`for i in $PA; do echo $i; done | grep '\.root'`
+outname="${{toutfile%.*}}"
+echo fastHadd encode -o $outname.dat $toutfile
+fastHadd encode -o $outname.dat $toutfile
+
 echo "exit code: "$exitcode
+
 exit $exitcode 
 	""".format(swdir)
   

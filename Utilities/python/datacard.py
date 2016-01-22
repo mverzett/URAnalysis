@@ -275,7 +275,11 @@ class DataCard(object):
             ' has been called as %s.' % (name, self.systematics[name].type, stype))
       self.systematics[name].applies(categories, samples, value)
 
-   def add_bbb_systematics(self, categories, samples, threshold=0.05):
+   def add_bbb_systematics(self, categories, samples, threshold=0.05, relative=True):
+      '''add_bbb_systematics(categories, samples, threshold=0.05, relative=True)
+if relative is set to True (default) it checks that the error is >= threshold*content of data bin
+otherwises uses the samples bin content
+      '''
       if isinstance(categories, list):
          categories = [re.compile(i) for i in categories]
       elif isinstance(categories, basestring):
@@ -292,8 +296,8 @@ class DataCard(object):
 
       sample_category = self.categories.values()[0]
       all_samples = sample_category.keys()
-      all_samples = filter(lambda x: not self.shape_sys_naming.match(x), all_samples)
-      
+      all_samples = filter(lambda x: not self.shape_sys_naming.match(x) and x <> 'data_obs', all_samples)
+
       samples_to_process = filter(
          lambda x: any(i.match(x) for i in samples), 
          all_samples
@@ -307,9 +311,18 @@ class DataCard(object):
       for category in categories_to_process:
          for sample in samples_to_process:
             shape = self.categories[category][sample]
+            if 'data_obs' not in self.categories[category]:
+               raise RuntimeError(
+                  'To use relative threshold (default) in '
+                  'bin-by-bin error computation you must have '
+                  'data_obs histogram available for '
+                  'category: %s' % category
+                  )
+            reference = self.categories[category][sample] \
+               if not relative else self.categories[category]['data_obs']
             nbins = shape.GetNbinsX()
             for idx in xrange(1, nbins+1):
-               content = shape.GetBinContent(idx)
+               content = reference.GetBinContent(idx)
                error   = shape.GetBinError(idx)
                if not content or (error/content) < threshold:
                   continue
@@ -317,7 +330,7 @@ class DataCard(object):
                unc_name = '%s_%s_bin_%i' % (category, sample, idx)
                for postfix, shift in zip(['Up', 'Down'], [error, -1*error]):
                   shifted = shape.Clone()
-                  shifted.SetBinContent(idx, max(content+shift, 0))
+                  shifted.SetBinContent(idx, max(content+shift, 10**-5))
                   self.categories[category]['%s_%s%s' % (sample, unc_name, postfix)] = shifted
                self.add_systematic(unc_name, 'shape', category, sample, 1.00)
       logging.info(

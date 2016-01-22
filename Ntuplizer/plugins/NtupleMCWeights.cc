@@ -49,6 +49,7 @@ private:
   // ----------member data ---------------------------
   bool isMC_;
   edm::InputTag src_;
+  edm::EDGetTokenT<LHEEventProduct> srcToken_;
    
   std::vector<float> weights;     // Basically what is the position of this particle in the collection
   //std::vector< std::vector<float> > weights;     // Basically what is the position of this particle in the collection
@@ -57,7 +58,8 @@ private:
 // Constructor
 NtupleMCWeights::NtupleMCWeights(edm::ParameterSet iConfig): 
 	Obj2BranchBase(iConfig),
-	src_(iConfig.getParameter<edm::InputTag>("src"))
+	src_(iConfig.getParameter<edm::InputTag>("src")),
+	srcToken_(consumes<LHEEventProduct>(src_))
 	//weights(1)
 {
   // By having this class inherit from Obj2BranchBAse, we have access to our tree_, no need for TFileService
@@ -74,7 +76,7 @@ void NtupleMCWeights::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 {
 	weights.clear();
 	edm::Handle<LHEEventProduct> lheinfo;
-	iEvent.getByLabel(src_, lheinfo);
+	iEvent.getByToken(srcToken_, lheinfo);
 	if(lheinfo.isValid())
 	{
 		for(size_t w = 0 ; w < lheinfo->weights().size() ; ++w)
