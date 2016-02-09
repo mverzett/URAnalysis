@@ -86,6 +86,8 @@ WhenToTransferOutput = ON_EXIT
 Transfer_Input_Files = {5}
 Output = con_$(Process).stdout
 Error = con_$(Process).stderr
+Log = con_$(Process).log
+request_memory = 5000
 Arguments = {0} {1} {6}_out_$(Process).root -c {7} --thread 1 --j $(Process) --J {3} {4}
 Queue {3}
 
