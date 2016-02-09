@@ -1199,6 +1199,8 @@ class BasePlotter(object):
       ROOT.gPad.Modified()
       if first:
         y_range = BasePlotter._get_y_range_(*histos) if y_range is None else y_range 
+        if y_range[0] == y_range[1]:
+          y_range = (y_range[0], y_range[0]+1.)
         if isinstance(histo, plotting.HistStack):
           histo.SetMinimum(y_range[0])
           histo.SetMaximum(y_range[1])
@@ -1217,7 +1219,7 @@ class BasePlotter(object):
       self.save(writeTo)
     return None
     
-  def compare(self, ref, targets, method, xtitle='', ytitle='', **styles_kw):
+  def compare(self, ref, targets, method, xtitle='', ytitle='', yrange=None, **styles_kw):
     for target in targets:
       target.title = ''
       target.SetStats(False)
@@ -1260,9 +1262,15 @@ class BasePlotter(object):
         'ratio': (0.,1.999),
         'diff' : (-0.499,0.499)
         }
+      centrals = {
+        'pull' : 0,
+        'ratio': 1,
+        'diff' : 0,
+        }
       styles_kw['drawstyle'] = 'e x0'
+      y_range = yranges[method] if not yrange else (centrals[method]-yrange, centrals[method]+yrange)
       self.overlay(
-        targets, y_range=yranges[method], xtitle=xtitle, 
+        targets, y_range=y_range, xtitle=xtitle, 
         yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
 
   def dual_pad_format(self):
@@ -1292,7 +1300,7 @@ class BasePlotter(object):
   
   def overlay_and_compare(self, histos, reference, method='pull', 
     legend_def=None, logx=False, logy=False, xtitle='', ytitle='',
-    logz=False, writeTo='', **styles_kw):
+    logz=False, writeTo='', lower_y_range=None, **styles_kw):
     labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
     self.pad.cd()
     self.label_factor = labelSizeFactor1
@@ -1318,10 +1326,12 @@ class BasePlotter(object):
         to_compare = [sum(histos[0].hists)] 
     else:
       to_compare = [i.Clone() for i in histos]
+      for i, j in zip(to_compare, histos):
+        i.markercolor = j.linecolor
 
     self.compare(
       reference.Clone(), to_compare, method, xtitle=xtitle, 
-      ytitle=ytitle, **styles_kw)
+      ytitle=ytitle, yrange=lower_y_range, **styles_kw)
 
     if writeTo:
       self.save(writeTo)
