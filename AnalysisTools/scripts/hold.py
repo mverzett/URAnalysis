@@ -18,6 +18,10 @@ parser.add_argument(
    '--maxResubmission', type=int, help='resubmit the jobs a maximum of times',
    default=3
    )
+parser.add_argument(
+   '--failThr', type=float, help='Failure rate above which something strange is going on and we should not resubmit',
+   default=0.2
+   )
 
 args = parser.parse_args()
 
@@ -78,6 +82,7 @@ while not escape:
       print "Jobs completed!",
       if args.check_correctness:
          stdouts = glob.glob(os.path.join(args.check_correctness, '*/*.stdout'))
+         njobs = {}
          failed_samples = {}
          for log in stdouts:
             lines = open(log).readlines()
@@ -89,14 +94,22 @@ while not escape:
                   key = os.path.dirname(log)
                   if key not in failed_samples:
                      failed_samples[key] = []
+                     njobs[key] = 0
                   failed_samples[key].append(os.path.basename(log))
+                  njobs[key] += 1
             else:               
                raise ValueError("cannot match %s with exit code regex! in %s" % (last_line, log))
          if len(failed_samples) == 0:
             print " exiting..."
             escape = True
          else:
-            if submission <= args.maxResubmission:
+            for sample, lfailed in failed_samples.iteritems():
+               ntotal = float(njobs[sample])
+               nfailed = len(lfailed)
+               ratio = nfailed/ntotal
+               if ntotal > 5 and ratio > args.failThr:
+                  print "sample %s has %.0f%% of failed jobs, this is suspicious, please check" % (sample, ratio*100)
+            if not escape and submission <= args.maxResubmission:
                submission += 1
                print " %i samples failed to complete properly! Resubmitting them..." % len(failed_samples)
                cwd = os.getcwd()
