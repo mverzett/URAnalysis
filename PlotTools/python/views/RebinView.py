@@ -107,7 +107,8 @@ class RebinView(views._FolderView):
         new_histo.SetEntries( histogram.GetEntries() )
         return new_histo
                               
-    def rebin(self, histogram, binning):
+    @staticmethod
+    def rebin(histogram, binning):
         ''' Rebin a histogram
 
         [binning] can be either an integer, or a list/tuple for variable bin
@@ -130,7 +131,7 @@ class RebinView(views._FolderView):
             if len(binning[0]) ==1 and len(binning[1])==1 :                
                 return  histogram.Rebin2D(int(binning[0][0]),int(binning[1][0]), histogram.GetName() + 'rebin')
             else:
-                return self.newRebin2D(histogram, bin_arrayx, bin_arrayy)
+                return RebinView.newRebin2D(histogram, bin_arrayx, bin_arrayy)
         elif isinstance(histogram, ROOT.TH1):
             if isinstance(binning[0], (list, tuple)):
                 raise ValueError(
@@ -147,4 +148,4 @@ class RebinView(views._FolderView):
 
     def apply_view(self, object):
         object = object.Clone()
-        return self.rebin(object, self.binning)
+        return RebinView.rebin(object, self.binning)
