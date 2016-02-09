@@ -28,7 +28,7 @@ parser.add_argument('--njobs', type=int, help='how many jobs should I run?'
 parser.add_argument('--sample-def', dest='sample_def', type=str,
                     help='json file containing the samples definition ', default="%s/samples.json" % os.environ["URA_PROJECT"])
 parser.add_argument('--crab', dest='crab', type=int,
-                    default=0, help='Version of crab to use')
+                    default=3, help='Version of crab to use')
 parser.add_argument('--local', dest='local', action='store_true',
                     default=False, help='Submit to local (NOT SUPPORTED YET)')
 
