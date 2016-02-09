@@ -7,6 +7,7 @@ import math
 import re
 from pdb import set_trace
 import logging
+import ROOT
 
 from optparse import OptionParser
 try:
@@ -78,11 +79,58 @@ class DataCard(object):
          self.signals = [re.compile(i) for i in signals]
       self.shape_sys_naming = re.compile(r'.*_.*(:?Down|Up)')
       self.yields = {}
+      self.comments = []
+
+   def add_comment(self, comment):
+      self.comments.append(comment)
 
    def add_category(self, name):
       'adds a category'
       self.categories[name] = Struct()
+
+   def replace_shape(self, category, sample_re, shape, add_sys_err=True):
+      '''replace_shape(category, sample, shape, add_sys_err=True)
+      replace shape in multiple categories (regex allowed) from a single source (regex allowed too, but checks for only one match), scaling the shape appropriately for the category.
+      Useful for low-stat shapes that need to me merged. DOES NOT CHANGE THE SHAPE SYS!
+      Use add_sys_err to automatically add a lnN systematic proportional to the initial shape integral error (proportional to MC stat)
+      '''
+      pattern = re.compile(category)
+      sample_pattern = re.compile(sample_re)
+      for name, content in self.categories.iteritems():
+         if not pattern.match(name): continue
+         samples = [i for i in content.keys() if sample_pattern.match(i)]
+         if len(samples) != 1:
+            raise RuntimeError('DataCard.replace_shape: sample pattern (%s) matches multiple samples!' % sample_re)
+         sample = samples[0]
+         int_error = ROOT.Double()      
+         integral = content[sample].IntegralAndError(1, content[sample].nbins(), int_error)
+         if integral <= 0.: 
+            content[sample].Reset()
+            continue
+         content[sample] = shape.Clone()
+         content[sample].Scale(integral/content[sample].Integral())
+         if add_sys_err:
+            sys_name = '%s_%s_MCStat' % (name, sample)
+            print name, sample, sys_name, 1+int_error/integral, int_error, integral
+            self.add_systematic(sys_name, 'lnN', name, sample, 1+int_error/integral)
    
+   def clamp_negative_bins(self, cat_re, sam_re):
+      '''clamp_negative_bins(self, category, sample):
+      clamps negative bins to zero, category and sample are regexes'''
+      cat_pat = re.compile(cat_re)
+      sam_pat = re.compile(sam_re)
+      nclamped = 0
+      for category, content in self.categories.iteritems():
+         if not cat_pat.match(category): continue
+         for sample, shape in content.iteritems():
+            if not sam_pat.match(sample): continue
+            for bin in shape:
+               if bin.value < 0:
+                  bin.value = 10**-6
+                  bin.error = 0
+                  nclamped += 1
+      logging.info('Clamped %d bins' % nclamped)
+
    def __getattr__(self, val):
       'access categories with dot operator'
       if val in self.categories:
@@ -140,6 +188,8 @@ class DataCard(object):
       ##
       txt_name = os.path.join(directory, '%s.txt' % filename)
       with open(txt_name, 'w') as txt:
+         for cmt in self.comments:
+            txt.write('## %s \n' % cmt)
          separator = '-'*40+'\n'
          ncategories = len(self.categories)
          sample_category = self.categories.values()[0]
@@ -183,7 +233,9 @@ class DataCard(object):
          proc_num_line = ['process']
          proc_name_line = ['process']
          rate_line = ['rate']
+         rates = {}
          for category, info in self.categories.iteritems():
+            rates[category] = {}
             category_yield = 0
             for sample, shape in info.iteritems():
                if sample not in mcsamples: continue
@@ -207,6 +259,7 @@ class DataCard(object):
                   #   'Sample %s in category %s has a negative'
                   #   ' number of expected events! (%f)' % (sample, category, rate)
                   #   )
+               rates[category][sample] = rate
                category_yield += rate
                mag  = max(int(math.log10(abs(rate))), 0) if rate != 0 else 0
                float_format = '%.'+str(max(5-mag,0))+'f'
@@ -234,7 +287,9 @@ class DataCard(object):
             for category, info in self.categories.iteritems():
                for sample, _ in info.iteritems():
                   if sample not in mcsamples: continue
-                  line['%s_%s' % (category, sample)] = syst.effect(category, sample)
+                  if rates[category][sample] < 10.**-5: line['%s_%s' % (category, sample)] = '-'
+                  else:
+                     line['%s_%s' % (category, sample)] = syst.effect(category, sample)
          if line is not None: del line
          sys_table.add_separator()
          txt.write('%s\n' % sys_table)
@@ -307,6 +362,7 @@ otherwises uses the samples bin content
          if any(j.match(i) for j in categories)
          ]
 
+      nuis_names=[]
       n_nuis=0
       for category in categories_to_process:
          for sample in samples_to_process:
@@ -322,18 +378,24 @@ otherwises uses the samples bin content
                if not relative else self.categories[category]['data_obs']
             nbins = shape.GetNbinsX()
             for idx in xrange(1, nbins+1):
-               content = reference.GetBinContent(idx)
+               ref_content = reference.GetBinContent(idx)
+               content = shape.GetBinContent(idx)
                error   = shape.GetBinError(idx)
-               if not content or (error/content) < threshold:
+               if ref_content and (error/ref_content) < threshold:
+                  continue
+               if not ref_content and not content: 
                   continue
                n_nuis+=1
                unc_name = '%s_%s_bin_%i' % (category, sample, idx)
+               #if category == 'subtag' and sample == 'vjets': set_trace()
                for postfix, shift in zip(['Up', 'Down'], [error, -1*error]):
                   shifted = shape.Clone()
                   shifted.SetBinContent(idx, max(content+shift, 10**-5))
                   self.categories[category]['%s_%s%s' % (sample, unc_name, postfix)] = shifted
                self.add_systematic(unc_name, 'shape', category, sample, 1.00)
+               nuis_names.append(unc_name)
       logging.info(
          'Added %i BBB nuisances, in %i samples, in %i categories' % \
          (n_nuis, len(samples_to_process), len(categories_to_process))
          )
+      return nuis_names
