@@ -1,4 +1,5 @@
 from HiggsAnalysis.CombinedLimit.PhysicsModel import *
+import URAnalysis.Utilities.prettyjson as prettyjson
 from pdb import set_trace
 
 class PhysOpts(object):
@@ -11,7 +12,11 @@ class PhysOpts(object):
        key,value =tuple(opt.split('='))
        if key in self.opts:
           t = type(getattr(self, key))
-          setattr(self, key, t(eval(value)))
+          default = getattr(self, key)
+          if isinstance(default, bool):
+              setattr(self, key, t(eval(value)))
+          else:
+              setattr(self, key, t(value))
        else:
           raise ValueError(
              "Model option %s not recognised!"
@@ -26,10 +31,12 @@ class CTagEfficiency(PhysicsModel):
         self.opts.add('fitLightEff', True)
         self.opts.add('verbose', False)
         self.opts.add('inclusive', False)
+        self.opts.add('lightConstantsJson', '')
         self.paganini = True #avoid repetitions
         self.exprs = {}
         self.pars  = ['signal_norm', 'LCharmE', 'SLightE', 'lead_cfrac', 'LLightE', 'SCharmE', 'sub_cfrac']
         self.categories = set(['notag', 'leadtag', 'subtag', 'ditag'])
+        self.constants = None
 
     def setPhysicsOptions(self,physOptions):
         '''Receive a list of strings with the physics options from command line'''
@@ -37,6 +44,12 @@ class CTagEfficiency(PhysicsModel):
            self.opts.parse(po)
         if self.opts.inclusive:
             self.categories = set(['Inc_nolead', 'Inc_nosub', 'Inc_leadtag', 'Inc_subtag'])
+        if self.opts.lightConstantsJson:
+            self.constants = prettyjson.loads(open(self.opts.lightConstantsJson, 'r').read())
+            self.pars.remove('SLightE')
+            self.pars.remove('LLightE')
+            self.pars.extend(['mc_lead_light_eff', 'mc_sub_light_eff', self.constants['light_SF']['nuisance_name']])
+            
 
     def doParametersOfInterest(self):
         """Create POI and other parameters, and define the POI set."""
@@ -88,17 +101,20 @@ class CTagEfficiency(PhysicsModel):
             #L(eading)/S(ubleading) Charm/Light E(fficiency)
             self.modelBuilder.factory_('expr::LCharmE("@0*@1", charmSF, mc_lead_charm_eff)')
             self.modelBuilder.factory_('expr::SCharmE("@0*@1", charmSF, mc_sub_charm_eff )')
-            self.modelBuilder.factory_('expr::LLightE("@0*@1", lightSF, mc_lead_light_eff)') 
-            self.modelBuilder.factory_('expr::SLightE("@0*@1", lightSF, mc_sub_light_eff )') 
+            if self.opts.fitLightEff:
+                self.modelBuilder.factory_('expr::LLightE("@0*@1", lightSF, mc_lead_light_eff)') 
+                self.modelBuilder.factory_('expr::SLightE("@0*@1", lightSF, mc_sub_light_eff )') 
 
         if self.DC.isSignal[process]:
             expr = self.exprs[bin]
-            ## for idx, name in enumerate(self.pars):
-            ##     expr = expr.replace(name, '@%i' % idx)
-            ## expr = expr.format(PARS=(', '.join(self.pars)))
+            if not self.opts.fitLightEff:
+                constant = self.constants['light_SF'][bin]
+                adder = '+' if constant >= 0 else ''
+                lsf = '(1{adder}{cnst}*{nuis})'.format(adder=adder, cnst=constant, nuis=self.constants['light_SF']['nuisance_name']) #light scale factor
+                print bin, process, constant, lsf
+                expr = expr.replace('LLightE', 'mc_lead_light_eff*%s' % lsf).replace('SLightE', 'mc_sub_light_eff*%s' % lsf)
             expr, pars = CTagEfficiency.replace_pars(expr, self.pars)
             expr = expr.format(PARS=(', '.join(pars)))
-            ## set_trace()
             try:
                 self.modelBuilder.factory_(expr)
             except RuntimeError as e:
@@ -106,13 +122,18 @@ class CTagEfficiency(PhysicsModel):
                     raise RuntimeError('%s: %s' % (str(e), expr))
                 else:
                     raise e
+            return 'Scaling_%s' % bin
+        else:            
+            #Set POI yield effect on non-signals
+            varname = '%s_%s_charmScale' % (bin, process)
+            expr = 'expr::%s("%s", charmSF)' % (varname, self.constants['charm_SF'][bin][process])
+            self.modelBuilder.factory_(expr)
+            return varname
+        ## if self.paganini:
+        ##     if self.opts.verbose:
+        ##         self.modelBuilder.out.Print()
+        ##     self.paganini = False
 
-        if self.paganini:
-            if self.opts.verbose:
-                self.modelBuilder.out.Print()
-            self.paganini = False
-
-        return 'Scaling_%s' % bin if self.DC.isSignal[process] else 1 
 
 
 ctagEfficiency = CTagEfficiency()
