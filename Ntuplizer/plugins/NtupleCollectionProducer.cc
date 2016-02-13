@@ -92,7 +92,7 @@ void NtupleCollectionProducer<EDObject>::analyze(const edm::Event& evt, const ed
   if(!handle.isValid()) return;
 
   size_t size = handle->size();
-  //std::cout << "got " << src_ << " with size: " << size << std::endl;
+//  std::cout << "got " << src_ << " with size: " << size << std::endl;
   for(auto&& branch : branches_)
     {
       branch->reserve(size);

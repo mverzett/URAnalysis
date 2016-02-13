@@ -69,20 +69,20 @@ WeightedEventCountProducer::~WeightedEventCountProducer(){}
 
 void
 WeightedEventCountProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSetup){
-  if(computeWeighted_)
-  {
-    edm::Handle<LHEEventProduct > lhes;
-    //iEvent.getByLabel(lhes_, lhes);
-    iEvent.getByToken(lhesToken_, lhes);
-    float w = lhes->hepeup().XWGTUP;
-    short sign = (w > 0) ? 1 : ((w < 0) ? -1 : 0);
-    weightedEventsProcessedInLumi_+=sign;
-  }
-  else
-  {
-    weightedEventsProcessedInLumi_++;
-  }
-  return;
+	edm::Handle<LHEEventProduct > lhes;
+	//iEvent.getByLabel(lhes_, lhes);
+	iEvent.getByToken(lhesToken_, lhes);
+	if(computeWeighted_ && lhes.isValid())
+	{
+		float w = lhes->hepeup().XWGTUP;
+		short sign = (w > 0) ? 1 : ((w < 0) ? -1 : 0);
+		weightedEventsProcessedInLumi_+=sign;
+	}
+	else
+	{
+		weightedEventsProcessedInLumi_++;
+	}
+	return;
 }
 
 

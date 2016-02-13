@@ -10,7 +10,7 @@ def skim(process, **collections):
    process.muonFilter = cms.EDFilter(
       "CandViewCountFilter",
       src = cms.InputTag('hiptMuons'),
-      minNumber = cms.uint32(1)
+      minNumber = cms.uint32(0)
       )
 
    process.hiPtJets = cms.EDFilter(

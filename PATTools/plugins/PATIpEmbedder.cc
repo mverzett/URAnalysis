@@ -88,7 +88,6 @@ void PATIpEmbedder<T>::produce(edm::Event& evt, const edm::EventSetup& es) {
   v_missingInnerHits.reserve(handle->size());
   // v_tip.reserve(handle->size());
   // v_tipS.reserve(handle->size());
-
   for (size_t iObject = 0; iObject < handle->size(); ++iObject) {
     const T& object = handle->at(iObject);
     std::vector<const reco::Track*> tracks = trackExtractor_(object);

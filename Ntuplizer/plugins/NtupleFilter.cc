@@ -103,7 +103,7 @@ void NtupleFilter::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 	iEvent.getByToken(srcTokenPAT, triggerBits);
 	if(!triggerBits.isValid())
 	{
-		iEvent.getByToken(srcTokenPAT, triggerBits);
+		iEvent.getByToken(srcTokenRECO, triggerBits);
 	}
 
 	if(iEvent.id().run() != currentrun)
