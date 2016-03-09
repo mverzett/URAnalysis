@@ -46,9 +46,10 @@ class CTagEfficiency(PhysicsModel):
             self.categories = set(['Inc_nolead', 'Inc_nosub', 'Inc_leadtag', 'Inc_subtag'])
         if self.opts.lightConstantsJson:
             self.constants = prettyjson.loads(open(self.opts.lightConstantsJson, 'r').read())
-            self.pars.remove('SLightE')
-            self.pars.remove('LLightE')
-            self.pars.extend(['mc_lead_light_eff', 'mc_sub_light_eff', self.constants['light_SF']['nuisance_name']])
+            if not self.opts.fitLightEff:
+                self.pars.remove('SLightE')
+                self.pars.remove('LLightE')
+                self.pars.extend(['mc_lead_light_eff', 'mc_sub_light_eff', self.constants['light_SF']['nuisance_name']])
             
 
     def doParametersOfInterest(self):
@@ -56,10 +57,10 @@ class CTagEfficiency(PhysicsModel):
         #tt signal strenght 0-200% on over-all right combination ttbar scaling
         #self.modelBuilder.doVar('strength[4347,0,8000]') 
         #what we actually want to measure
-        self.modelBuilder.doVar('charmSF[1,0,2]')
+        self.modelBuilder.doVar('charmSF[1,0.5,1.5]')
         if self.opts.fitLightEff:
             print 'PASSING HERE', self.opts.fitLightEff
-            self.modelBuilder.doVar('lightSF[1,0,2]')
+            self.modelBuilder.doVar('lightSF[1,0.5,1.5]')
             self.modelBuilder.doSet('POI','charmSF,lightSF')
         else:
             self.modelBuilder.doSet('POI','charmSF')
@@ -128,6 +129,13 @@ class CTagEfficiency(PhysicsModel):
             varname = '%s_%s_charmScale' % (bin, process)
             expr = 'expr::%s("%s", charmSF)' % (varname, self.constants['charm_SF'][bin][process])
             self.modelBuilder.factory_(expr)
+            if self.opts.fitLightEff:
+                lvname = '%s_%s_lightScale' % (bin, process)
+                expr = 'expr::%s("%s", lightSF)' % (lvname, self.constants['light_SF'][bin][process])
+                self.modelBuilder.factory_(expr)
+                gname = '%s_%s_globalScale' % (bin, process)
+                self.modelBuilder.factory_('expr::%s("@0*@1", %s, %s)' % (gname, lvname, varname))
+                varname = gname
             return varname
         ## if self.paganini:
         ##     if self.opts.verbose:
