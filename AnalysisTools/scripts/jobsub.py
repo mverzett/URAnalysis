@@ -19,7 +19,11 @@ parser.add_argument('jobdir')
 parser.add_argument('executable')
 parser.add_argument('--opts', default='', help='options to be passed to the analyzer')
 parser.add_argument('--samples', nargs='*', help='samples to be analyze (full regex supported')
-parser.add_argument('--splitting', default='', help='samples to be analyze (full regex supported')
+parser.add_argument('--splitting', default='10', help='splitting to be used, either an integer of a valid path')
+parser.add_argument('--nocfg', action='store_true', help='do not provide job cfg')
+parser.add_argument('--notransfer', action='store_true', help='do not provide additional input files')
+parser.add_argument('--nosubmit', action='store_true', help='does not submit the jobs')
+parser.add_argument('--noconversion', action='store_true', help='does not convert into .dat format')
 
 args = parser.parse_args()
 
@@ -58,8 +62,10 @@ transferfiles_config = ', '.join(transferfiles)
 
 filesperjob = 10
 splitting = None
-if args.splitting:
+if os.path.isfile(args.splitting):
   splitting = prettyjson.loads(open(args.splitting).read())
+else:
+        filesperjob = int(args.splitting)
 
 for sf in samplefiles:
   infile = os.path.join(inputdir, sf)
@@ -79,24 +85,40 @@ for sf in samplefiles:
   numjobs = numjobs if numrootfiles > numjobs else numrootfiles
   print "submitting sample %s in %d jobs, ~1 every %d" % (sample, numjobs, filesperjob)
 
+  transfer = 'Transfer_Input_Files = %s' % transferfiles_config if not args.notransfer else ''
   condorfile ="""universe = vanilla
 Executable = batch_job.sh
 Should_Transfer_Files = YES
 WhenToTransferOutput = ON_EXIT
-Transfer_Input_Files = {5}
+{transfer_statement}
 Output = con_$(Process).stdout
 Error = con_$(Process).stderr
 Log = con_$(Process).log
 request_memory = 5000
-Arguments = {0} {1} {6}_out_$(Process).root -c {7} --thread 1 --j $(Process) --J {3} {4}
-Queue {3}
+Arguments = {exe} {input} {sample}_out_$(Process).root {cfg} --thread 1 --j $(Process) --J {njobs} {options}
+Queue {njobs}
 
-	""".format(exe, infile, '', numjobs, jobargs, transferfiles_config, sample, os.path.basename(exe_cfg))
+	""".format(
+          transfer_statement=transfer,
+          exe=exe, 
+          input=infile, 
+          sample=sample,
+          cfg='-c %s' % os.path.basename(exe_cfg) if not args.nocfg else '',
+          njobs=numjobs, 
+          options=jobargs
+          )
   
   conf = open(os.path.join(jobpath, 'condor.jdl'), 'w')
   conf.write(condorfile)
   conf.close()
 
+  conversion='''
+#EXPERIMENTAL!
+toutfile=`for i in $PA; do echo $i; done | grep '\.root'`
+outname="${toutfile%.*}"
+echo fastHadd encode -o $outname.dat $toutfile
+fastHadd encode -o $outname.dat $toutfile
+'''
   batch_job="""#!/bin/bash
 WORKINGDIR=$PWD
 cd {0}
@@ -117,21 +139,15 @@ echo $PA
 $EXE $PA 
 
 exitcode=$? 
-
-#EXPERIMENTAL!
-toutfile=`for i in $PA; do echo $i; done | grep '\.root'`
-outname="${{toutfile%.*}}"
-echo fastHadd encode -o $outname.dat $toutfile
-fastHadd encode -o $outname.dat $toutfile
-
+{1}
 echo "exit code: "$exitcode
-
 exit $exitcode 
-	""".format(swdir)
+	""".format(swdir, conversion if not args.noconversion else '')
   
   conf = open(os.path.join(jobpath, 'batch_job.sh'), 'w')
   conf.write(batch_job)
   conf.close()
-  
-  os.system('cd ' + jobpath + ' && condor_submit condor.jdl')
+
+  if not args.nosubmit:
+          os.system('cd ' + jobpath + ' && condor_submit condor.jdl')
 
