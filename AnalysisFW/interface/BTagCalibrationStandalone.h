@@ -24,6 +24,7 @@ class BTagEntry
 {
 public:
   enum OperatingPoint {
+    OP_NOTSET=-1,
     OP_LOOSE=0,
     OP_MEDIUM=1,
     OP_TIGHT=2,
