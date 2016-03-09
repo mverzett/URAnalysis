@@ -126,7 +126,7 @@ end
 
 def publish_pics(input_name, output_name)
   if not (File.directory? output_name)
-    sh "mkdir -p #{output_name}"
+    `mkdir -p #{output_name}`
   end
   toy_dirs = /toy_\d+/
   Dir["#{input_name}/*"].each do |path|

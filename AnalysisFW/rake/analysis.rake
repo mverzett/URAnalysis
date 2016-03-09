@@ -133,7 +133,7 @@ task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
   task :runThisBatch => "bin/#{bname}.exe" do |u|
     submit_dir = "/uscms_data/d3/#{ENV['USER']}/BATCH_#{Time.now.to_i}_#{bname}"
     puts "Submitting to #{submit_dir}"
-    sh "jobsub #{submit_dir} #{bname}.exe #{samples} #{opts}"
+    sh "jobsub.py #{submit_dir} #{bname}.exe #{samples} #{opts}"
     Rake::Task["track_batch"].invoke(submit_dir)
   end
   Rake::Task["runThisBatch"].invoke
