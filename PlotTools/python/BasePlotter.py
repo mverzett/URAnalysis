@@ -199,6 +199,7 @@ class BasePlotter(object):
     self.label_factor = None
     BasePlotter.set_canvas_style(self.canvas)
     self.set_style()
+    self.reset()
 
   def set_outdir(self, dirpath):
     '''sets the base output directory'''
@@ -524,8 +525,10 @@ class BasePlotter(object):
         histo.xaxis.title = val
       elif key =='ytitle':
         histo.yaxis.title = val
-      else:        
+      elif hasattr(histo, key):        
         setattr(histo, key, val)
+      else:
+        raise RuntimeError('%s does not have attribute %s' % (histo, key))
     histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
     histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
     histo.SetStats(False)
@@ -1432,7 +1435,7 @@ class BasePlotter(object):
       self.keep.append(legend)
       return legend
 
-  def add_cms_blurb(self, sqrts, preliminary=True, lumiformat='%0.1f'):
+  def add_cms_blurb(self, sqrts, lumi, preliminary=True, lumiformat='%0.1f'):
       ''' Add the CMS blurb '''
       self.pad.cd()
       latex = ROOT.TLatex()
@@ -1444,8 +1447,7 @@ class BasePlotter(object):
       if preliminary:
           label_text += " Preliminary"
       label_text += " %i TeV " % sqrts
-      label_text += (lumiformat + " fb^{-1}") % (
-          self.views['data']['intlumi']/1000.)
+      label_text += (lumiformat + " fb^{-1}") % (lumi/1000.)
       self.keep.append(latex.DrawLatex(0.18,0.96, label_text));
 
 
@@ -1500,6 +1502,9 @@ class BasePlotter(object):
       kwargs.update(
           inkwargs
           )
+
+      if 'blurb' in self.defaults:
+        self.add_cms_blurb(*self.defaults['blurb'])
       #
       if filename is None:
         filename = self.canvas.name
