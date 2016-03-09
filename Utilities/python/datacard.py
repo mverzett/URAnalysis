@@ -330,7 +330,7 @@ class DataCard(object):
             ' has been called as %s.' % (name, self.systematics[name].type, stype))
       self.systematics[name].applies(categories, samples, value)
 
-   def add_bbb_systematics(self, categories, samples, threshold=0.05, relative=True):
+   def add_bbb_systematics(self, categories, samples, threshold=0.05, relative=True, multiplier=1.):
       '''add_bbb_systematics(categories, samples, threshold=0.05, relative=True)
 if relative is set to True (default) it checks that the error is >= threshold*content of data bin
 otherwises uses the samples bin content
@@ -381,7 +381,7 @@ otherwises uses the samples bin content
                ref_content = reference.GetBinContent(idx)
                content = shape.GetBinContent(idx)
                error   = shape.GetBinError(idx)
-               if ref_content and (error/ref_content) < threshold:
+               if ref_content and (error*multiplier/ref_content) < threshold:
                   continue
                if not ref_content and not content: 
                   continue
