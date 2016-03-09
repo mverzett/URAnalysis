@@ -23,6 +23,6 @@ DataFile::DataFile(std::string path) {
   }
 }
 
-std::string DataFile::full_path() {
+std::string DataFile::full_path() const {
   return std::string(std::getenv("PATH"))+"/"+rel_path_;
 }

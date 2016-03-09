@@ -5,9 +5,11 @@
 
 class DataFile {
 public:
+  DataFile():
+    rel_path_() {}
   DataFile(std::string);
-  std::string path() {return rel_path_;}
-  std::string full_path();  
+  std::string path() const {return rel_path_;}
+  std::string full_path() const;  
 
 private:
   std::string rel_path_;
