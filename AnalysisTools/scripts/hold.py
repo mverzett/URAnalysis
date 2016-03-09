@@ -22,6 +22,10 @@ parser.add_argument(
    '--failThr', type=float, help='Failure rate above which something strange is going on and we should not resubmit',
    default=0.2
    )
+parser.add_argument(
+   '--outtype', help='output extension',
+   default='root'
+   )
 
 args = parser.parse_args()
 
@@ -53,10 +57,63 @@ def rescue(jdl, nrescue, to_rescue):
          rescue.write(''.join(proc))
    return rescuer
 
+regex = re.compile('exit code: (?P<exitcode>\d+)')
+stdout_format = 'con_(?P<id>\d+).stdout'
+stdout_regex = re.compile(stdout_format)
+def check_correct(taskdir, sample, output_extension='root'):
+   sample_dir = os.path.join(taskdir, sample)
+   #get jdl
+   jdl_f = os.path.join(sample_dir, 'condor.jdl')
+   njobs =0
+   with open(jdl_f) as jdl:
+      for line in jdl:
+         if line.lower().startswith('queue'):
+            nqueued = line.lower().replace('queue','').strip()
+            njobs += int(nqueued) if nqueued else 1
+   
+   #Get stdouts
+   stdouts = glob.glob('%s/*.stdout' % sample_dir)
+   failed = []
+   present = [False for _ in range(njobs)]
+   out_present = [False for _ in range(njobs)]
+   #check the exit codes
+   for log in stdouts:
+      logname = os.path.basename(log)
+      log_id = int(stdout_regex.match(logname).group('id'))
+      present[log_id] = True #bit string would be faster, but who cares?
+      out_present[log_id] = os.path.isfile('%s/%s_out_%d.%s' % (sample_dir, sample, log_id, output_extension))
+      lines = open(log).readlines()
+      last_line = lines[-1] if len(lines) else 'exit code: 999' #fake wrong exit code
+      match = regex.search(last_line)
+      if match:
+         exitcode = int(match.group('exitcode'))
+         if exitcode != 0 :
+            failed.append(logname)
+      else:               
+         raise ValueError("cannot match %s with exit code regex! in %s" % (last_line, log))
+
+   #print sample, len(failed), 'jobs with bad exit codes'
+   #check if some jobs did not yield stdout at all
+   for idn, info in enumerate(present):
+      if not info:
+         failed.append(
+            stdout_format.replace('(?P<id>\d+)', '%d' % idn)
+            )
+
+   #print sample, len(failed), 'jobs with bad exit codes or missing stdout'
+   #check if some jobs failed producing output
+   for idn, info in enumerate(out_present):
+      if not info:
+         failed.append(
+            stdout_format.replace('(?P<id>\d+)', '%d' % idn)
+            )
+   #print sample, len(failed), 'jobs with bad exit codes or missing out'
+   return njobs, failed
+   
+
 escape = False
 start = time.time()
 totjobs = -1
-regex = re.compile('exit code: (?P<exitcode>\d+)')
 submission = 0
 
 while not escape:
@@ -81,28 +138,22 @@ while not escape:
    if njobs == 0:
       print "Jobs completed!",
       if args.check_correctness:
-         stdouts = glob.glob(os.path.join(args.check_correctness, '*/*.stdout'))
+         #get samples
+         samples = [os.path.basename(i) for i in glob.glob('%s/*' % args.check_correctness) if os.path.isdir(i)]
          njobs = {}
          failed_samples = {}
-         for log in stdouts:
-            lines = open(log).readlines()
-            last_line = lines[-1] if len(lines) else 'exit code: 999' #fake wrong exit code
-            match = regex.search(last_line)
-            if match:
-               exitcode = int(match.group('exitcode'))
-               if exitcode != 0 :
-                  key = os.path.dirname(log)
-                  if key not in failed_samples:
-                     failed_samples[key] = []
-                     njobs[key] = 0
-                  failed_samples[key].append(os.path.basename(log))
-                  njobs[key] += 1
-            else:               
-               raise ValueError("cannot match %s with exit code regex! in %s" % (last_line, log))
+         #check correctness for each sample
+         for sample in samples:
+            nj, failed = check_correct(args.check_correctness, sample, args.outtype)
+            njobs[sample] = nj
+            if failed:
+               failed_samples[sample] = failed
+
+         #if everything is right
          if len(failed_samples) == 0:
             print " exiting..."
             escape = True
-         else:
+         else:            
             for sample, lfailed in failed_samples.iteritems():
                ntotal = float(njobs[sample])
                nfailed = len(lfailed)
@@ -113,8 +164,10 @@ while not escape:
                submission += 1
                print " %i samples failed to complete properly! Resubmitting them..." % len(failed_samples)
                cwd = os.getcwd()
-               for condor_dir, jobs in failed_samples.iteritems():
+               for sample, jobs in failed_samples.iteritems():
+                  condor_dir = os.path.join(args.check_correctness, sample)
                   os.chdir(condor_dir)
+                  print "Sample %s has %d failed jobs, resubmitting them" % (sample, len(jobs))
                   id_getter = re.compile(r'con_(?P<id>\d+)\.stdout')
                   job_ids = [int(id_getter.match(i).group('id')) for i in jobs]
                   for idjob in job_ids:
