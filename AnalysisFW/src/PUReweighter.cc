@@ -5,9 +5,9 @@
 #include "DataFile.h"
 #include "TMath.h"
 
-void PUReweighter::init(std::string sample, std::string hdata, std::string hmc, std::string file_postfix) {
-  TFile mc_file( DataFile(sample+file_postfix).path().c_str() );
-  TFile data_file( DataFile("data"+file_postfix).path().c_str() );
+void PUReweighter::init(std::string sample_fname, std::string data_fname, std::string hdata, std::string hmc) {
+  TFile mc_file( DataFile(sample_fname).path().c_str() );
+  TFile data_file( DataFile(data_fname).path().c_str() );
   TH1 *data_h = (TH1*) data_file.Get(hdata.c_str());
   if(!data_h) {Logger::log().error() << "Data PU histogram ("<< hdata <<") not found!" << std::endl; throw 42;}
   TH1 *mc_h = (TH1*) mc_file.Get(hmc.c_str());

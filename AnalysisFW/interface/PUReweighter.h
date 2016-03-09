@@ -10,7 +10,7 @@ public:
   PUReweighter():
     weights_(),
     wsize_() {}
-  void init(std::string sample, std::string hdata="pileup", std::string hmc="pu_distribution", std::string file_postfix=".meta.pu.root");
+    void init(std::string sample_fname, std::string data_fname="data.meta.pu.root", std::string hdata="pileup", std::string hmc="pu_distribution");
 
 	float weight(size_t nvtx){
 		return (nvtx < wsize_) ? weights_[nvtx] : weights_[wsize_-1];
