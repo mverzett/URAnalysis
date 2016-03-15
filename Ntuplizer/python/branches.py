@@ -55,6 +55,7 @@ isolation = [
 ]
 
 genjet_specific = [
+   make_branch_pset('e', 'energy'),
    make_branch_pset('invisibleEnergy', 'invisibleEnergy()'),
    make_branch_pset('pdgId', 'pdgId()')
 ]
