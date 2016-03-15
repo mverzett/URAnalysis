@@ -149,16 +149,20 @@ if __name__=='__main__':
    parser.add_argument('flist', metavar='files.txt', type=str,
                        help='.txt file containing the location of'
                        ' root files to be processed')
-   parser.add_argument('output', metavar='file.json', type=str,
-                       help='Json output file name')
+   parser.add_argument('output', type=str,
+                       help='output file name (json or root)')
    parser.add_argument('--mc-mode', dest='isMc', action='store_true',
                        default=False, help='Computes the true PU distribution')
-   parser.add_argument('--threads', dest='threads', type=int, default=4,
+   parser.add_argument('--thread', dest='threads', type=int, default=4,
                        help='Number of threads used')
    parser.add_argument('--verbose', dest='verbose', action='store_true',
                        default=False, help='More printout')
    parser.add_argument('--quiet', dest='quiet', action='store_true',
                        default=False, help='minimal printout')
+   parser.add_argument('--j', dest='ijob', type=int, default=0,
+                       help='job index (multi-processisg)')
+   parser.add_argument('--J', dest='njobs', type=int, default=1,
+                       help='total number of jobs')
 
    args = parser.parse_args()
 
@@ -167,18 +171,38 @@ if __name__=='__main__':
    elif args.quiet:
       log.setLevel(logging.ERROR)
 
+   sample = os.path.basename(args.flist)
+   if sample.startswith('data'):
+      args.isMc = False
+   else:
+      args.isMc= True
+   
    if not os.path.isfile(args.flist):
       raise IOError('File %s does not exist!' % args.flist)
       #logging.error('ERROR: file %s does not exist!' % args.flist)
 
    log.debug('loading root files')
    file_queue = LockedObject(Queue()) #should reserve some space
+   file_list = []
    with open(args.flist) as inputs:
       for path in inputs:
          #no threading issue
-         if not os.path.isfile(path.strip()):
-            raise IOError('File %s does not exist!' % path)
-         file_queue.object.put(path.strip())
+         ## if not os.path.isfile(path.strip()):
+         ##    raise IOError('File %s does not exist!' % path)
+         if not path.startswith('#BAD#'):
+            file_list.append(path.strip())
+
+   nfiles = len(file_list)
+   chunk_size = nfiles/args.njobs
+   strt, stop = args.ijob*chunk_size, (args.ijob+1)*chunk_size
+   log.info('Processing list between %d and %d out of %d' % (strt, stop, nfiles))
+   if args.ijob != (args.njobs-1):
+      file_list = file_list[strt : stop]
+   else:
+      file_list = file_list[strt :]
+
+   for i in file_list:
+      file_queue.object.put(i)
 
    log.debug('creating shared objects and threads')
    pu_histo = LockedObject(None) if args.isMc else None
@@ -199,14 +223,22 @@ if __name__=='__main__':
       extractor = Extractor("Single Processor", file_queue, pu_histo, out_json)
       extractor.extract()
 
-   log.debug('saving information to %s' % args.output)
+   jname, rname = '', ''
+   if args.output.endswith('.json'):
+      jname = args.output
+      rname = args.output.replace('.json', '.pu.root')
+   else:
+      jname = args.output.replace('.root', '.json')
+      rname = args.output
+   
+   log.debug('saving information to %s' % jname)
    with out_json as json:
       json.warn()
-      json.dump(args.output)
+      json.dump(jname)
 
-   log.debug('saving root information to %s' % args.output.replace('.json', '.pu.root'))
+   log.debug('saving root information to %s' % rname)
    if args.isMc:
-      tfile = ROOT.TFile.Open(args.output.replace('.json', '.pu.root'),'RECREATE')
+      tfile = ROOT.TFile.Open(rname,'RECREATE')
       tfile.cd()
       with pu_histo as histo:
          histo.Write()

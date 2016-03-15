@@ -199,6 +199,7 @@ class BasePlotter(object):
     self.label_factor = None
     BasePlotter.set_canvas_style(self.canvas)
     self.set_style()
+    self.reset()
 
   def set_outdir(self, dirpath):
     '''sets the base output directory'''
@@ -524,8 +525,10 @@ class BasePlotter(object):
         histo.xaxis.title = val
       elif key =='ytitle':
         histo.yaxis.title = val
-      else:        
+      elif hasattr(histo, key):        
         setattr(histo, key, val)
+      else:
+        raise RuntimeError('%s does not have attribute %s' % (histo, key))
     histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
     histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
     histo.SetStats(False)
@@ -1199,6 +1202,8 @@ class BasePlotter(object):
       ROOT.gPad.Modified()
       if first:
         y_range = BasePlotter._get_y_range_(*histos) if y_range is None else y_range 
+        if y_range[0] == y_range[1]:
+          y_range = (y_range[0], y_range[0]+1.)
         if isinstance(histo, plotting.HistStack):
           histo.SetMinimum(y_range[0])
           histo.SetMaximum(y_range[1])
@@ -1217,7 +1222,7 @@ class BasePlotter(object):
       self.save(writeTo)
     return None
     
-  def compare(self, ref, targets, method, xtitle='', ytitle='', **styles_kw):
+  def compare(self, ref, targets, method, xtitle='', ytitle='', yrange=None, **styles_kw):
     for target in targets:
       target.title = ''
       target.SetStats(False)
@@ -1260,9 +1265,15 @@ class BasePlotter(object):
         'ratio': (0.,1.999),
         'diff' : (-0.499,0.499)
         }
+      centrals = {
+        'pull' : 0,
+        'ratio': 1,
+        'diff' : 0,
+        }
       styles_kw['drawstyle'] = 'e x0'
+      y_range = yranges[method] if not yrange else (centrals[method]-yrange, centrals[method]+yrange)
       self.overlay(
-        targets, y_range=yranges[method], xtitle=xtitle, 
+        targets, y_range=y_range, xtitle=xtitle, 
         yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
 
   def dual_pad_format(self):
@@ -1292,7 +1303,7 @@ class BasePlotter(object):
   
   def overlay_and_compare(self, histos, reference, method='pull', 
     legend_def=None, logx=False, logy=False, xtitle='', ytitle='',
-    logz=False, writeTo='', **styles_kw):
+    logz=False, writeTo='', lower_y_range=None, **styles_kw):
     labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
     self.pad.cd()
     self.label_factor = labelSizeFactor1
@@ -1318,10 +1329,12 @@ class BasePlotter(object):
         to_compare = [sum(histos[0].hists)] 
     else:
       to_compare = [i.Clone() for i in histos]
+      for i, j in zip(to_compare, histos):
+        i.markercolor = j.linecolor
 
     self.compare(
       reference.Clone(), to_compare, method, xtitle=xtitle, 
-      ytitle=ytitle, **styles_kw)
+      ytitle=ytitle, yrange=lower_y_range, **styles_kw)
 
     if writeTo:
       self.save(writeTo)
@@ -1422,7 +1435,7 @@ class BasePlotter(object):
       self.keep.append(legend)
       return legend
 
-  def add_cms_blurb(self, sqrts, preliminary=True, lumiformat='%0.1f'):
+  def add_cms_blurb(self, sqrts, lumi, preliminary=True, lumiformat='%0.1f'):
       ''' Add the CMS blurb '''
       self.pad.cd()
       latex = ROOT.TLatex()
@@ -1434,8 +1447,7 @@ class BasePlotter(object):
       if preliminary:
           label_text += " Preliminary"
       label_text += " %i TeV " % sqrts
-      label_text += (lumiformat + " fb^{-1}") % (
-          self.views['data']['intlumi']/1000.)
+      label_text += (lumiformat + " fb^{-1}") % (lumi/1000.)
       self.keep.append(latex.DrawLatex(0.18,0.96, label_text));
 
 
@@ -1490,6 +1502,9 @@ class BasePlotter(object):
       kwargs.update(
           inkwargs
           )
+
+      if 'blurb' in self.defaults:
+        self.add_cms_blurb(*self.defaults['blurb'])
       #
       if filename is None:
         filename = self.canvas.name

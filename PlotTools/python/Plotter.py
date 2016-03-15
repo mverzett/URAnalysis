@@ -224,12 +224,12 @@ class Plotter(BasePlotter):
         ])
         return tf1
         
-    def plot(self, sample, path, drawopt='', rebin=None, styler=None, xaxis='', xrange=None):
+    def plot(self, sample, path, drawopt='', rebin=None, styler=None, xaxis='', yaxis='', xrange=None):
         ''' Plot a single histogram from a single sample.
 
         Returns a reference to the histogram.
         '''
-        view = self.views[sample]['view']
+        view = self.get_view(sample)
         if rebin:
             view = self.rebin_view(view, rebin)
         histo = view.Get(path)
@@ -237,8 +237,11 @@ class Plotter(BasePlotter):
             histo.GetXaxis().SetRange(xrange[0], xrange[1])
         if styler:
             styler(histo)
+        histo.xaxis.title = xaxis
+        histo.yaxis.title = yaxis
+        histo.drawstyle = drawopt
+        #set_trace()
         histo.Draw(drawopt)
-        histo.GetXaxis().SetTitle(xaxis)
         self.keep.append(histo)
         return histo
 
@@ -299,6 +302,7 @@ class Plotter(BasePlotter):
         mc_stack.Draw()
         mc_stack.GetHistogram().GetYaxis().SetTitle('Events')
         mc_stack.GetHistogram().GetXaxis().SetTitle(xaxis)
+        mc_stack.Draw()
         if xrange:
             mc_stack.GetXaxis().SetRangeUser(xrange[0], xrange[1])
             mc_stack.Draw()
@@ -331,4 +335,6 @@ class Plotter(BasePlotter):
             self.pad.SetLogy()
         if show_ratio:
             self.label_factor = labelSizeFactor2
+            for i in mc_stack.hists:
+                i.xaxis.title=xaxis
             self.add_ratio_plot(data, mc_stack, x_range=xrange, ratio_range=ratio_range)

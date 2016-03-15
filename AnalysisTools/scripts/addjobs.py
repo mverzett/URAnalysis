@@ -61,7 +61,7 @@ for dir in jobdirs:
     files = [dir + '/' + f for f in files]
     if args.fastHadd:
       if len(files) > 1:
-        cmd = ['fastHadd', 'add', '-j', '10', '-o', '%s.dat' % dir]
+        cmd = ['fastHadd', 'add', '-j', '6', '-o', '%s.dat' % dir]
         cmd.extend(files)
         os.system(' '.join(cmd))
       else:

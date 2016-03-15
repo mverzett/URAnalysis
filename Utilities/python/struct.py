@@ -37,6 +37,10 @@ class Struct:
     def keys(self):
         return self.__dict__.keys()
 
+    def __delitem__(self, val):
+        '''__delitem__(self, y) --> del x[y]'''
+        del self.__dict__[val]
+
 class RecursiveStruct:
     def __init__(self, **entries):
         class_dict = {}

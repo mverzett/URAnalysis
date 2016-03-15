@@ -1,6 +1,6 @@
 import re
 from pdb import set_trace
-
+from latex import t2latex, tabline
 class Table(object):
    def __init__(self, *columns, **kwargs):
       self.alias = []
@@ -81,3 +81,17 @@ class LineProxy(object):
       self.table.add_line(
          *[self.entries[i] for i in self.table.alias]
          )
+
+def latex_table(headers, table):
+   return '''\\begin{{tabular}}{{cc}}
+\hline
+{HEADER}
+\hline
+{LINES}
+\hline
+\end{{tabular}}
+'''.format(
+      HEADER=tabline(headers),
+      LINES='\n'.join([tabline(i) for i in table])
+      )
+
