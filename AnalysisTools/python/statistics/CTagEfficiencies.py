@@ -31,6 +31,7 @@ class CTagEfficiency(PhysicsModel):
         self.opts.add('fitLightEff', True)
         self.opts.add('verbose', False)
         self.opts.add('inclusive', False)
+        self.opts.add('POIPropagation', True)
         self.opts.add('lightConstantsJson', '')
         self.paganini = True #avoid repetitions
         self.exprs = {}
@@ -57,10 +58,10 @@ class CTagEfficiency(PhysicsModel):
         #tt signal strenght 0-200% on over-all right combination ttbar scaling
         #self.modelBuilder.doVar('strength[4347,0,8000]') 
         #what we actually want to measure
-        self.modelBuilder.doVar('charmSF[1,0.5,1.5]')
+        self.modelBuilder.doVar('charmSF[1,0.,2.]')
         if self.opts.fitLightEff:
             print 'PASSING HERE', self.opts.fitLightEff
-            self.modelBuilder.doVar('lightSF[1,0.5,1.5]')
+            self.modelBuilder.doVar('lightSF[1,0.,2.]')
             self.modelBuilder.doSet('POI','charmSF,lightSF')
         else:
             self.modelBuilder.doSet('POI','charmSF')
@@ -109,6 +110,8 @@ class CTagEfficiency(PhysicsModel):
         if self.DC.isSignal[process]:
             expr = self.exprs[bin]
             if not self.opts.fitLightEff:
+                if not self.constants:
+                    raise RuntimeError("Running without light SF Fit requires having the constants json!")
                 constant = self.constants['light_SF'][bin]
                 adder = '+' if constant >= 0 else ''
                 lsf = '(1{adder}{cnst}*{nuis})'.format(adder=adder, cnst=constant, nuis=self.constants['light_SF']['nuisance_name']) #light scale factor
@@ -124,7 +127,8 @@ class CTagEfficiency(PhysicsModel):
                 else:
                     raise e
             return 'Scaling_%s' % bin
-        else:            
+        elif self.opts.POIPropagation:
+            #print 'POI propagation'
             #Set POI yield effect on non-signals
             varname = '%s_%s_charmScale' % (bin, process)
             expr = 'expr::%s("%s", charmSF)' % (varname, self.constants['charm_SF'][bin][process])
@@ -137,6 +141,8 @@ class CTagEfficiency(PhysicsModel):
                 self.modelBuilder.factory_('expr::%s("@0*@1", %s, %s)' % (gname, lvname, varname))
                 varname = gname
             return varname
+        else:
+            return 1.
         ## if self.paganini:
         ##     if self.opts.verbose:
         ##         self.modelBuilder.out.Print()

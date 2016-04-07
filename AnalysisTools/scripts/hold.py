@@ -160,6 +160,7 @@ while not escape:
                ratio = nfailed/ntotal
                if ntotal > 5 and ratio > args.failThr:
                   print "sample %s has %.0f%% of failed jobs, this is suspicious, please check" % (sample, ratio*100)
+                  escape = True
             if not escape and submission <= args.maxResubmission:
                submission += 1
                print " %i samples failed to complete properly! Resubmitting them..." % len(failed_samples)

@@ -102,11 +102,11 @@ class DataCard(object):
          if len(samples) != 1:
             raise RuntimeError('DataCard.replace_shape: sample pattern (%s) matches multiple samples!' % sample_re)
          sample = samples[0]
-         int_error = ROOT.Double()      
-         integral = content[sample].IntegralAndError(1, content[sample].nbins(), int_error)
+         integral = content[sample].Integral()#(1, content[sample].nbins(), int_error)
          if integral <= 0.: 
             content[sample].Reset()
             continue
+         int_error = 1./math.sqrt(content[sample].GetEntries()) #sometimes IntegralAndError goes nuts
          content[sample] = shape.Clone()
          content[sample].Scale(integral/content[sample].Integral())
          if add_sys_err:

@@ -16,6 +16,10 @@ parser.add_argument(
    '--fastHadd', action='store_true',
    help='Use DQM fastHadd instead of normal hadd. Gain speed, but works only on histograms'
    )
+parser.add_argument(
+   '--ignoreFailed', action='store_true',
+   help='Use DQM fastHadd instead of normal hadd. Gain speed, but works only on histograms'
+   )
 
 args = parser.parse_args()
 
@@ -40,22 +44,23 @@ for dir in jobdirs:
   files = [f for f in files if fnmatch(f, pattern)]
 
   #check for errors in job processing
-  for stdout in stdouts:
-    try:
-      last_line = open(os.path.join(dir, stdout)).readlines()[-1]
-    except:
-      raise RuntimeError('Problem reading %s' % stdout)
-    match = regex.match(last_line)
-    if match:
-      exitcode = int(match.group('exitcode'))
-      if exitcode != 0 :
-        raise IOError('Condor job %s in %s did not complete properly and exited'
-                      ' returing status %i' % (stdout, os.path.join(os.getcwd(),dir), exitcode))
-    else:
-      raise ValueError("cannot match %s with exit code regex!" % last_line)
+  if not args.ignoreFailed:
+    for stdout in stdouts:
+      try:
+        last_line = open(os.path.join(dir, stdout)).readlines()[-1]
+      except:
+        raise RuntimeError('Problem reading %s' % stdout)
+      match = regex.match(last_line)
+      if match:
+        exitcode = int(match.group('exitcode'))
+        if exitcode != 0 :
+          raise IOError('Condor job %s in %s did not complete properly and exited'
+                        ' returing status %i' % (stdout, os.path.join(os.getcwd(),dir), exitcode))
+      else:
+        raise ValueError("cannot match %s with exit code regex!" % last_line)
 
   print num, len(files)
-  if num == len(files):
+  if num == len(files) or args.ignoreFailed:
     outfile = dir + '.root'
     print 'merging into %s' % outfile
     files = [dir + '/' + f for f in files]

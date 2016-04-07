@@ -289,7 +289,7 @@ class Plotter(BasePlotter):
     def plot_mc_vs_data(self, folder, variable, rebin=1, xaxis='',
                         leftside=True, xrange=None, preprocess=None, postprocess=None,
                         show_ratio=False, ratio_range=0.2, sort=False,
-                        logy=False):
+                        logy=False, nodata=False):
         ''' Compare Monte Carlo to data '''
         #path = os.path.join(folder, variable)
         labelSizeFactor1, labelSizeFactor2 = 1, 1
@@ -308,7 +308,7 @@ class Plotter(BasePlotter):
             mc_stack.Draw()
         self.keep.append(mc_stack)
         to_legend = [mc_stack]
-        if 'data' in self.views:
+        if 'data' in self.views and not nodata:
             # Draw data
             data_view = self.get_view('data')
             if preprocess:
@@ -333,7 +333,7 @@ class Plotter(BasePlotter):
         self.add_legend(to_legend, leftside, entries=len(mc_stack.GetHists())+len(to_legend)-1)
         if logy:
             self.pad.SetLogy()
-        if show_ratio:
+        if show_ratio and not nodata and 'data' in self.views:
             self.label_factor = labelSizeFactor2
             for i in mc_stack.hists:
                 i.xaxis.title=xaxis

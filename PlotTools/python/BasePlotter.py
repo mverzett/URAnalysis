@@ -112,7 +112,7 @@ class LegendDefinition(object):
 
   def make_legend(self):
     # Create the legend Set the legend position according to LegendDefinition::position variable
-    maxTextSize = 0
+    maxTextSize = 7 #below 5 the coordinates screw up
     if len(self.title) > maxTextSize:
       maxTextSize = min(
         len(self.title),
@@ -610,7 +610,9 @@ class BasePlotter(object):
     return stack
       
   @staticmethod
-  def _get_y_range_(*histos):
+  def _get_y_range_(*histos, **kwargs):
+    'algo can be yield (for plotting data) or shape, optimized for shapes'
+    algo = kwargs.get('algo', 'yield')
     def __get_min__(obj):
       if isinstance(obj, plotting.HistStack):
         return sum(obj.hists).min() 
@@ -635,16 +637,24 @@ class BasePlotter(object):
       for i in histos
       )
             
-    if ymin >= 0:
-      ymin = 0 + (ymax-ymin)/100000000
-      ymax = ymax + (ymax-ymin)*0.2
-    elif ymin < 0 and ymax > 0:
-      ymin = ymin - (ymax-ymax)*0.2
-      ymax = ymax + (ymax-ymin)*0.2
+    if algo == 'yield':
+      if ymin >= 0:
+        ymin = 0 + (ymax-ymin)/100000000
+        ymax = ymax + (ymax-ymin)*0.2
+      elif ymin < 0 and ymax > 0:
+        ymin = ymin - (ymax-ymax)*0.2
+        ymax = ymax + (ymax-ymin)*0.2
+      else:
+        ymin = ymin - (ymax-ymin)*0.2
+        ymax = 0 - (ymax-ymin)/100000000
+      return ymin, ymax
+    elif  algo == 'shape':
+      delta = (ymax - ymin)*0.1
+      ymin -= delta
+      ymax += delta
+      return ymin, ymax
     else:
-      ymin = ymin - (ymax-ymin)*0.2
-      ymax = 0 - (ymax-ymin)/100000000
-    return ymin, ymax
+      raise RuntimeError('range algo can only be yield or shape, not %s' % algo)
   
   @staticmethod
   def create_and_write_canvases(linestyle, markerstyle, color, logscalex, logscaley, histos):
@@ -1176,7 +1186,7 @@ class BasePlotter(object):
   def overlay(
     self, hhs, legend_def=None, logx=False, logy=False, 
     logz=False, writeTo='', y_range=None, xtitle='', ytitle='', 
-    yaxis_divisions=None, **kwargs):
+    yaxis_divisions=None, ignore_style=False, **kwargs):
     '''Overlays multiple histograms. rootpy styling can be passed as 
     keyword args as the cloning policy (wether or not to clone the 
     histo before styling it) with key "clone". The styling passed as list are 
@@ -1192,7 +1202,7 @@ class BasePlotter(object):
     styles = BasePlotter._kwargs_to_styles_(styles_kw, len(histos))
     first = True
     for histo, style in zip(histos, styles):
-      self.style_histo(histo, **style)
+      if not ignore_style: self.style_histo(histo, **style)
       if yaxis_divisions is not None:
         histo.yaxis.SetNdivisions(yaxis_divisions)
       histo.Draw('' if first else 'same')
@@ -1202,6 +1212,8 @@ class BasePlotter(object):
       ROOT.gPad.Modified()
       if first:
         y_range = BasePlotter._get_y_range_(*histos) if y_range is None else y_range 
+        if isinstance(y_range, basestring):
+          y_range = BasePlotter._get_y_range_(*histos, algo=y_range)
         if y_range[0] == y_range[1]:
           y_range = (y_range[0], y_range[0]+1.)
         if isinstance(histo, plotting.HistStack):
@@ -1213,7 +1225,8 @@ class BasePlotter(object):
       self.keep.append(histo)
 
     if legend_def is not None:
-      legend_def.entries = histos
+      if not legend_def.entries:
+        legend_def.entries = histos
       legend = legend_def.make_legend()
       legend.Draw()
       self.keep.append(legend)
@@ -1223,6 +1236,9 @@ class BasePlotter(object):
     return None
     
   def compare(self, ref, targets, method, xtitle='', ytitle='', yrange=None, **styles_kw):
+    if method == 'datamc' and len(targets) > 1:
+      raise RuntimeError('datamc comparison mode works only with one target only!')
+
     for target in targets:
       target.title = ''
       target.SetStats(False)
@@ -1232,6 +1248,17 @@ class BasePlotter(object):
           error = quad(rbin.error, tbin.error)
           tbin.value = (tbin.value-rbin.value)/error if error else 9999
           tbin.error = 0.01
+        elif method == 'datamc':
+          if rbin.value and tbin.value:
+            rbin.value = rbin.value/tbin.value
+            rbin.error = min(rbin.error/tbin.value, 9999)
+            tbin.error = min(tbin.error/tbin.value, 9999)
+            tbin.value = 1.
+          else:
+            tbin.value = 1.
+            tbin.error = 0.
+            rbin.value = 9999
+            rbin.error = 1.
         elif method == 'ratio':
           if rbin.value and tbin.value:
             result = tbin.value/rbin.value
@@ -1258,20 +1285,29 @@ class BasePlotter(object):
       ylabels = {
         'pull' : 'Pull',
         'ratio': 'Ratio',
+        'datamc' : 'data / mc',
         'diff' : 'Difference'
         }
       yranges = {
         'pull' : (-2.999,2.999),
         'ratio': (0.,1.999),
+        'datamc': (0.,1.999),
         'diff' : (-0.499,0.499)
         }
       centrals = {
         'pull' : 0,
         'ratio': 1,
+        'datamc': 1.,
         'diff' : 0,
         }
       styles_kw['drawstyle'] = 'e x0'
       y_range = yranges[method] if not yrange else (centrals[method]-yrange, centrals[method]+yrange)
+      if method == 'datamc':         
+        targets = [targets[0], ref]
+        styles_kw['fillcolor'] = [1, 1]
+        styles_kw['fillstyle'] = [3013, 3013]
+        styles_kw['drawstyle'] = ['E2', 'e x0']
+        styles_kw['markerstyle']= [0, 20]
       self.overlay(
         targets, y_range=y_range, xtitle=xtitle, 
         yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
@@ -1303,7 +1339,7 @@ class BasePlotter(object):
   
   def overlay_and_compare(self, histos, reference, method='pull', 
     legend_def=None, logx=False, logy=False, xtitle='', ytitle='',
-    logz=False, writeTo='', lower_y_range=None, **styles_kw):
+    logz=False, writeTo='', lower_y_range=None, ignore_style=False, **styles_kw):
     labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
     self.pad.cd()
     self.label_factor = labelSizeFactor1
@@ -1313,6 +1349,7 @@ class BasePlotter(object):
       legend_def=legend_def,
       logx=False, logy=False, 
       logz=False, ytitle=ytitle,
+      ignore_style=ignore_style,
       **styles_kw
       )
 

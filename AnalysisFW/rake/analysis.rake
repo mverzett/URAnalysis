@@ -100,11 +100,18 @@ task :test, [:analyzer, :sample] do |t, args|
   Rake::Task["testThis"].invoke
 end
 
-task :track_batch, [:submit_dir] do |t, args|
+task :track_batch, [:submit_dir, :ignore_correctness] do |t, args|
   puts "running on #{ENV['HOST']}"
-  sh "hold.py --check_correctness #{args.submit_dir}"
+  addopt = ''
+  holdopt = ''
+  if args.ignore_correctness == 'True'
+    addopt='--ignoreFailed '
+  else
+    holdopt = "--check_correctness #{args.submit_dir}"
+  end
+  sh "hold.py #{holdopt}"
   Dir.chdir(args.submit_dir) do
-    sh 'addjobs.py --fastHadd'
+    sh "addjobs.py --fastHadd #{addopt}"
   end
   analyzer = File.basename(args.submit_dir).split(/BATCH_\d+_/)[1]
   target_dir = "results/#{ENV['jobid']}/#{analyzer}"
@@ -120,7 +127,7 @@ task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
 
   samples = ''
   if args.samples
-    samples="--samples=#{args.samples}"
+    samples="--samples='#{args.samples}'"
   end
   opts = ''
   if args.opts

@@ -14,7 +14,7 @@ rule '.meta.json' => [proc {|trgt| trgt.sub(/\.meta\.json$/, '.txt')}] do |t|
   if sample.start_with? 'data'
     mc = ''
   end
-  sh "compute_meta.py #{t.source} #{t.name} #{mc} --threads #{workers} --quiet"
+  sh "compute_meta.py #{t.source} #{t.name} #{mc} --thread #{workers} --quiet"
 end
 
 task :getmeta => Dir.glob("#{ENV['URA_PROJECT']}/inputs/#{ENV['jobid']}/*.txt").map{|x| x.sub('.txt','.meta.json')}
