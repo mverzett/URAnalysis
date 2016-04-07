@@ -84,10 +84,12 @@ PATEmbedder<PATObject>::PATEmbedder(const edm::ParameterSet& cfg):
 	ufloat_names_ = float_maps.getParameterNames();
 	for(auto&& tag : trig_matches_)
 	{
+std::cout << "TRIG: " << tag << std::endl;
 		trig_matchTokens_.push_back(consumes< edm::Association<pat::TriggerObjectStandAloneCollection> >(tag));
 	}
 
 	for(auto&& name : ufloat_names_){
+std::cout << "USER: " << name << std::endl;
 		float_maps_.push_back(float_maps.getParameter<edm::InputTag>(name));
 		float_mapTokens_.push_back(consumes< edm::ValueMap<float> >(float_maps_.back()));
 	}
@@ -115,51 +117,51 @@ template<typename PATObject>
 void
 PATEmbedder<PATObject>::produce(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-//  edm::Handle< collection > handle;
-//  iEvent.getByToken(srcToken_, handle);
-//
-//  //get all trigger matches handles
-//  std::vector< edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > > match_maps;
-//  for(auto&& match : trig_matchTokens_){
-//    edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > i;
-//    iEvent.getByToken(match, i);
-//    match_maps.push_back(i);
-//  }
-//
-//  //get all user float handles
-//  std::vector< edm::Handle< edm::ValueMap<float> > > float_maps;
-//  for(auto&& token : float_mapTokens_){
-//    edm::Handle< edm::ValueMap<float> > i;
-//    iEvent.getByToken(token, i);
-//    float_maps.push_back(i);
-//  }
+  edm::Handle< collection > handle;
+  iEvent.getByToken(srcToken_, handle);
+
+  //get all trigger matches handles
+  std::vector< edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > > match_maps;
+  for(auto&& match : trig_matchTokens_){
+    edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > i;
+    iEvent.getByToken(match, i);
+    match_maps.push_back(i);
+  }
+
+  //get all user float handles
+  std::vector< edm::Handle< edm::ValueMap<float> > > float_maps;
+  for(auto&& token : float_mapTokens_){
+    edm::Handle< edm::ValueMap<float> > i;
+    iEvent.getByToken(token, i);
+    float_maps.push_back(i);
+  }
 
   //make new collection 
   std::unique_ptr<collection> output(new collection());
 
-//  //loop over the object
-//  for(size_t idx = 0; idx < handle->size(); idx++){
-//    PATObject new_cand(handle->at(idx));
-//    edm::Ref<collection> cand_ref(handle, idx);
-//    //protection from multiple entries of the same trig object
-//    //as in https://github.com/cms-sw/cmssw/blob/CMSSW_7_2_X/PhysicsTools/PatAlgos/plugins/PATTriggerMatchEmbedder.cc#L98
-//    //std::set< TriggerObjectStandAloneRef > cachedRefs; 
-//    auto path_it = tring_paths_.cbegin();
-//    for(auto map_it = match_maps.cbegin(); map_it != match_maps.cend(); ++map_it, ++path_it){
-//      const pat::TriggerObjectStandAloneRef trigRef( (**map_it)[cand_ref] );
-//      int trig_match = (int) (trigRef.isNonnull() && trigRef.isAvailable());
-//      new_cand.addUserInt(*path_it, trig_match);
-//    }
-//
-//    auto name_it = ufloat_names_.cbegin();
-//    for(auto map_it = float_maps.cbegin(); map_it != float_maps.cend(); ++map_it, ++name_it){
-//      float value = (**map_it)[cand_ref];
-//      new_cand.addUserFloat(*name_it, value);
-//    }
-//
-//    //put new candidate
-//    output->push_back(new_cand);
-//  }
+  //loop over the object
+  for(size_t idx = 0; idx < handle->size(); idx++){
+    PATObject new_cand(handle->at(idx));
+    edm::Ref<collection> cand_ref(handle, idx);
+    //protection from multiple entries of the same trig object
+    //as in https://github.com/cms-sw/cmssw/blob/CMSSW_7_2_X/PhysicsTools/PatAlgos/plugins/PATTriggerMatchEmbedder.cc#L98
+    //std::set< TriggerObjectStandAloneRef > cachedRefs; 
+    auto path_it = tring_paths_.cbegin();
+    for(auto map_it = match_maps.cbegin(); map_it != match_maps.cend(); ++map_it, ++path_it){
+      const pat::TriggerObjectStandAloneRef trigRef( (**map_it)[cand_ref] );
+      int trig_match = (int) (trigRef.isNonnull() && trigRef.isAvailable());
+      new_cand.addUserInt(*path_it, trig_match);
+    }
+
+    auto name_it = ufloat_names_.cbegin();
+    for(auto map_it = float_maps.cbegin(); map_it != float_maps.cend(); ++map_it, ++name_it){
+      float value = (**map_it)[cand_ref];
+      new_cand.addUserFloat(*name_it, value);
+    }
+
+    //put new candidate
+    output->push_back(new_cand);
+  }
 
   iEvent.put(std::move(output)); 
 }

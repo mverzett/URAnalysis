@@ -55,6 +55,7 @@ isolation = [
 ]
 
 genjet_specific = [
+   make_branch_pset('e', 'energy'),
    make_branch_pset('invisibleEnergy', 'invisibleEnergy()'),
    make_branch_pset('pdgId', 'pdgId()')
 ]
@@ -130,6 +131,7 @@ btaggging = [
    #make_branch_pset('csvIncl', 'bDiscriminator("combinedInclusiveSecondaryVertexV2BJetTags")'),
    make_branch_pset('csvIncl', 'bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags")'),
    make_branch_pset('CvsLtag', 'bDiscriminator("pfCombinedCvsLJetTags")'),
+   make_branch_pset('CombinedMVA', 'bDiscriminator("pfCombinedMVAV2BJetTags")'),
    make_branch_pset('CvsBtag', 'bDiscriminator("pfCombinedCvsBJetTags")'),
    make_branch_pset('vtxMass' , 'userFloat("vtxMass")'),
    make_branch_pset('vtxNtracks' , 'userFloat("vtxNtracks")'),

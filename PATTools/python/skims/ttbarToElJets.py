@@ -17,6 +17,7 @@ def skim(process, **collections):
       "PATJetSelector",
       src = cms.InputTag(collections['jets']),
       cut = cms.string('pt > 20 && abs(eta) < 10')
+      #cut = cms.string('pt > 22 && abs(eta) < 2.5')
       )
 
    process.jetFilter = cms.EDFilter(
