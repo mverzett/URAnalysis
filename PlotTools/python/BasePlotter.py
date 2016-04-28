@@ -17,6 +17,7 @@ import logging
 import ROOT
 import uuid
 from itertools import izip_longest 
+import rootpy
 
 ROOT.gROOT.SetBatch(True)
 
@@ -618,25 +619,25 @@ class BasePlotter(object):
         return sum(obj.hists).min() 
       elif isinstance(obj, ROOT.TGraph):
         return obj.GetYmin()
-      else:
+      elif hasattr(obj, 'min'):
         return obj.min()
+      else:
+        return None
     def __get_max__(obj):
       if isinstance(obj, plotting.HistStack):
         return sum(obj.hists).max() 
       elif isinstance(obj, ROOT.TGraph):
         return obj.GetYmax()
-      else:
+      elif hasattr(obj, 'max'):
         return obj.max()
+      else:
+        return None
 
-    ymin = min(
-      __get_min__(i)
-      for i in histos
-      )
-    ymax = max(
-      __get_max__(i)
-      for i in histos
-      )
-            
+    ymin = [__get_min__(i) for i in histos]
+    ymin = min(i for i in ymin if i is not None)
+    ymax = [__get_max__(i) for i in histos]
+    ymax = max(i for i in ymax if i is not None)
+
     if algo == 'yield':
       if ymin >= 0:
         ymin = 0 + (ymax-ymin)/100000000
@@ -1159,7 +1160,7 @@ class BasePlotter(object):
     histo = hh.Clone() if do_clone else hh
     self.pad.cd()
     self.style_histo(histo, **style)
-    y_range = BasePlotter._get_y_range_(histo)
+    y_range = BasePlotter._get_y_range_(histo)  
     if isinstance(histo, plotting.HistStack):
       histo.SetMinimum(y_range[0])
       histo.SetMaximum(y_range[1])
@@ -1413,7 +1414,7 @@ class BasePlotter(object):
     self.plot_legend(c,objects, plotoptions, legend_ordered)
   
   @staticmethod
-  def parse_formula(fcn_string, pars_string):
+  def parse_formula(fcn_string, pars_string, x_range=(0, 200)):
     '''Parses a formula similar to a roofit workspace,
     but uses root to make things little easier.
     Produces a TF1
@@ -1435,7 +1436,7 @@ class BasePlotter(object):
       formula    = formula.replace(par.name, '[%i]' % par.num)
       pars.append(par)
 
-    ret = ROOT.TF1('ret', formula, 0, 200)
+    ret = rootpy.asrootpy(ROOT.TF1('ret', formula, x_range[0], x_range[1]))
     for par in pars:
       ret.SetParName(par.num, par.name)
       if len(par.bounds) == 1:
