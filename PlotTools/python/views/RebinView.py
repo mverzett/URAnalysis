@@ -129,7 +129,7 @@ class RebinView(views._FolderView):
             bin_arrayx = binning[0] #array.array('d',binning[0])
             bin_arrayy = binning[1] #array.array('d',binning[1])
             if len(binning[0]) ==1 and len(binning[1])==1 :                
-                return  histogram.Rebin2D(int(binning[0][0]),int(binning[1][0]), histogram.GetName() + 'rebin')
+                return  asrootpy(histogram.Rebin2D(int(binning[0][0]),int(binning[1][0]), histogram.GetName() + 'rebin'))
             else:
                 return RebinView.newRebin2D(histogram, bin_arrayx, bin_arrayy)
         elif isinstance(histogram, ROOT.TH1):
