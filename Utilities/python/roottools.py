@@ -183,7 +183,7 @@ class Envelope(object):
          down, up = self.one_sigma
          return abs(down-center), abs(up-center)
 
-   def __init__(self):
+   def __init__(self, mode='median'):
       self.styles = {
          'two_sigma' : {
             'legendstyle' : 'f',
@@ -210,6 +210,7 @@ class Envelope(object):
             }
          }
 
+      self.mode = mode
       self._hists = []
       self._nhists = 0
       self.median_, self.one_sigma_, self.two_sigma_ = None, None, None
@@ -260,7 +261,8 @@ class Envelope(object):
       for ibin in range(1, nbins+1):
          vals = [i.get_bin_content(ibin) for i in self._hists]
          vals.sort()
-         self.median_.SetBinContent(ibin, vals[median])
+         med_val = vals[median] if self.mode == 'median' else sum(vals)/len(vals)
+         self.median_.set_bin_content(ibin, med_val)
          one_s_range = tuple(vals[i] for i in one_sigmas)
          two_s_range = tuple(vals[i] for i in two_sigmas)
          self.log.debug(
