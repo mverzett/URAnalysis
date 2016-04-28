@@ -152,3 +152,113 @@ class CTagEfficiency(PhysicsModel):
 
 ctagEfficiency = CTagEfficiency()
 
+
+class CTagComplete(PhysicsModel):
+    def __init__(self):
+        PhysicsModel.__init__(self)
+        self.opts = PhysOpts()
+        self.opts.add('verbose', False)
+        self.opts.add('constants', '')
+        self.effs_done = set()
+        self.categories = {
+            'notag'   : (False, False),
+            'leadtag' : (True , False),
+            'subtag'  : (False, True ),
+            'ditag'   : (True , True ),
+            }
+        self.constants = None
+
+    def setPhysicsOptions(self,physOptions):
+        '''Receive a list of strings with the physics options from command line'''
+        for po in physOptions:
+           self.opts.parse(po)
+        self.constants = prettyjson.loads(open(self.opts.constants).read())
+
+    def doParametersOfInterest(self):
+        """Create POI and other parameters, and define the POI set."""
+        #tt signal strenght 0-200% on over-all right combination ttbar scaling
+        #self.modelBuilder.doVar('strength[4347,0,8000]') 
+        #what we actually want to measure
+        self.modelBuilder.doVar('charmSF[1,0.,2.]')
+        self.modelBuilder.doVar('lightSF[1,0.,2.]')
+        self.modelBuilder.doVar('beautySF[1,0.,2.]')
+        self.modelBuilder.doSet('POI','charmSF,lightSF,beautySF')
+
+    @staticmethod
+    def replace_pars(expr, pars):
+        idx = 0
+        out_pars = []
+        for par in pars:
+            if par in expr:
+                expr = expr.replace(par, '@%i' % idx)
+                out_pars.append(par)
+                idx += 1
+        return expr, out_pars
+
+    def getYieldScale(self,bin,process):
+        name = 'Scaling_%s_%s' % (bin, process)
+        if self.modelBuilder.out.function(name):
+            return name
+        #check category (bin) consistency
+        if bin not in self.categories:
+            raise ValueError(
+                'Asking information for bin %s, but allowed bins are %s, '
+                'did you forget the inclusive=True option?' % (bin, self.categories))
+
+        ltag, stag = self.categories[bin]
+        ntot = self.constants[process]['normalization']
+
+        leff = 'L%sE'+ ('_%s' % process)
+        seff = 'S%sE'+ ('_%s' % process)
+        
+        l_template = '%s' if ltag else '(1-%s)' 
+        s_template = '%s' if stag else '(1-%s)' 
+        factor_template = 'expr::{FACTOR}("{MCEFF}*@0", {FLAV}SF)'
+
+        flavours = []
+        num_flav = 0 #for debug
+        pars = set()
+        for mapping in self.constants[process]['flavours']:
+            lead, sub, weight = tuple(mapping)
+            if weight > 0.:
+                partial = weight #for debug
+                eff_var = leff % lead
+                pars.add(eff_var)
+                l_factor = l_template % eff_var
+                eff = self.constants['mceffs'][lead]["leading"][process] #for debug
+                partial *= eff if ltag else (1-eff) #for debug
+                if eff_var not in self.effs_done:
+                    cmd = factor_template.format(
+                        FACTOR=eff_var,
+                        MCEFF=self.constants['mceffs'][lead]["leading"][process],
+                        FLAV=lead
+                        )
+                    self.modelBuilder.factory_(cmd)
+                    self.effs_done.add(eff_var)
+                eff_var = seff % sub
+                pars.add(eff_var)
+                s_factor = s_template % eff_var
+                eff = self.constants['mceffs'][sub]["subleading"][process] #for debug
+                partial *= eff if stag else (1-eff) #for debug
+                num_flav += partial  #for debug 
+                if eff_var not in self.effs_done:
+                    cmd = factor_template.format(
+                        FACTOR=eff_var,
+                        MCEFF=self.constants['mceffs'][sub]["subleading"][process],
+                        FLAV=sub
+                        )
+                    self.modelBuilder.factory_(cmd)
+                    self.effs_done.add(eff_var)
+                ww = str(weight)
+                pair_factor = '*'.join([l_factor, s_factor, ww])
+                flavours.append( pair_factor )
+        formula = 'expr::%s("%f*(%s)", {PARS})' % (name, ntot, ' + '.join(flavours))
+        #print '%s/%s' % (bin, process), formula
+        formula, pars = CTagComplete.replace_pars(formula, pars)
+        formula = formula.format(PARS=(', '.join(pars)))
+        self.modelBuilder.factory_(formula)
+        print '%s/%s' % (bin, process), ntot*num_flav#, '-->', self.modelBuilder.out.function(name).getVal()
+        return name
+
+
+effcomplete = CTagComplete()
