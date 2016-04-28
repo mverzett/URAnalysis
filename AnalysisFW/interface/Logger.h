@@ -21,7 +21,7 @@ public:
 
   ~Messenger()
   {
-    if(active_) std::cout << message_.str();
+    if(active_) std::cerr << message_.str();
   }
 
   template<typename T>
