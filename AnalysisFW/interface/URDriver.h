@@ -7,22 +7,22 @@ class URDriver<T> T = Analyzer
 Class to handle the analysis of Ntuples in a threaded way
  */
 
-#include "URParser.h"
-#include "PathReader.h"
-#include "SafeQueue.h"
+#include "URAnalysis/AnalysisFW/interface/URParser.h"
+#include "URAnalysis/AnalysisFW/interface/PathReader.h"
+#include "URAnalysis/AnalysisFW/interface/SafeQueue.h"
+#include "URAnalysis/AnalysisFW/interface/Worker.h"
+#include "URAnalysis/AnalysisFW/interface/TFileMerger.h"
+#include "URAnalysis/AnalysisFW/interface/Logger.h"
+#include "URAnalysis/AnalysisFW/interface/ProgressBar.h"
 #include <vector>
-#include "Worker.h"
 #include <stdio.h>
-#include "TFileMerger.h"
 #include <iostream>
 #include <stdio.h>
 #include "TFile.h"
 #include "TTree.h"
-#include "Logger.h"
 #include <sstream>
 #include "TThread.h"
 #include "TROOT.h"
-#include "ProgressBar.h"
 #include "TTreeCache.h"
 
 // Necessary to take a shell variable as cpp macro and transform it into a string

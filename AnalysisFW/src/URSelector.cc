@@ -1,7 +1,7 @@
 #ifndef URSelector_cc
 #define URSelector_cc
 
-#include "URSelector.h"
+#include "URAnalysis/AnalysisFW/interface/URSelector.h"
 
 
 

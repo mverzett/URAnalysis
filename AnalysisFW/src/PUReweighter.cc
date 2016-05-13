@@ -1,8 +1,8 @@
-#include "PUReweighter.h"
+#include "URAnalysis/AnalysisFW/interface/PUReweighter.h"
 #include "TH1.h"
 #include "TFile.h"
-#include "Logger.h"
-#include "DataFile.h"
+#include "URAnalysis/AnalysisFW/interface/Logger.h"
+#include "URAnalysis/AnalysisFW/interface/DataFile.h"
 #include "TMath.h"
 
 void PUReweighter::init(std::string sample_fname, std::string data_fname, std::string hdata, std::string hmc) {

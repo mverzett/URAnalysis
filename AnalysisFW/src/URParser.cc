@@ -5,8 +5,8 @@
 #include <iostream>
 #include <stdlib.h>
 #include <fstream>
-#include "URParser.h"
-#include "Logger.h"
+#include "URAnalysis/AnalysisFW/interface/URParser.h"
+#include "URAnalysis/AnalysisFW/interface/Logger.h"
 
 opts::options_description & URParser::optionGroup(std::string groupName, std::string desc, Visibility vis)
 {

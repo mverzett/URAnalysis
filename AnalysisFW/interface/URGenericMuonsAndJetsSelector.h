@@ -3,8 +3,8 @@
 
 
 
-#include "URGenericMuonsSelector.h"
-#include "URGenericJetsSelector.h"
+#include "URAnalysis/AnalysisFW/interface/URGenericMuonsSelector.h"
+#include "URAnalysis/AnalysisFW/interface/URGenericJetsSelector.h"
 
 
 
