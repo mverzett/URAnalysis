@@ -51,6 +51,8 @@ public:
 		switch(type_){
 		case Type::T_TH1F: tfill<TH1F>(x); break;
 		case Type::T_TH1D: tfill<TH1D>(x); break;
+		case Type::T_TH2F: break;
+		case Type::T_TH2D: break;
     case Type::T_UNKNOWN: robj_.get()->GetName(); //this will crash!
 		}
 	}
@@ -59,14 +61,16 @@ public:
 		switch(type_){
 		case Type::T_TH1F: tfill<TH1F>(x, y); break;
 		case Type::T_TH1D: tfill<TH1D>(x, y); break;
-		case Type::T_TH2F: tfill<TH2F>(x, y); break;
-		case Type::T_TH2D: tfill<TH2D>(x, y); break;
+		case Type::T_TH2F: break;
+		case Type::T_TH2D: break;
     case Type::T_UNKNOWN: robj_.get()->GetName(); //this will crash!
 		}
 	}
 
 	void fill(float x, float y, float z) {
 		switch(type_){
+    case Type::T_TH1F: break;
+    case Type::T_TH1D: break;
 		case Type::T_TH2F: tfill<TH2F>(x, y); break;
 		case Type::T_TH2D: tfill<TH2D>(x, y); break;
     case Type::T_UNKNOWN: robj_.get()->GetName(); //this will crash!

@@ -1,4 +1,5 @@
 <use name="root"/>
+<use name="rootcore"/>
 <use name="rootmath"/>
 <use   name="boost_program_options"/>
 <use   name="boost_filesystem"/>

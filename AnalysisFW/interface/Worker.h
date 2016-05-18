@@ -18,6 +18,7 @@ public:
   void start(){thread_ = std::thread(&Worker::work, this);}
   void join(){thread_.join();}
 	virtual void start_nothread(){work();}
+  virtual ~Worker() {}
 
 private:
   virtual void work() = 0;

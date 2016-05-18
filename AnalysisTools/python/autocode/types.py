@@ -310,7 +310,7 @@ class ObjStruct(object):
             setters += '\nvoid %s(float pt, float eta, float phi, float mass){SetPtEtaPhiM(pt, eta, phi, mass);}' % _lorentz_setter
 
          void_init = '%s\n%s' % ('TLorentzVector(),', void_init)
-         getters += '\nClassDef(%s, 1);' % self.name
+         #getters += '\nClassDef(%s, 1);' % self.name #creates dreaded undefined reference to vtable without LinkDef
          
       return cpp_format(
          ObjStruct.cpp_template,

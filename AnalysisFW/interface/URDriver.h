@@ -11,7 +11,7 @@ Class to handle the analysis of Ntuples in a threaded way
 #include "URAnalysis/AnalysisFW/interface/PathReader.h"
 #include "URAnalysis/AnalysisFW/interface/SafeQueue.h"
 #include "URAnalysis/AnalysisFW/interface/Worker.h"
-#include "URAnalysis/AnalysisFW/interface/TFileMerger.h"
+#include "TFileMerger.h"
 #include "URAnalysis/AnalysisFW/interface/Logger.h"
 #include "URAnalysis/AnalysisFW/interface/ProgressBar.h"
 #include <vector>
@@ -42,6 +42,7 @@ public:
 
 	void setTree(TTree* tree) {analyzer_.setTree(tree);}
 	void end() {analyzer_.end();}
+  virtual ~AnalysisWorker() {}
 
 	void start_nothread(SafeQueue<std::string>& inputs_, ProgressBar &bar_) 
 	{
@@ -103,7 +104,7 @@ public:
       ("threads", opts::value<int>()->default_value(2), "number of threads to be used for processing")
       ("J", opts::value<int>()->default_value(1), "total number of jobs")
       ("j", opts::value<int>()->default_value(0), "jobnumber");
-	  ("noprog", "do not show progress bar");
+	  //("noprog", "do not show progress bar");
     //make input and output positional (even though are still valid in CLI)
     args.add("input", 1);
     args.add("output", 1);
