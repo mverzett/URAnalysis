@@ -1,25 +1,6 @@
 tools = "#{$fwk_dir}/rake/tools.rb"
 require tools
 
-rule ".exe" => [
-    #the input .cc
-    proc {|target| target.sub(%r{(ENV['URA_PROJECT']/)?bin/(.*).exe}, "#{ENV['URA_PROJECT']}/\\2.cc")},
-    proc { "#{ENV['URA_PROJECT']}/lib/.lib_timestamp"},
-    proc { "#{ENV['URA']}/AnalysisFW/lib/.lib_timestamp"}] do |t|
-  puts t.investigation
-  project_dir = ENV['URA_PROJECT']
-  fwk_dir = ENV['URA']+'/AnalysisFW'
-  local_libs = Dir.glob("#{project_dir}/lib/*.*o")
-  fwk_libs = Dir.glob("#{fwk_dir}/lib/*.*o")
-  prj_libs = Array[ENV.fetch('URA_PROJECT_LIBS', '')]
-  
-  local_includes = "#{project_dir}/interface/"
-  fwk_includes = "#{fwk_dir}/interface/"
-  
-  sh compile_string([local_includes, fwk_includes],local_libs+fwk_libs+prj_libs, t.prerequisites[0], t.name)
-  #"g++ -I#{local_includes} -I#{fwk_includes} `root-config --cflags` `root-config --libs` -lboost_program_options #{libs} #{t.prerequisites[0]} -o #{t.name}"
-end
-
 rule ".cfg" do |t|
   sh "touch #{t.name}"
   puts t.investigation
@@ -27,18 +8,19 @@ end
 
 $external_opts=''
 rule ".root" => [ 
-    # The analyzer executable
-    proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "bin/\\1.exe")},
     # The cfg
     proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "\\1.cfg")},
     # The sample file list .txt file
     proc {|targ| targ.sub(%r{results/(.*)/.*/(.*).root}, "inputs/\\1/\\2.txt")} ] do |t|
+  #delegate scram for checking if something needs to be built
+  scram_build_analyzers()
   # Make the output directory
   sh "mkdir -p `dirname #{t.name}`"
   workers = ENV.fetch('URA_NTHREADS', 2)
-  executable = File.basename(t.prerequisites[0])
-  cfg = t.prerequisites[1]
-  inputs = t.prerequisites[2]
+  executable = File.basename(File.dirname(t.name))
+  puts executable
+  cfg = t.prerequisites[0]
+  inputs = t.prerequisites[1]
   sh "time #{executable} #{inputs} #{t.name} -c  #{cfg} --threads #{workers} #{$external_opts}"
 end
 
@@ -90,11 +72,13 @@ task :test, [:analyzer, :sample] do |t, args|
     samples_to_test << mc_samples[0]
   end
   jobid = ENV['jobid']
-  task :testThis => "bin/#{bname}.exe" do |u|
+  #delegate scram for checking if something needs to be built
+  scram_build_analyzers()
+  task :testThis => [] do |u|
     samples_to_test.each do |sample|
       input_list = "inputs/#{jobid}/#{sample}.txt"
       nlines =  %x{wc -l #{input_list}}.to_i
-      sh "time #{bname}.exe #{input_list} #{sample}.#{bname}.test.root -c #{bname}.cfg --threads 1 --J #{nlines} -v"
+      sh "time #{bname} #{input_list} #{sample}.#{bname}.test.root -c #{bname}.cfg --threads 1 --J #{nlines} -v"
     end
   end
   Rake::Task["testThis"].invoke
@@ -137,10 +121,12 @@ task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
     opts+='--splitting=splitting.json'
   end
 
-  task :runThisBatch => "bin/#{bname}.exe" do |u|
+  #delegate scram for checking if something needs to be built
+  scram_build_analyzers()
+  task :runThisBatch => [] do |u|
     submit_dir = "/uscms_data/d3/#{ENV['USER']}/BATCH_#{Time.now.to_i}_#{bname}"
     puts "Submitting to #{submit_dir}"
-    sh "jobsub.py #{submit_dir} #{bname}.exe #{samples} #{opts}"
+    sh "jobsub.py #{submit_dir} #{bname} #{samples} #{opts}"
     Rake::Task["track_batch"].invoke(submit_dir)
   end
   Rake::Task["runThisBatch"].invoke
