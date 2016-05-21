@@ -18,6 +18,43 @@ options.register(
    'Switch to MC production'
 )
 options.register(
+   'runJEC',
+   False,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+   'Re-run JEC'
+)
+options.register(
+   'JECDb',
+   '',
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.string,
+   'Re-run JEC with custom DB file and tag. '
+   'format dbfile.db:tagAK4PFchs:tagAK4PF'
+)
+options.register(
+   'makePSTop',
+   False,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+   'Run (and store) pseudo-top'
+)
+## options.register(
+##    'noHFMET',
+##    False,
+##    VarParsing.multiplicity.singleton,
+##    VarParsing.varType.bool,
+##    'Run no HF MET'
+## )
+options.register(
+   'skim',
+   '',
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.string,
+   'Set which skim to run'
+)
+
+options.register(
    'computeWeighted',
    True,
    VarParsing.multiplicity.singleton,

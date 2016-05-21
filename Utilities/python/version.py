@@ -44,6 +44,9 @@ def cmssw_major_version():
 def cmssw_minor_version():
     return int(os.getenv('CMSSW_VERSION').split('_')[2])
 
+@diaper
+def cmssw_branch():
+    return cmssw_major_version(), cmssw_minor_version()
 
 @diaper
 def git_version_unsafe():

@@ -47,31 +47,23 @@ process.TFileService = cms.Service(
 ######################
 ##   PREPROCESSING
 ######################
-if options.isMC:
-   from URAnalysis.Configuration.mcpreprocessing import preprocess
-   collections = preprocess(process) #creates preprocessing sequence
-else:
-   from URAnalysis.Configuration.datapreprocessing import preprocess
-   collections = preprocess(process) #creates preprocessing sequence  
+collections = { 
+   'muons' : 'slimmedMuons',
+   'electrons' : 'slimmedElectrons',
+   'photons' : 'slimmedPhotons',
+   'jets' : 'slimmedJets',
+   'vertices' : 'offlineSlimmedPrimaryVertices',
+   'METs' : 'slimmedMETs',
+   'NoHFMETs' : 'slimmedMETsNoHF',
+   'genParticles' : 'prunedGenParticles',
+   }
+sequence, collections = urpat.preprocess(process, options, **collections)
+process.preprocessing = sequence
 
 #HF Noise Filter
 process.load('CommonTools.RecoAlgos.HBHENoiseFilterResultProducer_cfi')
 process.HBHENoiseFilterResultProducer.minZeros = cms.int32(99999) 
 process.preprocessing *= process.HBHENoiseFilterResultProducer
-
-#process.ApplyBaselineHBHENoiseFilter = cms.EDFilter('BooleanFlagFilter',
-#   inputLabel = cms.InputTag('HBHENoiseFilterResultProducer','HBHENoiseFilterResult'),
-#   reverseDecision = cms.bool(False)
-#)
-
-#process.load('RecoMET.METFilters.CSCTightHaloFilter_cfi')
-#
-#process.goodVertices = cms.EDFilter(
-#  "VertexSelector",
-#  filter = cms.bool(False),
-#  src = cms.InputTag("offlinePrimaryVertices"),
-#  cut = cms.string("!isFake && ndof > 4 && abs(z) <= 24 && position.rho < 2")
-#)
 
 if not options.noSkim:
    skim_sequences = urskims.add_skims(process, **collections)
