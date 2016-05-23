@@ -5,13 +5,6 @@
 // 
 /**\class NtupleFilter.cc NtupleFilter.cc.cc URAnalysis/NtupleFilter.cc/plugins/NtupleFilter.cc.cc
 
-Description: Add inheritance information to GenParticles and store it in the URTree.
-The inheritance information (mom_index) consists in assigning an integer counter to each 
-GenParticle in the input collection that points to its mother.
-
-Useful to take a look at these pages, (I stole the bulk of the code from the second link):
-https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookGenParticleCandidate
-https://cmssdt.cern.ch/SDT/lxr/source/PhysicsTools/HepMCCandAlgos/plugins/ParticleListDrawer.cc
 */
 //
 // Original Author:  Aran Garcia-Bellido
@@ -72,8 +65,8 @@ NtupleFilter::NtupleFilter(edm::ParameterSet iConfig):
 	triggerSelection_(iConfig.getParameter<vector<string> >("filterSelection")),
 	currentrun(0)
 {
-    srcTokenRECO = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "RECO"));	
-    srcTokenPAT = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "PAT"));
+  srcTokenRECO = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "RECO"));	
+  srcTokenPAT = consumes<edm::TriggerResults>(edm::InputTag("TriggerResults", "" , "PAT"));
 
 	results.resize(triggerSelection_.size());
 	selectedBits.resize(triggerSelection_.size());
@@ -115,7 +108,7 @@ void NtupleFilter::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 			selectedBits[tr] = 0;
 			for(size_t tn = 0 ; tn < triggerBits->size() ; ++tn)
 			{
-	cout << names.triggerName(tn) << " " << tn << endl;
+        //cout << names.triggerName(tn) << " " << tn << endl;
 				if(names.triggerName(tn).find(triggerSelection_[tr]) != string::npos)
 				{
 					selectedBits[tr] = tn;

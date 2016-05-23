@@ -92,8 +92,7 @@ custom_pat_sequence, collections = urpat.customize(
 
 ntuple_sequence, ntuple_end = ntuple.make_ntuple(
    process,
-   options.isMC,
-   options.computeWeighted,
+   options, 
    **collections
    )
 

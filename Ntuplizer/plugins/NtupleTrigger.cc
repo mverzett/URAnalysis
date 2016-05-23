@@ -111,7 +111,7 @@ void NtupleTrigger::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 				if(names.triggerName(tn).find(triggerSelection_[tr]+"_v") != string::npos)
 				{
 					selectedBits[tr] = tn;
-					cout << names.triggerName(tn) << " " << tn << endl;
+					//cout << names.triggerName(tn) << " " << tn << endl;
 					break;
 				}
 			}

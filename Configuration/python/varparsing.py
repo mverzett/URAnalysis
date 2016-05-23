@@ -39,13 +39,27 @@ options.register(
    VarParsing.varType.bool,
    'Run (and store) pseudo-top'
 )
-## options.register(
-##    'noHFMET',
-##    False,
-##    VarParsing.multiplicity.singleton,
-##    VarParsing.varType.bool,
-##    'Run no HF MET'
-## )
+options.register(
+   'useHFMET',
+   False,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+   'Run no HF MET'
+)
+options.register(
+	'storeLHEParticles',
+	False,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+	'store LHE particles'
+)	
+options.register(
+   'makeJetTracks',
+   False,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+   'Store jet track info'
+)
 options.register(
    'skim',
    '',
