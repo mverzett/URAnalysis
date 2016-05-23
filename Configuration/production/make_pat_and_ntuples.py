@@ -66,9 +66,20 @@ process.HBHENoiseFilterResultProducer.minZeros = cms.int32(99999)
 process.preprocessing *= process.HBHENoiseFilterResultProducer
 
 if not options.noSkim:
-   skim_sequences = urskims.add_skims(process, **collections)
+	skims = urskims.add_skims(process, **collections)
+	if options.skims:
+		if options.skims.lower() == 'help':
+			for i in skims:
+				print i.label_()
+			raise RuntimeError('Everything is OK, just wanted to exit')
+		else:
+			to_pick = set(options.skims.split(','))
+			skim_sequences = [i.label_() for i in skims]
+			skim_sequences = filter(lambda x: x in to_pick, skim_sequences)
+	else:
+		skim_sequences = [i.label_() for i in skims]
 else:
-   skim_sequences = []
+	skim_sequences = []
 
 #store meta
 process.load("Configuration.StandardSequences.Services_cff")
