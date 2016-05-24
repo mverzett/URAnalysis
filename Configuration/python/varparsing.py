@@ -61,11 +61,11 @@ options.register(
    'Store jet track info'
 )
 options.register(
-   'skim',
+   'skims',
    '',
    VarParsing.multiplicity.singleton,
    VarParsing.varType.string,
-   'Set which skim to run'
+   'Set which skim to run (coma-separated list), use "help" to dump names'
 )
 
 options.register(
