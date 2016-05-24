@@ -16,6 +16,7 @@ from argparse import ArgumentParser
 from pdb import set_trace
 import os
 import subprocess
+from glob import glob
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument('jobid', type=str, help='job id of the production')
@@ -31,6 +32,7 @@ parser.add_argument('--crab', dest='crab', type=int,
                     default=3, help='Version of crab to use')
 parser.add_argument('--local', dest='local', action='store_true',
                     default=False, help='Submit to local (NOT SUPPORTED YET)')
+parser.add_argument('--externals', default='', help='external files to be provided (JSONS, JEC.db, etc...) allows POSIX regex, space-separated string')
 
 args = parser.parse_args()
 
@@ -92,7 +94,13 @@ to_submit = set(to_submit)
 jobs = []
 
 #JEC external files
-externals = ['URAnalysis/PATTools/data/Summer15_25nsV6_DATA.db']
+externals = []
+if args.externals:
+	paths = externals.split()
+	for i in paths:
+		externals.exted(glob(i))
+	if len(externals):
+		raise RuntimeError('You provided external files but I could not find any!')
 externals = [os.path.join(os.environ['CMSSW_BASE'],'src',i) for i in externals]
 
 for sample in to_submit:
