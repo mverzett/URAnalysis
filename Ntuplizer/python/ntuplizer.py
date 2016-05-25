@@ -10,6 +10,7 @@ def make_ntuple(process, opts, ntuple_seq_name='ntuple', **kwargs):
 	Ntuple object, the keyword is the ntuple object name
 	returns a tuple: (ntuple_sequence, ntuple_end_module)
 	'''
+	process.ntupleEnd = cms.EDAnalyzer('TreeFiller')
 	if not hasattr(process, ntuple_seq_name):
 		setattr(process, ntuple_seq_name, cms.Sequence())
 		ntuple = getattr(process, ntuple_seq_name)
@@ -185,8 +186,8 @@ def make_ntuple(process, opts, ntuple_seq_name='ntuple', **kwargs):
 	#############
 	#  MC Only info, on data will produce empty collections
 	#############
-	if not opts.isMC:
-		return ntuple, process.ntupleEnd
+	##if not opts.isMC:
+	##	return ntuple, process.ntupleEnd
 	process.genInfo = cms.EDAnalyzer(
 		'NtupleGenInfoProducer',
 		src = cms.InputTag(
@@ -341,5 +342,4 @@ def make_ntuple(process, opts, ntuple_seq_name='ntuple', **kwargs):
 		)
 	ntuple += process.genjets
 	
-	process.ntupleEnd = cms.EDAnalyzer('TreeFiller')
 	return ntuple, process.ntupleEnd
