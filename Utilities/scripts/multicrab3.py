@@ -51,6 +51,7 @@ elif args.task == 'status':
             lines = lines[lines.index('')+1:]
             lines = lines[:lines.index('')]
          except ValueError:
+            print 'cannot parse output:\n\n%s' % out
             set_trace()
          #make it look nice
          lines = [i.replace('Jobs status:','').replace('\t','') for i in lines]
