@@ -3,8 +3,16 @@ task :getfiles, [:inputdir] do |t, args|
   sh "mkdir -p inputs/#{jobid}"
   Dir.glob("#{args.inputdir}/#{jobid}/*").each do |dir|
     sample = File.basename(dir)
-    sh "find #{dir} -name '*.root' | grep -v 'failed' > inputs/#{jobid}/#{sample}.txt"
+    files = `find #{dir} -name '*.root' | grep -v 'failed'` # avoid issues with empty samples causing crashes
+    if files.empty?
+      puts "sample #{sample} has not files! Skipping..."
+    else
+      File.open("inputs/#{jobid}/#{sample}.txt", 'w') do |file|
+        file << files
+      end
+    end
   end
+  sh "sed -i 's|/eos/uscms/|root://cmseos.fnal.gov//|g' inputs/#{jobid}/*.txt"
 end
 
 rule '.meta.json' => [proc {|trgt| trgt.sub(/\.meta\.json$/, '.txt')}] do |t|
@@ -41,6 +49,7 @@ task :track_meta_batch, [:submit_dir] do |t, args|
   target_dir = "inputs/#{ENV['jobid']}"
   sh "cp #{args.submit_dir}/*.root #{target_dir}/."
   sh "cp #{args.submit_dir}/*.json #{target_dir}/."
+  sh "mkdir -p #{target_dir}/INPUT/."
   sh "cp #{args.submit_dir}/*.root #{target_dir}/INPUT/."
 end
 
@@ -71,10 +80,14 @@ multitask :getlumi => Dir.glob("#{ENV['URA_PROJECT']}/inputs/#{ENV['jobid']}/*.t
   sh "cp inputs/#{ENV['jobid']}/*.meta.pu*.root inputs/#{ENV['jobid']}/INPUT/."
 end
 
-task :proxy do |t|
+task :proxy, [:sample] do |t, args|
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/*.txt").map{|x| File.basename(x).split('.')[0]}
   mc_samples = samples.select{|x| not x.start_with?('data')}
+  if not args.sample.empty?
+    regex = Regexp.new args.sample
+    mc_samples = mc_samples.select{|x| regex =~ x}
+  end
   tfile = File.new("inputs/#{jobid}/"+mc_samples[0]+".txt", 'r').gets.strip
-  sh "make_tree_proxy.py #{tfile} Events"
+  sh "make_tree_proxy.py --nodict #{tfile} Events"
 end
