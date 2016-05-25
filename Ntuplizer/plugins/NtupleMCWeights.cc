@@ -51,16 +51,8 @@ private:
   edm::InputTag src_;
   edm::EDGetTokenT<LHEEventProduct> srcToken_;
    
-  std::vector<float> weights;     // Basically what is the position of this particle in the collection
-  std::vector<float> px;     // Basically what is the position of this particle in the collection
-  std::vector<float> py;     // Basically what is the position of this particle in the collection
-  std::vector<float> pz;     // Basically what is the position of this particle in the collection
-  std::vector<float> e;     // Basically what is the position of this particle in the collection
-  std::vector<int> pdgid;     // Basically what is the position of this particle in the collection
-  std::vector<int> status;     // Basically what is the position of this particle in the collection
-  std::vector<int> fmother;     // Basically what is the position of this particle in the collection
-  std::vector<int> lmother;     // Basically what is the position of this particle in the collection
-  int npnlo;     // Basically what is the position of this particle in the collection
+  std::vector<float> weights;
+  int npnlo;
 };
 
 // Constructor
@@ -73,23 +65,6 @@ NtupleMCWeights::NtupleMCWeights(edm::ParameterSet iConfig):
   // By having this class inherit from Obj2BranchBAse, we have access to our tree_, no need for TFileService
   // Book branches:
   tree_.branch(prefix_+SEPARATOR+"weights", &weights); 
-  //tree_.branch(prefix_+SEPARATOR+"px", &px); 
-  //tree_.branch(prefix_+SEPARATOR+"py", &py); 
-  //tree_.branch(prefix_+SEPARATOR+"pz", &pz); 
-  //tree_.branch(prefix_+SEPARATOR+"e", &e); 
-  //tree_.branch(prefix_+SEPARATOR+"pdgid", &pdgid); 
-  //tree_.branch(prefix_+SEPARATOR+"status", &status); 
-  //tree_.branch(prefix_+SEPARATOR+"fmother", &fmother); 
-  //tree_.branch(prefix_+SEPARATOR+"lmother", &lmother); 
-  //tree_.branch(prefix_+SEPARATOR+"npnlo", &npnlo, (prefix_+SEPARATOR+"npnlo/I").c_str()); 
-  tree_.branch(std::string("PXLHEs")+SEPARATOR+"px", &px); 
-  tree_.branch(std::string("PYLHEs")+SEPARATOR+"py", &py); 
-  tree_.branch(std::string("PZLHEs")+SEPARATOR+"pz", &pz); 
-  tree_.branch(std::string("ELHEs")+SEPARATOR+"e", &e); 
-  tree_.branch(std::string("PDGIDLHEs")+SEPARATOR+"pdgid", &pdgid); 
-  tree_.branch(std::string("STATUSLHEs")+SEPARATOR+"status", &status); 
-  tree_.branch(std::string("FMOTHLHEs")+SEPARATOR+"fmother", &fmother); 
-  tree_.branch(std::string("LMOTHLHEs")+SEPARATOR+"lmother", &lmother); 
   tree_.branch(std::string("NPNLOLHE")+SEPARATOR+"npnlo", &npnlo, (std::string("NPNLOLHE")+SEPARATOR+"npnlo/I").c_str()); 
 }
 
@@ -101,14 +76,6 @@ NtupleMCWeights::~NtupleMCWeights()
 void NtupleMCWeights::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 	weights.clear();
-	px.clear();
-	py.clear();
-	pz.clear();
-	e.clear();
-	pdgid.clear();
-	status.clear();
-	fmother.clear();
-	lmother.clear();
 
 	edm::Handle<LHEEventProduct> lheinfo;
 	iEvent.getByToken(srcToken_, lheinfo);
@@ -122,21 +89,6 @@ void NtupleMCWeights::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		}
 		npnlo = lheinfo->npNLO();
 		//std::cout << npnlo << std::endl;
-		const lhef::HEPEUP& hepeup = lheinfo->hepeup();
-		for(size_t p = 0 ; p < hepeup.IDUP.size() ; ++p)
-		{
-			//std::cout << hepeup.IDUP.size() << " " << hepeup.IDUP[p] << std::endl;
-			const lhef::HEPEUP::FiveVector& mom = hepeup.PUP[p];
-			//std::cout << mom[0] << " " << mom[1] << " "<< mom[2] << " " << mom[3] << std::endl;
-			px.push_back(mom[0]);
-			py.push_back(mom[1]);
-			pz.push_back(mom[2]);
-			e.push_back(mom[3]);
-			pdgid.push_back(hepeup.IDUP[p]);
-			status.push_back(hepeup.ISTUP[p]);
-			fmother.push_back(hepeup.MOTHUP[p].first);
-			lmother.push_back(hepeup.MOTHUP[p].second);
-		}	
 	} 
 }
 
