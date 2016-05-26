@@ -146,7 +146,18 @@ else:
       )
    process.schedule.append(process.passThroughPath)
 
-## process.end = cms.EndPath(
-##    ntuple_end
-## )
-## process.schedule.append(process.end)
+if options.edm:
+	process.edmOut = cms.OutputModule(
+		"PoolOutputModule",
+		# use this in case of filter available
+		outputCommands = cms.untracked.vstring( 
+			'drop *',
+			'keep *_patJetsReapplyJEC_*_*',
+			'keep *_patPFMetT1v2_*_*'
+			),
+		fileName = cms.untracked.string('edmTEST.root')
+		)
+	process.end = cms.EndPath(
+		process.edmOut
+		)
+	process.schedule.append(process.end)
