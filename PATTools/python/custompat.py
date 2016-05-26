@@ -110,7 +110,13 @@ def preprocess(process, opts, **collections):
 				'particleFlow', 'packedPFCandidates', verbose=True
 				)
 		elif cmssw_branch() == (7,6): #7.6 bugfixes (do they ever get it right)?
-			getattr(process, 'shiftedPatJetEnUp%s' % met_kwargs['postfix']).src = cms.InputTag('patJetsReapplyJEC', '', process.name_())
+			process.allTheFuckingMET = cms.Sequence()
+			for i in dir(process):
+				if i.endswith(met_kwargs['postfix']) and not isinstance(getattr(process, i), cms.Sequence):
+					process.allTheFuckingMET += getattr(process, i)
+			massSearchReplaceAnyInputTag(process.allTheFuckingMET, 'slimmedJets', cms.InputTag('patJetsReapplyJEC', '', process.name_()), True)
+			getattr(process, 'slimmedMETs%s' % met_kwargs['postfix']).t1Uncertainties = \
+				 cms.InputTag('patPFMetT1%s' % met_kwargs['postfix'], '', process.name_())			
 			massSearchReplaceAnyInputTag(
 				getattr(process, 'patPFMetTxyCorrSequence%s' % met_kwargs['postfix']),
 				'offlinePrimaryVertices', 'offlineSlimmedPrimaryVertices', verbose=True
@@ -119,6 +125,7 @@ def preprocess(process, opts, **collections):
 				getattr(process, 'patPFMetTxyCorrSequence%s' % met_kwargs['postfix']), 
 				'particleFlow', 'packedPFCandidates', verbose=True
 				)			
+			process.selectedPatJetsv2.src = cms.InputTag('patJetsReapplyJEC', '', process.name_())
 		
 		if not opts.isMC:
 			getattr(process, 'patPFMetTxyCorr%s' % met_kwargs['postfix']).vertexCollection = cms.InputTag('offlineSlimmedPrimaryVertices')
