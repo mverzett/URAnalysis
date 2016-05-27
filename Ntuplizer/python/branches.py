@@ -144,6 +144,9 @@ jet_specific = [
    make_branch_pset('area', 'jetArea'),
    make_branch_pset('mass', 'p4().mass()'),
 
+	 #JES uncertainty values
+	 make_branch_pset('JESUnc', '? hasUserCand("JES+") ? userCand("JES+").pt()/pt() -1 : 0'),
+
    #uncorrected values
    make_branch_pset('uncorrPt' , 'correctedP4(0).pt()'),
    make_branch_pset('uncorrEta', 'correctedP4(0).eta()'),

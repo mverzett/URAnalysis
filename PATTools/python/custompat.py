@@ -187,18 +187,15 @@ def customize(process, isMC=True, **collections):
         )
     process.electronIpInfo.vtxSrc = collections['vertices']
     
-    process.load('URAnalysis.PATTools.objects.jets')
-    collections['jets'] = cfgtools.chain_sequence(
-        process.customJets,
-        collections['jets']
-        )
+    import URAnalysis.PATTools.objects.jets as jets
+    jet_sequence, collections['jets'] = jets.add_jets(process, collections['jets'], isMC)
 
     process.customPAT = cms.Sequence(
         process.customTrigger *
         process.customVertices *
         process.customMuons *
         process.customElectrons *
-        process.customJets
+        jet_sequence
         )
 
     ## if isMC:

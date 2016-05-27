@@ -46,6 +46,7 @@ private:
   typedef std::vector<edm::InputTag> vInputTag;
   typedef std::vector<std::string> vstring;
   typedef std::vector<PATObject> collection;
+	typedef std::vector<edm::ParameterSet> vPSet;
   // ----------member data ---------------------------
   
   edm::InputTag src_;
@@ -57,6 +58,8 @@ private:
   vInputTag trig_matches_;
   std::vector< edm::EDGetTokenT< edm::Association<pat::TriggerObjectStandAloneCollection> > > trig_matchTokens_;
   vstring tring_paths_;
+	std::vector< edm::EDGetTokenT< collection > > shiftedCollections_;
+	vstring shiftNames_;
 };
 
 //
@@ -78,22 +81,27 @@ PATEmbedder<PATObject>::PATEmbedder(const edm::ParameterSet& cfg):
 	//float_maps_(cfg.getParameter<vInputTag>("floatMaps")),
 	//int_maps_(cfg.getParameter<vInputTag>("intMaps")),
 	trig_matches_(cfg.getParameter<vInputTag>("trigMatches")),
-	tring_paths_(cfg.getParameter<vstring>("trigPaths"))
+	tring_paths_(cfg.getParameter<vstring>("trigPaths")),
+	shiftNames_(cfg.getParameter<vstring>("shiftNames"))
 {
 	edm::ParameterSet float_maps = cfg.getParameter<edm::ParameterSet>("floatMaps");
 	ufloat_names_ = float_maps.getParameterNames();
-	for(auto&& tag : trig_matches_)
-	{
-std::cout << "TRIG: " << tag << std::endl;
+	for(auto&& tag : trig_matches_) {
+		std::cout << "TRIG: " << tag << std::endl;
 		trig_matchTokens_.push_back(consumes< edm::Association<pat::TriggerObjectStandAloneCollection> >(tag));
 	}
 
 	for(auto&& name : ufloat_names_){
-std::cout << "USER: " << name << std::endl;
+		std::cout << "USER: " << name << std::endl;
 		float_maps_.push_back(float_maps.getParameter<edm::InputTag>(name));
 		float_mapTokens_.push_back(consumes< edm::ValueMap<float> >(float_maps_.back()));
 	}
 
+	vInputTag shifted_tags = cfg.getParameter<vInputTag>("shiftedCollections");
+	for(auto&& shift : shifted_tags) {
+		shiftedCollections_.push_back(consumes< collection >(shift));
+	}
+	
 	produces<collection>();
 }
 
@@ -119,6 +127,12 @@ PATEmbedder<PATObject>::produce(edm::Event& iEvent, const edm::EventSetup& iSetu
 {
   edm::Handle< collection > handle;
   iEvent.getByToken(srcToken_, handle);
+
+	std::vector< edm::Handle< collection > > shiftsHandles;
+	for(auto&& token : shiftedCollections_) {
+		shiftsHandles.emplace_back();
+		iEvent.getByToken(token, shiftsHandles.back());
+	}
 
   //get all trigger matches handles
   std::vector< edm::Handle< edm::Association<pat::TriggerObjectStandAloneCollection> > > match_maps;
@@ -159,6 +173,14 @@ PATEmbedder<PATObject>::produce(edm::Event& iEvent, const edm::EventSetup& iSetu
       new_cand.addUserFloat(*name_it, value);
     }
 
+		//Add user candidates (full p4 linked)
+		for(size_t cand_idx=0; cand_idx < shiftsHandles.size(); cand_idx++) {
+			new_cand.addUserCand(
+				shiftNames_[cand_idx], 
+				reco::CandidatePtr(shiftsHandles[cand_idx], idx)
+				);
+		}
+		
     //put new candidate
     output->push_back(new_cand);
   }

@@ -60,8 +60,10 @@ private:
 	vector<float> metpy;
 	vector<float> metxunc;
 	vector<float> metyunc;
-	vector<float> metxuncjet;
-	vector<float> metyuncjet;
+	vector<float> metxuncjes;
+	vector<float> metyuncjes;
+	vector<float> metxuncjer;
+	vector<float> metyuncjer;
 
 };
 
@@ -77,8 +79,10 @@ NtupleMETUncertainty::NtupleMETUncertainty(edm::ParameterSet iConfig):
   tree_.branch(prefix_+SEPARATOR+"py", &metpy); 
   tree_.branch(prefix_+SEPARATOR+"pxunc", &metxunc); 
   tree_.branch(prefix_+SEPARATOR+"pyunc", &metyunc); 
-  tree_.branch(prefix_+SEPARATOR+"pxuncjet", &metxuncjet); 
-  tree_.branch(prefix_+SEPARATOR+"pyuncjet", &metyuncjet); 
+  tree_.branch(prefix_+SEPARATOR+"pxuncJES", &metxuncjes); 
+  tree_.branch(prefix_+SEPARATOR+"pyuncJES", &metyuncjes); 
+  tree_.branch(prefix_+SEPARATOR+"pxuncJER", &metxuncjer); 
+  tree_.branch(prefix_+SEPARATOR+"pyuncJER", &metyuncjer); 
 }
 
 // Destructor
@@ -92,8 +96,10 @@ void NtupleMETUncertainty::analyze(const edm::Event& iEvent, const edm::EventSet
 	metpy.clear();
 	metxunc.clear();
 	metyunc.clear();
-	metxuncjet.clear();
-	metyuncjet.clear();
+	metxuncjes.clear();
+	metyuncjes.clear();
+	metxuncjer.clear();
+	metyuncjer.clear();
 	edm::Handle<vector<pat::MET>> hmet;
 	iEvent.getByToken(srcToken_, hmet);
 
@@ -113,8 +119,10 @@ void NtupleMETUncertainty::analyze(const edm::Event& iEvent, const edm::EventSet
 		metxunc.push_back(sqrt(_metxunc)/2.);
 
 		float _metxuncjet = pow(met[n].shiftedPx(pat::MET::JetEnUp) - met[n].shiftedPx(pat::MET::JetEnDown), 2);
-		_metxuncjet += pow(met[n].shiftedPx(pat::MET::JetResUp) - met[n].shiftedPx(pat::MET::JetResDown), 2);
-		metxuncjet.push_back(sqrt(_metxuncjet)/2.);
+		metxuncjes.push_back(sqrt(_metxuncjet)/2.);
+
+		_metxuncjet = pow(met[n].shiftedPx(pat::MET::JetResUp) - met[n].shiftedPx(pat::MET::JetResDown), 2);
+		metxuncjer.push_back(sqrt(_metxuncjet)/2.);
 
 		float _metyunc = pow(met[n].shiftedPy(pat::MET::MuonEnUp) - met[n].shiftedPy(pat::MET::MuonEnDown), 2);
 		_metyunc += pow(met[n].shiftedPy(pat::MET::ElectronEnUp) - met[n].shiftedPy(pat::MET::ElectronEnDown), 2);
@@ -123,43 +131,11 @@ void NtupleMETUncertainty::analyze(const edm::Event& iEvent, const edm::EventSet
 		metyunc.push_back(sqrt(_metyunc)/2.);
 
 		float _metyuncjet = pow(met[n].shiftedPy(pat::MET::JetEnUp) - met[n].shiftedPy(pat::MET::JetEnDown), 2);
-		_metyuncjet += pow(met[n].shiftedPy(pat::MET::JetResUp) - met[n].shiftedPy(pat::MET::JetResDown), 2);
-		metyuncjet.push_back(sqrt(_metyuncjet)/2.);
+		metyuncjes.push_back(sqrt(_metyuncjet)/2.);
 
+		_metyuncjet = pow(met[n].shiftedPy(pat::MET::JetResUp) - met[n].shiftedPy(pat::MET::JetResDown), 2);
+		metyuncjer.push_back(sqrt(_metyuncjet)/2.);
 	}
-
-//edm::Handle<vector<pat::Electron> > els;
-//iEvent.getByLabel(edm::InputTag("slimmedElectrons"), els);
-
-//for(size_t i = 0 ; i < els->size() ; ++i)
-//{
-//	if(els->at(i).pt() > 30)
-//	{
-//		cout << els->at(i).chargedHadronIso() << " C " << els->at(i).pfIsolationVariables().sumChargedHadronPt << ", ";
-//		cout << els->at(i).neutralHadronIso() << " N " << els->at(i).pfIsolationVariables().sumNeutralHadronEt << ", ";
-//		cout << els->at(i).photonIso() << " P " << els->at(i).pfIsolationVariables().sumPhotonEt << endl;
-//	}
-//}
-
-
-//	edm::Handle<vector<reco::PFMET> > hnohfmet;
-//	iEvent.getByLabel(edm::InputTag("pfMet"), hnohfmet);
-//	//cout << (*hnohfmet)[0].px() << endl;
-//	metpx.push_back((*hnohfmet)[0].px());	
-//	metpy.push_back((*hnohfmet)[1].py());	
-//	metxunc.push_back(0.);
-//	metyunc.push_back(0.);
-//	metxuncjet.push_back(0.);
-//	metyuncjet.push_back(0.);
-//	edm::Handle<vector<reco::PFMET> > hnohfmetT1;
-//	iEvent.getByLabel(edm::InputTag("noHFPFMetT1"), hnohfmetT1);
-//	//cout << (*hnohfmetT1)[0].px() << endl;
-//	metpx.push_back((*hnohfmetT1)[0].px());	
-//	metpy.push_back((*hnohfmetT1)[1].py());	
-//	metxunc.push_back(0.);
-//	metyunc.push_back(0.);
-//	metxuncjet.push_back(0.);
-//	metyuncjet.push_back(0.);
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
