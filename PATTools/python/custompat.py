@@ -74,7 +74,7 @@ def preprocess(process, opts, **collections):
 		jetuncfile = None
 		if cmssw_branch() == (7,6): 			
 			met_kwargs['jetColl'] = 'patJetsReapplyJEC'
-			#met_kwargs['jecUncFile'] = 'URAnalysis/PATTools/data/Summer15_25nsV6_DATA_UncertaintySources_AK4PFchs.txt'
+			#met_kwargs['jecUncFile'] = opts.JECUnc #'Fall15_25nsV2_DATA_UncertaintySources_AK4PFchs.txt'
 
 		if not opts.useHFMET:
 			runMetCorAndUncFromMiniAOD(
@@ -157,7 +157,7 @@ def preprocess(process, opts, **collections):
 		
 	return process.preprocessing, collections
 
-def customize(process, isMC=True, **collections):
+def customize(process, opts, **collections):
     '''Returns a tuple containing the custom PAT 
     Sequence label and final collection names'''
     #load custom objects
@@ -188,7 +188,7 @@ def customize(process, isMC=True, **collections):
     process.electronIpInfo.vtxSrc = collections['vertices']
     
     import URAnalysis.PATTools.objects.jets as jets
-    jet_sequence, collections['jets'] = jets.add_jets(process, collections['jets'], isMC)
+    jet_sequence, collections['jets'] = jets.add_jets(process, collections['jets'], opts)
 
     process.customPAT = cms.Sequence(
         process.customTrigger *

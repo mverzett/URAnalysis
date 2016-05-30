@@ -31,6 +31,13 @@ options.register(
    VarParsing.varType.bool,
    'Re-run JEC'
 )
+## options.register(
+##    'JECUnc',
+##    '',
+##    VarParsing.multiplicity.singleton,
+##    VarParsing.varType.string,
+##    'Needed to re-run JEC, provides JES uncertainties'
+## )
 options.register(
    'JECDb',
    '',

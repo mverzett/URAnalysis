@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-def add_jets(process, collection, isMC):
+def add_jets(process, collection, opts):
 	process.urSkimmedJets = cms.EDFilter(
     "PATJetSelector",
     src = cms.InputTag(collection),
@@ -10,7 +10,7 @@ def add_jets(process, collection, isMC):
 	process.customJets = cms.Sequence(
 		process.urSkimmedJets
 		)
-	if not isMC:
+	if not opts.isMC:
 		return process.customJets, 'urSkimmedJets'
 
 	process.urSkimmedJetsJESP = cms.EDProducer(
@@ -36,6 +36,11 @@ def add_jets(process, collection, isMC):
 		src = cms.InputTag("urSkimmedJets")
 		)
 	process.customJets *= process.urSkimmedJetsJESM
+	#if opts.JECUnc:
+	#	process.urSkimmedJetsJESP = process.shiftedPatJetEnUpv2.clone()
+	#	process.urSkimmedJetsJESM = process.shiftedPatJetEnDownv2.clone()
+	#	process.urSkimmedJetsJESP.jetCorrInputFileName = cms.FileInPath(opts.JECUnc)
+	#	process.urSkimmedJetsJESM.jetCorrInputFileName = cms.FileInPath(opts.JECUnc)
 	
 	process.embeddedURJets = cms.EDProducer(
 		'PATJetsEmbedder',

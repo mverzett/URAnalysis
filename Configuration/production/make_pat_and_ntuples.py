@@ -97,7 +97,7 @@ process.metaTree.globalTag=process.GlobalTag.globaltag
 
 custom_pat_sequence, collections = urpat.customize(
    process,
-   options.isMC,
+   options,
    **collections
 )
 
@@ -153,7 +153,9 @@ if options.edm:
 		outputCommands = cms.untracked.vstring( 
 			'drop *',
 			'keep *_patJetsReapplyJEC_*_*',
-			'keep *_patPFMetT1v2_*_*'
+			'keep *_patPFMetT1v2_*_*',
+			'keep *_embeddedURJets_*_*',
+			'keep *_urSkimmedJetsJES*_*_*',
 			),
 		fileName = cms.untracked.string('edmTEST.root')
 		)
