@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-#run this script in the job collection directory to add all output files in the subdirectories
+
 import sys, os, time
 from glob import glob
 import re
@@ -18,7 +18,7 @@ parser.add_argument(
    )
 parser.add_argument(
    '--ignoreFailed', action='store_true',
-   help='Use DQM fastHadd instead of normal hadd. Gain speed, but works only on histograms'
+   help='Ignore failed files, use it only if you know what you are doing'
    )
 
 args = parser.parse_args()
