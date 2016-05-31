@@ -51,7 +51,9 @@ urElectrons = cms.EDProducer(
       ip3D  = cms.InputTag("electronIpInfo:ip3D" ),
       ip3DS = cms.InputTag("electronIpInfo:ip3DS"),
       missingInnerHits = cms.InputTag("electronIpInfo:missingInnerHits"),
-      )
+      ),
+	 shiftNames = cms.vstring(),
+	 shiftedCollections = cms.VInputTag()
 )
 customElectrons *= urElectrons
 

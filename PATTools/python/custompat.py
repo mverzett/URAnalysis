@@ -74,7 +74,7 @@ def preprocess(process, opts, **collections):
 		jetuncfile = None
 		if cmssw_branch() == (7,6): 			
 			met_kwargs['jetColl'] = 'patJetsReapplyJEC'
-			#met_kwargs['jecUncFile'] = 'URAnalysis/PATTools/data/Summer15_25nsV6_DATA_UncertaintySources_AK4PFchs.txt'
+			#met_kwargs['jecUncFile'] = opts.JECUnc #'Fall15_25nsV2_DATA_UncertaintySources_AK4PFchs.txt'
 
 		if not opts.useHFMET:
 			runMetCorAndUncFromMiniAOD(
@@ -110,7 +110,13 @@ def preprocess(process, opts, **collections):
 				'particleFlow', 'packedPFCandidates', verbose=True
 				)
 		elif cmssw_branch() == (7,6): #7.6 bugfixes (do they ever get it right)?
-			getattr(process, 'shiftedPatJetEnUp%s' % met_kwargs['postfix']).src = cms.InputTag('patJetsReapplyJEC', '', process.name_())
+			process.allTheFuckingMET = cms.Sequence()
+			for i in dir(process):
+				if i.endswith(met_kwargs['postfix']) and not isinstance(getattr(process, i), cms.Sequence):
+					process.allTheFuckingMET += getattr(process, i)
+			massSearchReplaceAnyInputTag(process.allTheFuckingMET, 'slimmedJets', cms.InputTag('patJetsReapplyJEC', '', process.name_()), True)
+			getattr(process, 'slimmedMETs%s' % met_kwargs['postfix']).t1Uncertainties = \
+				 cms.InputTag('patPFMetT1%s' % met_kwargs['postfix'], '', process.name_())			
 			massSearchReplaceAnyInputTag(
 				getattr(process, 'patPFMetTxyCorrSequence%s' % met_kwargs['postfix']),
 				'offlinePrimaryVertices', 'offlineSlimmedPrimaryVertices', verbose=True
@@ -119,6 +125,7 @@ def preprocess(process, opts, **collections):
 				getattr(process, 'patPFMetTxyCorrSequence%s' % met_kwargs['postfix']), 
 				'particleFlow', 'packedPFCandidates', verbose=True
 				)			
+			process.selectedPatJetsv2.src = cms.InputTag('patJetsReapplyJEC', '', process.name_())
 		
 		if not opts.isMC:
 			getattr(process, 'patPFMetTxyCorr%s' % met_kwargs['postfix']).vertexCollection = cms.InputTag('offlineSlimmedPrimaryVertices')
@@ -150,7 +157,7 @@ def preprocess(process, opts, **collections):
 		
 	return process.preprocessing, collections
 
-def customize(process, isMC=True, **collections):
+def customize(process, opts, **collections):
     '''Returns a tuple containing the custom PAT 
     Sequence label and final collection names'''
     #load custom objects
@@ -180,18 +187,15 @@ def customize(process, isMC=True, **collections):
         )
     process.electronIpInfo.vtxSrc = collections['vertices']
     
-    process.load('URAnalysis.PATTools.objects.jets')
-    collections['jets'] = cfgtools.chain_sequence(
-        process.customJets,
-        collections['jets']
-        )
+    import URAnalysis.PATTools.objects.jets as jets
+    jet_sequence, collections['jets'] = jets.add_jets(process, collections['jets'], opts)
 
     process.customPAT = cms.Sequence(
         process.customTrigger *
         process.customVertices *
         process.customMuons *
         process.customElectrons *
-        process.customJets
+        jet_sequence
         )
 
     ## if isMC:

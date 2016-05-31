@@ -48,7 +48,9 @@ urMuons = cms.EDProducer(
       ip3D  = cms.InputTag("muonIpInfo:ip3D" ),
       ip3DS = cms.InputTag("muonIpInfo:ip3DS"),
       missingInnerHits = cms.InputTag("muonIpInfo:missingInnerHits"),
-	  )
+	  ),
+	 shiftNames = cms.vstring(),
+	 shiftedCollections = cms.VInputTag()
 )
 customMuons *= urMuons
 

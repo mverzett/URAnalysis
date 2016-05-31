@@ -18,12 +18,26 @@ options.register(
    'Switch to MC production'
 )
 options.register(
+   'edm',
+   False,
+   VarParsing.multiplicity.singleton,
+   VarParsing.varType.bool,
+   'Store EDM file for debugging'
+)
+options.register(
    'runJEC',
    False,
    VarParsing.multiplicity.singleton,
    VarParsing.varType.bool,
    'Re-run JEC'
 )
+## options.register(
+##    'JECUnc',
+##    '',
+##    VarParsing.multiplicity.singleton,
+##    VarParsing.varType.string,
+##    'Needed to re-run JEC, provides JES uncertainties'
+## )
 options.register(
    'JECDb',
    '',
