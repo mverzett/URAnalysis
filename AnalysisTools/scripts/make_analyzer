@@ -10,3 +10,6 @@ fi
 
 cp $URA/AnalysisTools/templates/analyzer.template $1.cc
 sed -i "s|CLASSNAME|$1|g" $1.cc
+URAPRONAME=`basename $URA_PROJECT`
+sed -i "s|URAPRONAME|$URAPRONAME|g" $1.cc
+echo "<bin file=\"$1.cc\"        name=\"$1\"/>" >> BuildFile.xml

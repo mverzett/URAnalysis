@@ -1,13 +1,18 @@
 #include <iostream>
-#include "AnalyzerBase.h"
-#include "URStreamer.h"
-#include "URDriver.h"
+#include "URAnalysis/AnalysisFW/interface/AnalyzerBase.h"
+#include "Analyses/URAPRONAME/interface/URStreamer.h"
+#include "URAnalysis/AnalysisFW/interface/URDriver.h"
+#include "URAnalysis/AnalysisFW/interface/Logger.h"
 
 class CLASSNAME : public AnalyzerBase
 {
+private:
+  unsigned long evt_idx_ = 0;
+  // Add your private variables/methods here
 public:
   CLASSNAME(const std::string output_filename):
-    AnalyzerBase("CLASSNAME", output_filename) {};
+    AnalyzerBase("CLASSNAME", output_filename) {
+	};
   
   //This method is called once per job at the beginning of the analysis
   //book here your histograms/tree and run every initialization needed
@@ -20,10 +25,26 @@ public:
   //run your proper analysis here
   virtual void analyze()
   {
-    //URStreamer event(tree_);
-    //while(event.next())
-    //{
-    //}
+    opts::variables_map &values = URParser::instance().values();
+		int limit = values["limit"].as<int>();
+		int skip  = values["skip"].as<int>();
+		int report = values["report"].as<int>();
+    if(evt_idx_ >= limit) return;
+
+    URStreamer event(tree_);
+    while(event.next())
+    {
+			if(limit > 0 && evt_idx_ > limit) return;
+			evt_idx_++;
+			if(skip > 0 && evt_idx_ < skip) continue;
+			if(evt_idx_ % report == 1) Logger::log().debug() << "Beginning event " << evt_idx_ << endl;
+			
+			/*
+
+				DO YOUR ANALYSIS HERE!
+
+			 */
+    }
   }
 
   //this method is called at the end of the job, by default saves
@@ -35,10 +56,14 @@ public:
   //by AnalysisFW/interface/URParser.h and uses boost::program_options
   //look here for a quickstart tutorial: 
   //http://www.boost.org/doc/libs/1_51_0/doc/html/program_options/tutorial.html
-  static void setOptions() {}
-private:
-  // Nothing by default
-  // Add your private variables/methods here
+  static void setOptions() {
+		URParser &parser = URParser::instance();
+		opts::options_description &opts = parser.optionGroup("analyzer", "CLI and CFG options that modify the analysis");
+		opts.add_options()
+      ("limit,l", opts::value<int>()->default_value(-1), "limit the number of events processed per file")
+      ("skip,s", opts::value<int>()->default_value(-1), "limit the number of events processed per file")
+      ("report,s", opts::value<int>()->default_value(10000), "report every");
+	}
 };
 
 //make it executable
