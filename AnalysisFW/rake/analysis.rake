@@ -24,7 +24,7 @@ rule ".root" => [
   sh "time #{executable} #{inputs} #{t.name} -c  #{cfg} --threads #{workers} #{$external_opts}"
 end
 
-task :analyze, [:analyzer,:sample,:opts] do |t, args|
+task :analyze, [:analyzer,:sample,:opts,:dirtag] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/*.txt").map{|x| File.basename(x).split('.')[0]}
@@ -54,7 +54,7 @@ task :analyze_only, [:analyzer, :sample] do |t, args|
   Rake::Task["runThis"].invoke
 end
 
-task :test, [:analyzer, :sample] do |t, args|
+task :test, [:analyzer, :sample, :limit] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/*.txt").map{|x| File.basename(x).split('.')[0]}
@@ -62,6 +62,12 @@ task :test, [:analyzer, :sample] do |t, args|
     regex = /#{args.sample}/
     samples = samples.select{|x| x =~ regex}
   end
+
+  limit=""
+  if args.limit
+    limit = "-l #{args.limit}"
+  end
+
   data_samples = samples.select{|x| x.start_with?('data')}
   mc_samples = samples.select{|x| not x.start_with?('data')}
   samples_to_test = []
@@ -78,7 +84,7 @@ task :test, [:analyzer, :sample] do |t, args|
     samples_to_test.each do |sample|
       input_list = "inputs/#{jobid}/#{sample}.txt"
       nlines =  %x{wc -l #{input_list}}.to_i
-      sh "time #{bname} #{input_list} #{sample}.#{bname}.test.root -c #{bname}.cfg --threads 1 --J #{nlines} -v"
+      sh "time #{bname} #{input_list} #{sample}.#{bname}.test.root -c #{bname}.cfg --threads 1 --J #{nlines} -v #{limit}"
     end
   end
   Rake::Task["testThis"].invoke

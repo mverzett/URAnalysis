@@ -1245,6 +1245,7 @@ class BasePlotter(object):
       target.SetStats(False)
       #set comparison values depending on method
       for rbin, tbin in zip(ref, target):
+        if rbin.overflow or tbin.overflow: continue
         if method == 'pull':
           error = quad(rbin.error, tbin.error)
           tbin.value = (tbin.value-rbin.value)/error if error else 9999

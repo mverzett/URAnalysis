@@ -44,7 +44,7 @@ samplefiles = glob(os.path.join(inputdir, '*.txt'))
 #the cfg of the executable we want to run
 exe_cfg = os.path.join(
         swdir,
-        os.path.basename(exe).replace('.exe', '.cfg')
+        '%s.cfg' % exe
 )
 
 #external inputs: SFs, JEC and so forth
