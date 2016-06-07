@@ -50,14 +50,19 @@ public:
 
 private:
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
+	void dumpNormal(const pat::MET&);
+	void dumpUserCands(const pat::MET&);
 
   // ----------member data ---------------------------
-  bool isMC_;
   edm::InputTag src_;
+	bool useUserCands_;
+  bool isMC_;
   edm::EDGetTokenT<vector<pat::MET> > srcToken_;
   
 	vector<float> metpx;
 	vector<float> metpy;
+	vector<float> metpxsmear;
+	vector<float> metpysmear;
 	vector<float> metxunc;
 	vector<float> metyunc;
 	vector<float> metxuncjes;
@@ -70,13 +75,17 @@ private:
 // Constructor
 NtupleMETUncertainty::NtupleMETUncertainty(edm::ParameterSet iConfig): 
 	Obj2BranchBase(iConfig),
-	src_(iConfig.getParameter<edm::InputTag>("src"))
+	src_(iConfig.getParameter<edm::InputTag>("src")),
+	useUserCands_(iConfig.getParameter<bool>("useUserCands")),
+	isMC_(iConfig.getParameter<bool>("isMC"))
 {
   srcToken_ = consumes<vector<pat::MET> >(src_);
   // By having this class inherit from Obj2BranchBAse, we have access to our tree_, no need for TFileService
   // Book branches:
   tree_.branch(prefix_+SEPARATOR+"px", &metpx); 
   tree_.branch(prefix_+SEPARATOR+"py", &metpy); 
+	tree_.branch(prefix_+SEPARATOR+"pxsmear", &metpxsmear);
+	tree_.branch(prefix_+SEPARATOR+"pysmear", &metpysmear);
   tree_.branch(prefix_+SEPARATOR+"pxunc", &metxunc); 
   tree_.branch(prefix_+SEPARATOR+"pyunc", &metyunc); 
   tree_.branch(prefix_+SEPARATOR+"pxuncJES", &metxuncjes); 
@@ -90,10 +99,112 @@ NtupleMETUncertainty::~NtupleMETUncertainty()
 {
 }
 
+void NtupleMETUncertainty::dumpNormal(const pat::MET& met) {
+	//metpx.push_back(met.shiftedPx(pat::MET::NoShift));	
+	//metpy.push_back(met.shiftedPy(pat::MET::NoShift));	
+	//this SHOULD be the smeared one
+	metpx.push_back(met.px());	
+	metpy.push_back(met.py());	
+	//Threfore we put the same value twice
+	metpxsmear.push_back(met.px());
+	metpysmear.push_back(met.py());
+	
+	cout << "Accessing lepton shit" << endl;
+	float _metxunc = pow(met.shiftedPx(pat::MET::MuonEnUp) - met.shiftedPx(pat::MET::MuonEnDown), 2);
+	_metxunc += pow(met.shiftedPx(pat::MET::ElectronEnUp) - met.shiftedPx(pat::MET::ElectronEnDown), 2);
+	_metxunc += pow(met.shiftedPx(pat::MET::TauEnUp) - met.shiftedPx(pat::MET::TauEnDown), 2);
+	_metxunc += pow(met.shiftedPx(pat::MET::UnclusteredEnUp) - met.shiftedPx(pat::MET::UnclusteredEnDown), 2);
+	metxunc.push_back(sqrt(_metxunc)/2.);
+	
+	cout << "Accessing JES shit" << endl;
+	float _metxuncjet = pow(met.shiftedPx(pat::MET::JetEnUp) - met.shiftedPx(pat::MET::JetEnDown), 2);
+	metxuncjes.push_back(sqrt(_metxuncjet)/2.);
+	
+	cout << "Accessing JER shit" << endl;
+	_metxuncjet = pow(met.shiftedPx(pat::MET::JetResUp) - met.shiftedPx(pat::MET::JetResDown), 2);
+	metxuncjer.push_back(sqrt(_metxuncjet)/2.);
+	
+	float _metyunc = pow(met.shiftedPy(pat::MET::MuonEnUp) - met.shiftedPy(pat::MET::MuonEnDown), 2);
+	_metyunc += pow(met.shiftedPy(pat::MET::ElectronEnUp) - met.shiftedPy(pat::MET::ElectronEnDown), 2);
+	_metyunc += pow(met.shiftedPy(pat::MET::TauEnUp) - met.shiftedPy(pat::MET::TauEnDown), 2);
+	_metyunc += pow(met.shiftedPy(pat::MET::UnclusteredEnUp) - met.shiftedPy(pat::MET::UnclusteredEnDown), 2);
+	metyunc.push_back(sqrt(_metyunc)/2.);
+	
+	float _metyuncjet = pow(met.shiftedPy(pat::MET::JetEnUp) - met.shiftedPy(pat::MET::JetEnDown), 2);
+	metyuncjes.push_back(sqrt(_metyuncjet)/2.);
+	
+	_metyuncjet = pow(met.shiftedPy(pat::MET::JetResUp) - met.shiftedPy(pat::MET::JetResDown), 2);
+	metyuncjer.push_back(sqrt(_metyuncjet)/2.);
+}
+
+void NtupleMETUncertainty::dumpUserCands(const pat::MET& met) {
+	metpx.push_back(met.px());	
+	metpy.push_back(met.py());	
+	
+	//Access smeared
+	if(isMC_) {
+		if(!met.hasUserCand("JER")) throw cms::Exception("Runtime") << "MET object has no 'JER' user cand\n";
+		metpxsmear.push_back(met.userCand("JER")->px());
+		metpysmear.push_back(met.userCand("JER")->py());		
+	}
+	else {
+		metpxsmear.push_back(met.px());
+		metpysmear.push_back(met.py());
+	}
+
+	//access original to get leptons/unclustered systematics
+	if(isMC_) {
+		if(!met.hasUserCand("ORIGINAL")) throw cms::Exception("Runtime") << "MET object has no 'ORIGINAL' user cand\n"; 
+		//cast fom candidatePtr to pat::MET
+		pat::MET const *original = dynamic_cast<pat::MET const *>( met.userCand("ORIGINAL").get() );
+		
+		if(!original) throw cms::Exception("Runtime") << "Could not cast 'ORIGINAL' user cand to pat::MET type\n";
+		float _metxunc = pow(original->shiftedPx(pat::MET::MuonEnUp) - original->shiftedPx(pat::MET::MuonEnDown), 2);
+		_metxunc += pow(original->shiftedPx(pat::MET::ElectronEnUp) - original->shiftedPx(pat::MET::ElectronEnDown), 2);
+		_metxunc += pow(original->shiftedPx(pat::MET::TauEnUp) - original->shiftedPx(pat::MET::TauEnDown), 2);
+		_metxunc += pow(original->shiftedPx(pat::MET::UnclusteredEnUp) - original->shiftedPx(pat::MET::UnclusteredEnDown), 2);
+		metxunc.push_back(sqrt(_metxunc)/2.);
+
+		float _metyunc = pow(original->shiftedPy(pat::MET::MuonEnUp) - original->shiftedPy(pat::MET::MuonEnDown), 2);
+		_metyunc += pow(original->shiftedPy(pat::MET::ElectronEnUp) - original->shiftedPy(pat::MET::ElectronEnDown), 2);
+		_metyunc += pow(original->shiftedPy(pat::MET::TauEnUp) - original->shiftedPy(pat::MET::TauEnDown), 2);
+		_metyunc += pow(original->shiftedPy(pat::MET::UnclusteredEnUp) - original->shiftedPy(pat::MET::UnclusteredEnDown), 2);
+		metyunc.push_back(sqrt(_metyunc)/2.);
+	}
+	else { //for data pad with zeros
+		metxunc.push_back(0.);
+		metyunc.push_back(0.);
+	}
+
+	//access JES uncertainties
+	if(isMC_) {
+		if(!met.hasUserCand("JES+") || !met.hasUserCand("JES-")) throw cms::Exception("Runtime") << "MET object has no 'JES+' or 'JES-' user cands\n";
+		metxuncjes.push_back(abs(met.userCand("JES+")->px() - met.userCand("JES-")->px())/2.);
+		metyuncjes.push_back(abs(met.userCand("JES+")->py() - met.userCand("JES-")->py())/2.);
+	} 
+	else {
+		metxuncjes.push_back(0.);
+		metyuncjes.push_back(0.);
+	}
+
+	//access JER uncertainties 
+	if(isMC_) {
+		if(!met.hasUserCand("JER+") || !met.hasUserCand("JER-")) throw cms::Exception("Runtime") << "MET object has no 'JER+' or 'JER-' user cands\n";
+		metxuncjer.push_back(abs(met.userCand("JER+")->px() - met.userCand("JER-")->px())/2.);
+		metyuncjer.push_back(abs(met.userCand("JER+")->py() - met.userCand("JER-")->py())/2.);		
+	}
+	else {
+		metxuncjer.push_back(0.);
+		metyuncjer.push_back(0.);
+	}
+}
+
 void NtupleMETUncertainty::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 	metpx.clear();
 	metpy.clear();
+	metpxsmear.clear();
+	metpysmear.clear();
 	metxunc.clear();
 	metyunc.clear();
 	metxuncjes.clear();
@@ -105,36 +216,13 @@ void NtupleMETUncertainty::analyze(const edm::Event& iEvent, const edm::EventSet
 
 	const vector<pat::MET>& met = *hmet;
 
-	for(size_t n = 0 ; n < met.size() ; ++n)
-	{
-		//metpx.push_back(met[n].shiftedPx(pat::MET::NoShift));	
-		//metpy.push_back(met[n].shiftedPy(pat::MET::NoShift));	
-		metpx.push_back(met[n].px());	
-		metpy.push_back(met[n].py());	
-	
-		float _metxunc = pow(met[n].shiftedPx(pat::MET::MuonEnUp) - met[n].shiftedPx(pat::MET::MuonEnDown), 2);
-		_metxunc += pow(met[n].shiftedPx(pat::MET::ElectronEnUp) - met[n].shiftedPx(pat::MET::ElectronEnDown), 2);
-		_metxunc += pow(met[n].shiftedPx(pat::MET::TauEnUp) - met[n].shiftedPx(pat::MET::TauEnDown), 2);
-		_metxunc += pow(met[n].shiftedPx(pat::MET::UnclusteredEnUp) - met[n].shiftedPx(pat::MET::UnclusteredEnDown), 2);
-		metxunc.push_back(sqrt(_metxunc)/2.);
-
-		float _metxuncjet = pow(met[n].shiftedPx(pat::MET::JetEnUp) - met[n].shiftedPx(pat::MET::JetEnDown), 2);
-		metxuncjes.push_back(sqrt(_metxuncjet)/2.);
-
-		_metxuncjet = pow(met[n].shiftedPx(pat::MET::JetResUp) - met[n].shiftedPx(pat::MET::JetResDown), 2);
-		metxuncjer.push_back(sqrt(_metxuncjet)/2.);
-
-		float _metyunc = pow(met[n].shiftedPy(pat::MET::MuonEnUp) - met[n].shiftedPy(pat::MET::MuonEnDown), 2);
-		_metyunc += pow(met[n].shiftedPy(pat::MET::ElectronEnUp) - met[n].shiftedPy(pat::MET::ElectronEnDown), 2);
-		_metyunc += pow(met[n].shiftedPy(pat::MET::TauEnUp) - met[n].shiftedPy(pat::MET::TauEnDown), 2);
-		_metyunc += pow(met[n].shiftedPy(pat::MET::UnclusteredEnUp) - met[n].shiftedPy(pat::MET::UnclusteredEnDown), 2);
-		metyunc.push_back(sqrt(_metyunc)/2.);
-
-		float _metyuncjet = pow(met[n].shiftedPy(pat::MET::JetEnUp) - met[n].shiftedPy(pat::MET::JetEnDown), 2);
-		metyuncjes.push_back(sqrt(_metyuncjet)/2.);
-
-		_metyuncjet = pow(met[n].shiftedPy(pat::MET::JetResUp) - met[n].shiftedPy(pat::MET::JetResDown), 2);
-		metyuncjer.push_back(sqrt(_metyuncjet)/2.);
+	for(size_t n = 0 ; n < met.size() ; ++n) {
+		if(useUserCands_) {
+			dumpUserCands(met[n]);			
+		}
+		else {
+			dumpNormal(met[n]);
+		}
 	}
 }
 

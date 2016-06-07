@@ -163,9 +163,6 @@ def make_ntuple(process, opts, ntuple_seq_name='ntuple', **kwargs):
 					'slimmedMETsNoHF'
 					)
 				),
-			branches = cms.VPSet(
-				branches.met_specific
-				)
 			)
 		ntuple += process.NoHFMETs
 	else:
@@ -177,9 +174,8 @@ def make_ntuple(process, opts, ntuple_seq_name='ntuple', **kwargs):
 					'slimmedMETs'
 					)
 				),
-			branches = cms.VPSet(
-				branches.met_specific
-				)
+			useUserCands = cms.bool(opts.runJEC),
+			isMC = cms.bool(opts.isMC)
 			)
 		ntuple += process.METs
 		

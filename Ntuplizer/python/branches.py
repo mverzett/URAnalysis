@@ -146,6 +146,9 @@ jet_specific = [
 
 	 #JES uncertainty values
 	 make_branch_pset('JESUnc', '? hasUserCand("JES+") ? userCand("JES+").pt()/pt() -1 : 0'),
+	 make_branch_pset('JER', '? hasUserCand("JER") ? userCand("JER").pt()/pt() : 0'),
+	 make_branch_pset('JERUp', '? hasUserCand("JER+") ? userCand("JER+").pt()/pt() : 0'),
+	 make_branch_pset('JERDown', '? hasUserCand("JER-") ? userCand("JER-").pt()/pt() : 0'),
 
    #uncorrected values
    make_branch_pset('uncorrPt' , 'correctedP4(0).pt()'),
@@ -163,6 +166,7 @@ jet_specific = [
    make_branch_pset('muonEnergyFraction'),
 
    make_branch_pset('chargedMultiplicity'),
+	 make_branch_pset('neutralMultiplicity'),
 
    make_branch_pset('numChargedHadrons', 'chargedHadronMultiplicity'),
    make_branch_pset('numNeutralHadrons', 'neutralHadronMultiplicity'),
@@ -243,6 +247,8 @@ electron_specific = [
 
    make_branch_pset('eidMVAWP80', 'electronID("mvaEleID-Spring15-25ns-nonTrig-V1-wp80")'),
    make_branch_pset('eidMVAWP90', 'electronID("mvaEleID-Spring15-25ns-nonTrig-V1-wp90")'),
+   make_branch_pset('eidTrgMVAWP80', 'electronID("mvaEleID-Spring15-25ns-Trig-V1-wp80")'),
+   make_branch_pset('eidTrgMVAWP90', 'electronID("mvaEleID-Spring15-25ns-Trig-V1-wp90")'),
 
    make_branch_pset('pfHadronIso' , 'pfIsolationVariables().sumChargedHadronPt'),
    make_branch_pset('pfNeutralIso', 'pfIsolationVariables().sumNeutralHadronEt'),
