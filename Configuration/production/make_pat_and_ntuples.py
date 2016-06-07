@@ -38,6 +38,8 @@ process.source = cms.Source(
       options.inputFiles
       ),
 )
+if options.pick:
+	process.source.eventsToProcess = cms.untracked.VEventRange(options.pick)
 
 process.TFileService = cms.Service(
         "TFileService",
@@ -152,10 +154,10 @@ if options.edm:
 		# use this in case of filter available
 		outputCommands = cms.untracked.vstring( 
 			'drop *',
-			'keep *_patJetsReapplyJEC_*_*',
-			'keep *_patPFMetT1v2_*_*',
-			'keep *_embeddedURJets_*_*',
-			'keep *_urSkimmedJetsJES*_*_*',
+			'keep *_slimmedJets*_*_*',
+			'keep *_jetsNewJECAllEmbedded_*_*',
+			'keep *_METsNewJECAllEmbedded_*_*',
+			'keep *_slimmedMETs*_*_*',
 			),
 		fileName = cms.untracked.string('edmTEST.root')
 		)

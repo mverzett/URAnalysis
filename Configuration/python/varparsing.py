@@ -18,6 +18,13 @@ options.register(
    'Switch to MC production'
 )
 options.register(
+   'pick',
+   '',
+   VarParsing.multiplicity.list,
+   VarParsing.varType.string,
+   'Pick single events'
+)
+options.register(
    'edm',
    False,
    VarParsing.multiplicity.singleton,
