@@ -1,4 +1,5 @@
 import FWCore.ParameterSet.Config as cms
+from PhysicsTools.PatUtils.patPFMETCorrections_cff import patSmearedJets
 
 def add_jets(process, collection, opts):
 	process.urSkimmedJets = cms.EDFilter(
@@ -10,37 +11,13 @@ def add_jets(process, collection, opts):
 	process.customJets = cms.Sequence(
 		process.urSkimmedJets
 		)
-	if not opts.isMC:
-		return process.customJets, 'urSkimmedJets'
-
-	process.urSkimmedJetsJESP = cms.EDProducer(
-		"ShiftedPATJetProducer",
-		addResidualJES = cms.bool(True),
-		jetCorrLabelUpToL3 = cms.InputTag("ak4PFCHSL1FastL2L3Corrector"),
-		jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3ResidualCorrector"),
-		jetCorrPayloadName = cms.string('AK4PFchs'),
-		jetCorrUncertaintyTag = cms.string('Uncertainty'),
-		shiftBy = cms.double(1.0),
-		src = cms.InputTag("urSkimmedJets")
-		)
-	process.customJets *= process.urSkimmedJetsJESP
-
-	process.urSkimmedJetsJESM = cms.EDProducer(
-		"ShiftedPATJetProducer",
-		addResidualJES = cms.bool(True),
-		jetCorrLabelUpToL3 = cms.InputTag("ak4PFCHSL1FastL2L3Corrector"),
-		jetCorrLabelUpToL3Res = cms.InputTag("ak4PFCHSL1FastL2L3ResidualCorrector"),
-		jetCorrPayloadName = cms.string('AK4PFchs'),
-		jetCorrUncertaintyTag = cms.string('Uncertainty'),
+	return process.customJets, 'urSkimmedJets'
+	
+	process.urSmearedSkimmedJetsJERM = process.urSmearedSkimmedJets.clone(
 		shiftBy = cms.double(-1.0),
-		src = cms.InputTag("urSkimmedJets")
+		areSrcJetsSmeared = cms.bool(False)
 		)
-	process.customJets *= process.urSkimmedJetsJESM
-	#if opts.JECUnc:
-	#	process.urSkimmedJetsJESP = process.shiftedPatJetEnUpv2.clone()
-	#	process.urSkimmedJetsJESM = process.shiftedPatJetEnDownv2.clone()
-	#	process.urSkimmedJetsJESP.jetCorrInputFileName = cms.FileInPath(opts.JECUnc)
-	#	process.urSkimmedJetsJESM.jetCorrInputFileName = cms.FileInPath(opts.JECUnc)
+	process.customJets *= process.urSmearedSkimmedJetsJERM
 	
 	process.embeddedURJets = cms.EDProducer(
 		'PATJetsEmbedder',
@@ -48,10 +25,13 @@ def add_jets(process, collection, opts):
 		trigMatches = cms.VInputTag(),
 		trigPaths = cms.vstring(),
 		floatMaps = cms.PSet(),
-		shiftNames = cms.vstring('JES+', 'JES-'),
+		shiftNames = cms.vstring('JES+', 'JES-', 'JER+', 'JER-', 'JER'),
 		shiftedCollections = cms.VInputTag(
 			cms.InputTag('urSkimmedJetsJESP'),
-			cms.InputTag('urSkimmedJetsJESM')
+			cms.InputTag('urSkimmedJetsJESM'),
+			cms.InputTag('urSmearedSkimmedJetsJERP'),
+			cms.InputTag('urSmearedSkimmedJetsJERM'),
+			cms.InputTag('urSmearedSkimmedJets'),
 			),
 		)
 	process.customJets *= process.embeddedURJets
