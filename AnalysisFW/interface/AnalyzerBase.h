@@ -12,6 +12,7 @@
 #include <string>
 #include "TFile.h"
 #include "TTree.h"
+#include "URAnalysis/AnalysisFW/interface/Logger.h"
 
 class AnalyzerBase
 {
@@ -27,7 +28,10 @@ public:
   // To be run inside the thread
   virtual void analyze() = 0; 
   virtual void begin() = 0;
-  virtual void end() {outFile_.Write();}
+  virtual void end() {
+		outFile_.Write();
+		Logger::log().debug() << "AnalyzerBase::end" << std::endl;
+	}
     
   // To be run at the end
   virtual void postProcess() {}

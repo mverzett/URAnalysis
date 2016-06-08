@@ -42,7 +42,9 @@ public:
 
 	void setTree(TTree* tree) {analyzer_.setTree(tree);}
 	void end() {analyzer_.end();}
-  virtual ~AnalysisWorker() {}
+  virtual ~AnalysisWorker() {
+		Logger::log().debug() << id_ << ": calling dtor" << std::endl;
+	}
 
 	void start_nothread(SafeQueue<std::string>& inputs_, ProgressBar &bar_) 
 	{
@@ -50,7 +52,7 @@ public:
     {
       //get input file name from the queue
       std::string input_file = inputs_.pop();
-      Logger::log().debug() << id_ << ": got input file: " <<
+      Logger::log().debug() << id_ << ": AnalysisWorker::start_nothread: got input file: " <<
 				input_file << std::endl;
 
       //open and read it
@@ -74,11 +76,13 @@ public:
 					input_file << " properly" << std::endl;
         throw 42;
 			}
+			Logger::log().debug() << id_ << ": AnalysisWorker::start_nothread: closing file: " <<
+				input_file << std::endl;
       file->Close();
       bar_.update();
     }
     Logger::log().debug() << id_ <<
-      "No more files to analyze, exiting" << std::endl;		
+      ": No more files to analyze, exiting" << std::endl;		
 		end();
 	}
 
@@ -118,7 +122,8 @@ public:
     Logger::log().setLevel(Logger::Level::WARNING);
   }
 
-
+	~URDriver() {}
+	
   //this does mostly what a main would do, saving you to write it again every new analyzer
   int run()
   {
@@ -259,7 +264,10 @@ public:
 			Logger::log().debug() << "Starting without threads!" << std::endl;
 			workers[0]->start_nothread(input_files, progbar);
 		}
-		for(int i=0; i<n_threads; i++) delete workers[i];
+		for(int i=0; i<n_threads; i++) {
+			Logger::log().debug() << "Deleting worker: " << workers[i]->id() << std::endl;
+			delete workers[i];
+		}
     
     //merge the files
 		if(n_threads!=1)
@@ -285,6 +293,7 @@ public:
     // 	throw 42;
     //   }
     // }
+		Logger::log().debug() << "DONE " << std::endl;
     return 0;
   }
 private:

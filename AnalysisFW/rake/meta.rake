@@ -1,8 +1,12 @@
-task :getfiles, [:inputdir] do |t, args|
+desc "takes the root files from inputdir/$jobid and lists them into inputs/$jobid/sample.txt"
+task :getfiles, [:inputdir, :sample] do |t, args|
   jobid = ENV['jobid']
   sh "mkdir -p inputs/#{jobid}"
   Dir.glob("#{args.inputdir}/#{jobid}/*").each do |dir|
     sample = File.basename(dir)
+    if args.sample and not sample =~ /#{args.sample}/: 
+        next
+    end    
     files = `find #{dir} -name '*.root' | grep -v 'failed'` # avoid issues with empty samples causing crashes
     if files.empty?
       puts "sample #{sample} has not files! Skipping..."
