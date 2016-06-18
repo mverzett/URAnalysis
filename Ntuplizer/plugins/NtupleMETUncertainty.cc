@@ -109,20 +109,17 @@ void NtupleMETUncertainty::dumpNormal(const pat::MET& met) {
 	metpxsmear.push_back(met.px());
 	metpysmear.push_back(met.py());
 	
-	cout << "Accessing lepton shit" << endl;
 	float _metxunc = pow(met.shiftedPx(pat::MET::MuonEnUp) - met.shiftedPx(pat::MET::MuonEnDown), 2);
 	_metxunc += pow(met.shiftedPx(pat::MET::ElectronEnUp) - met.shiftedPx(pat::MET::ElectronEnDown), 2);
 	_metxunc += pow(met.shiftedPx(pat::MET::TauEnUp) - met.shiftedPx(pat::MET::TauEnDown), 2);
 	_metxunc += pow(met.shiftedPx(pat::MET::UnclusteredEnUp) - met.shiftedPx(pat::MET::UnclusteredEnDown), 2);
 	metxunc.push_back(sqrt(_metxunc)/2.);
 	
-	cout << "Accessing JES shit" << endl;
-	float _metxuncjet = pow(met.shiftedPx(pat::MET::JetEnUp) - met.shiftedPx(pat::MET::JetEnDown), 2);
-	metxuncjes.push_back(sqrt(_metxuncjet)/2.);
+	float _metxuncjet = met.shiftedPx(pat::MET::JetEnUp) - met.shiftedPx(pat::MET::JetEnDown);
+	metxuncjes.push_back(_metxuncjet/2.);
 	
-	cout << "Accessing JER shit" << endl;
-	_metxuncjet = pow(met.shiftedPx(pat::MET::JetResUp) - met.shiftedPx(pat::MET::JetResDown), 2);
-	metxuncjer.push_back(sqrt(_metxuncjet)/2.);
+	_metxuncjet = met.shiftedPx(pat::MET::JetResUp) - met.shiftedPx(pat::MET::JetResDown);
+	metxuncjer.push_back(_metxuncjet/2.);
 	
 	float _metyunc = pow(met.shiftedPy(pat::MET::MuonEnUp) - met.shiftedPy(pat::MET::MuonEnDown), 2);
 	_metyunc += pow(met.shiftedPy(pat::MET::ElectronEnUp) - met.shiftedPy(pat::MET::ElectronEnDown), 2);
@@ -130,11 +127,11 @@ void NtupleMETUncertainty::dumpNormal(const pat::MET& met) {
 	_metyunc += pow(met.shiftedPy(pat::MET::UnclusteredEnUp) - met.shiftedPy(pat::MET::UnclusteredEnDown), 2);
 	metyunc.push_back(sqrt(_metyunc)/2.);
 	
-	float _metyuncjet = pow(met.shiftedPy(pat::MET::JetEnUp) - met.shiftedPy(pat::MET::JetEnDown), 2);
-	metyuncjes.push_back(sqrt(_metyuncjet)/2.);
+	float _metyuncjet = met.shiftedPy(pat::MET::JetEnUp) - met.shiftedPy(pat::MET::JetEnDown);
+	metyuncjes.push_back(_metyuncjet/2.);
 	
-	_metyuncjet = pow(met.shiftedPy(pat::MET::JetResUp) - met.shiftedPy(pat::MET::JetResDown), 2);
-	metyuncjer.push_back(sqrt(_metyuncjet)/2.);
+	_metyuncjet = met.shiftedPy(pat::MET::JetResUp) - met.shiftedPy(pat::MET::JetResDown);
+	metyuncjer.push_back(_metyuncjet/2.);
 }
 
 void NtupleMETUncertainty::dumpUserCands(const pat::MET& met) {
@@ -179,8 +176,8 @@ void NtupleMETUncertainty::dumpUserCands(const pat::MET& met) {
 	//access JES uncertainties
 	if(isMC_) {
 		if(!met.hasUserCand("JES+") || !met.hasUserCand("JES-")) throw cms::Exception("Runtime") << "MET object has no 'JES+' or 'JES-' user cands\n";
-		metxuncjes.push_back(abs(met.userCand("JES+")->px() - met.userCand("JES-")->px())/2.);
-		metyuncjes.push_back(abs(met.userCand("JES+")->py() - met.userCand("JES-")->py())/2.);
+		metxuncjes.push_back((met.userCand("JES+")->px() - met.userCand("JES-")->px())/2.);
+		metyuncjes.push_back((met.userCand("JES+")->py() - met.userCand("JES-")->py())/2.);
 	} 
 	else {
 		metxuncjes.push_back(0.);
@@ -190,8 +187,8 @@ void NtupleMETUncertainty::dumpUserCands(const pat::MET& met) {
 	//access JER uncertainties 
 	if(isMC_) {
 		if(!met.hasUserCand("JER+") || !met.hasUserCand("JER-")) throw cms::Exception("Runtime") << "MET object has no 'JER+' or 'JER-' user cands\n";
-		metxuncjer.push_back(abs(met.userCand("JER+")->px() - met.userCand("JER-")->px())/2.);
-		metyuncjer.push_back(abs(met.userCand("JER+")->py() - met.userCand("JER-")->py())/2.);		
+		metxuncjer.push_back((met.userCand("JER+")->px() - met.userCand("JER-")->px())/2.);
+		metyuncjer.push_back((met.userCand("JER+")->py() - met.userCand("JER-")->py())/2.);		
 	}
 	else {
 		metxuncjer.push_back(0.);
