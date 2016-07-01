@@ -25,10 +25,10 @@ task :getmeta => Dir.glob("#{ENV['URA_PROJECT']}/inputs/#{ENV['jobid']}/*.txt").
 task :track_meta_batch, [:submit_dir] do |t, args|
   puts "running on #{ENV['HOST']}"
   sh "hold.py --check_correctness #{args.submit_dir} --outtype=json"
+
   Dir.chdir(args.submit_dir) do
     content = Dir["*"]
     content.each do |dir|
-      puts dir
       if not File.directory?(dir) 
         next
       end
@@ -38,10 +38,13 @@ task :track_meta_batch, [:submit_dir] do |t, args|
       sh "merge_meta_jsons.py #{dir}.meta.json #{dir}/*.json"
     end
   end
+
   target_dir = "inputs/#{ENV['jobid']}"
-  sh "cp #{args.submit_dir}/*.root #{target_dir}/."
   sh "cp #{args.submit_dir}/*.json #{target_dir}/."
-  sh "cp #{args.submit_dir}/*.root #{target_dir}/INPUT/."
+  if Dir["#{args.submit_dir}/*.root"].size > 0
+    sh "cp #{args.submit_dir}/*.root #{target_dir}/."
+    sh "cp #{args.submit_dir}/*.root #{target_dir}/INPUT/."
+  end
 end
 
 task :meta_batch, [:sample] do |t, args|
@@ -68,7 +71,9 @@ end
 
 multitask :getlumi => Dir.glob("#{ENV['URA_PROJECT']}/inputs/#{ENV['jobid']}/*.txt").map{|x| x.sub('.txt','.lumi')} do |t|
   sh "mkdir -p inputs/#{ENV['jobid']}/INPUT"
-  sh "cp inputs/#{ENV['jobid']}/*.meta.pu*.root inputs/#{ENV['jobid']}/INPUT/."
+  if Dir["inputs/#{ENV['jobid']}/*.meta.pu*.root"].size > 0
+    sh "cp inputs/#{ENV['jobid']}/*.meta.pu*.root inputs/#{ENV['jobid']}/INPUT/."
+  end
 end
 
 task :proxy do |t|

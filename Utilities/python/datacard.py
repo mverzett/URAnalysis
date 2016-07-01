@@ -318,7 +318,7 @@ class DataCard(object):
             txt.write(prettyjson.dumps(self.yields))
 
    def add_systematic(self, name, stype, categories, samples, value, unc=None):
-      'add a systematic effect to a bunch of samples. POSIX regex supported'
+      '''add a systematic effect to a bunch of samples. Full regex supported'''
       if name not in self.systematics:
          if stype == 'param':
             self.systematics[name] = Systematic(stype, unc=unc, val=value)
