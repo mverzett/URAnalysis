@@ -21,6 +21,10 @@ import rootpy
 
 ROOT.gROOT.SetBatch(True)
 
+def pippo():
+	pass
+
+
 _original_draw = plotting.Legend.Draw
 # Make legends not have crappy border
 def _monkey_patch_legend_draw(self, *args, **kwargs):
@@ -640,14 +644,14 @@ class BasePlotter(object):
 
     if algo == 'yield':
       if ymin >= 0:
-        ymin = 0 + (ymax-ymin)/100000000
-        ymax = ymax + (ymax-ymin)*0.2
+        ymin = 0 + (ymax-ymin)/100000
+        ymax = ymax + (ymax-ymin)*0.6
       elif ymin < 0 and ymax > 0:
-        ymin = ymin - (ymax-ymax)*0.2
-        ymax = ymax + (ymax-ymin)*0.2
+        ymin = ymin - (ymax-ymax)*0.6
+        ymax = ymax + (ymax-ymin)*0.6
       else:
-        ymin = ymin - (ymax-ymin)*0.2
-        ymax = 0 - (ymax-ymin)/100000000
+        ymin = ymin - (ymax-ymin)*0.6
+        ymax = 0 - (ymax-ymin)/100000
       return ymin, ymax
     elif  algo == 'shape':
       delta = (ymax - ymin)*0.1
@@ -1311,7 +1315,7 @@ class BasePlotter(object):
         styles_kw['markerstyle']= [0, 20]
       self.overlay(
         targets, y_range=y_range, xtitle=xtitle, 
-        yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
+        yaxis_divisions=4, ytitle=ylabels[method] if ytitle is None else ytitle, **styles_kw)
 
   def dual_pad_format(self):
     if self.lower_pad is None:
@@ -1488,6 +1492,19 @@ class BasePlotter(object):
       label_text += (lumiformat + " fb^{-1}") % (lumi/1000.)
       self.keep.append(latex.DrawLatex(0.18,0.96, label_text));
 
+  def add_cms_watermark(self):#, preliminary=True)#, lumiformat='%0.1f'):
+      ''' Add the CMS blurb '''
+      self.pad.cd()
+      latex = ROOT.TLatex()
+			latex.SetTextFont(42)
+      latex.SetNDC()
+      latex.SetTextSize(0.04)
+      latex.SetTextAlign(31)
+      latex.SetTextAlign(11)
+      self.keep.append(latex.DrawLatex(0.20,0.8, "#bf{CMS}"))
+      #if preliminary:
+      #    label_text += "#it{Preliminary}"
+      #self.keep.append(latex.DrawLatex(0.18,0.96, label_text))
 
 
   def make_text_box(self, text, position='NE'):
@@ -1543,6 +1560,8 @@ class BasePlotter(object):
 
       if 'blurb' in self.defaults:
         self.add_cms_blurb(*self.defaults['blurb'])
+			if 'watermark' in self.defaults:
+				self.add_cms_watermark()
       #
       if filename is None:
         filename = self.canvas.name
