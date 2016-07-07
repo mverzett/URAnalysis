@@ -123,6 +123,7 @@ for sample in to_submit:
          args.njobs if args.njobs > 0 else None,
          externals,
          os.path.join(os.environ['URA_PROJECT'], sample['lumimask']) if 'lumimask' in sample else '',
+				 sample['DBSInstance'] if 'DBSInstance' in sample else None
          )
       )
 
