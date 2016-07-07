@@ -1186,7 +1186,7 @@ class BasePlotter(object):
   
   def overlay(
     self, hhs, legend_def=None, logx=False, logy=False, 
-    logz=False, writeTo='', y_range=None, xtitle='', ytitle='', 
+    logz=False, writeTo='', x_range=None, y_range=None, xtitle='', ytitle='', 
     yaxis_divisions=None, ignore_style=False, **kwargs):
     '''Overlays multiple histograms. rootpy styling can be passed as 
     keyword args as the cloning policy (wether or not to clone the 
@@ -1222,6 +1222,9 @@ class BasePlotter(object):
           histo.SetMaximum(y_range[1])
         else:
           histo.yaxis.range_user = y_range
+        if not x_range is None:
+          histo.GetXaxis().SetRangeUser(x_range[0], x_range[1])
+
       first = False
       self.keep.append(histo)
 
@@ -1236,7 +1239,7 @@ class BasePlotter(object):
       self.save(writeTo)
     return None
     
-  def compare(self, ref, targets, method, xtitle='', ytitle='', yrange=None, **styles_kw):
+  def compare(self, ref, targets, method, xtitle='', ytitle='', yrange=None, x_range=None, **styles_kw):
     if method == 'datamc' and len(targets) > 1:
       raise RuntimeError('datamc comparison mode works only with one target only!')
 
@@ -1311,7 +1314,7 @@ class BasePlotter(object):
         styles_kw['drawstyle'] = ['E2', 'e x0']
         styles_kw['markerstyle']= [0, 20]
       self.overlay(
-        targets, y_range=y_range, xtitle=xtitle, 
+        targets, y_range=y_range, x_range=x_range, xtitle=xtitle, 
         yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
 
   def dual_pad_format(self):

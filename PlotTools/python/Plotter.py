@@ -176,7 +176,7 @@ class Plotter(BasePlotter):
                 histo.markercolor = histo.fillcolor
 
         self.compare(
-            data_hist.Clone(), test_hists, 'ratio', xtitle=xtitle, 
+            data_hist.Clone(), test_hists, 'ratio', xtitle=xtitle, x_range=x_range
             )
 
         if x_range is None:
