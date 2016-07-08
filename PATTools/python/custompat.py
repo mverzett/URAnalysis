@@ -70,6 +70,8 @@ def customize(process, opts, **collections):
     collections['trigger'] = 'triggerEvent'
     
     process.load('URAnalysis.PATTools.objects.vertices')
+    if opts.reHLT:
+        process.unpackedPatTrigger.triggerResults = cms.InputTag("TriggerResults","","HLT2")
     collections['vertices'] = cfgtools.chain_sequence(
         process.customVertices,
         collections['vertices']
