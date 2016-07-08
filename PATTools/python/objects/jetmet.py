@@ -47,8 +47,9 @@ def rerun_JECJER(process, opts, collections):
 			cms.vstring('L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual'),
 		payload = 'AK4PFchs'
 		)
+	process.patJetCorrFactorsReapplyJEC.levels = cms.vstring('L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual')
 	process.newJECJER *= process.patJetCorrFactorsReapplyJEC
-
+	
 	process.slimmedJetsNewJEC = patJetsUpdated.clone(
 		jetSource = cms.InputTag(collections['jets']),
 		jetCorrFactorsSource = cms.VInputTag(cms.InputTag("patJetCorrFactorsReapplyJEC"))
@@ -82,20 +83,30 @@ def rerun_JECJER(process, opts, collections):
 	process.newJECJER *= process.uncorrectedPatMet #probably not needed since unscheduled, but fuck it
 	process.Type1CorrForNewJEC = cms.EDProducer(
 		"PATPFJetMETcorrInputProducer",
-		isMC = cms.bool(opts.isMC),
-		jetCorrLabel = cms.InputTag("L3Absolute"),
-		jetCorrLabelRes = cms.InputTag("L2L3Residual"),
-		offsetCorrLabel = cms.InputTag("L1FastJet"),
-		skipEM = cms.bool(True),
-		skipEMfractionThreshold = cms.double(0.9),
-		skipMuonSelection = cms.string('isGlobalMuon | isStandAloneMuon'),
-		skipMuons = cms.bool(True),
-		src = cms.InputTag("slimmedJetsNewJEC"),
-		type1JetPtThreshold = cms.double(15.0),
-		type2ExtraCorrFactor = cms.double(1.0),
-		type2ResidualCorrEtaMax = cms.double(9.9),
-		type2ResidualCorrLabel = cms.InputTag(""),
-		type2ResidualCorrOffset = cms.double(0.0)
+    src = cms.InputTag('slimmedJetsNewJEC'),
+    offsetCorrLabel = cms.InputTag("L1FastJet"),
+    jetCorrLabel = cms.InputTag("L3Absolute"), # for MC
+    jetCorrLabelRes = cms.InputTag("L2L3Residual"), # for Data automatic switch
+    type1JetPtThreshold = cms.double(15.0),
+    skipEM = cms.bool(True),
+    skipEMfractionThreshold = cms.double(0.90),
+    skipMuons = cms.bool(True),
+    skipMuonSelection = cms.string("isGlobalMuon | isStandAloneMuon")
+		#WAS (in 7.6)
+		#isMC = cms.bool(opts.isMC),
+		#jetCorrLabel = cms.InputTag("L3Absolute"),
+		#jetCorrLabelRes = cms.InputTag("L2L3Residual"),
+		#offsetCorrLabel = cms.InputTag("L1FastJet"),
+		#skipEM = cms.bool(True),
+		#skipEMfractionThreshold = cms.double(0.9),
+		#skipMuonSelection = cms.string('isGlobalMuon | isStandAloneMuon'),
+		#skipMuons = cms.bool(True),
+		#src = cms.InputTag("slimmedJetsNewJEC"),
+		#type1JetPtThreshold = cms.double(15.0),
+		#type2ExtraCorrFactor = cms.double(1.0),
+		#type2ResidualCorrEtaMax = cms.double(9.9),
+		#type2ResidualCorrLabel = cms.InputTag(""),
+		#type2ResidualCorrOffset = cms.double(0.0)
 		)
 	process.newJECJER *= process.Type1CorrForNewJEC
 	
@@ -116,9 +127,12 @@ def rerun_JECJER(process, opts, collections):
 		src = cms.InputTag('slimmedJetsNewJEC'),
 		enabled = cms.bool(True),
 		rho = cms.InputTag("fixedGridRhoFastjetAll"),
-		#FIXME should become GT Based, which algo?
-		resolutionFile  = cms.FileInPath('URAnalysis/PATTools/data/Fall15_25nsV2_MC_PtResolution_AK4PFchs.txt'),
-		scaleFactorFile = cms.FileInPath('URAnalysis/PATTools/data/Fall15_25nsV2_MC_SF_AK4PFchs.txt'),
+		# Read from GT
+    algopt = cms.string('AK4PFchs_pt'),
+    algo = cms.string('AK4PFchs'),
+		#or from txt file (DEPRECATED!)
+		#resolutionFile  = cms.FileInPath('URAnalysis/PATTools/data/Fall15_25nsV2_MC_PtResolution_AK4PFchs.txt'),
+		#scaleFactorFile = cms.FileInPath('URAnalysis/PATTools/data/Fall15_25nsV2_MC_SF_AK4PFchs.txt'),
 		
 		genJets = cms.InputTag('slimmedGenJets'),
 		dRMax = cms.double(0.2),
