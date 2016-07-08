@@ -35,6 +35,8 @@ def make_ntuple(process, opts, ntuple_seq_name='ntuple', **kwargs):
 		branches = cms.VPSet(
 			)
 		)
+	if opts.reHLT:
+		process.trigger.trigger = cms.InputTag('TriggerResults', '', 'HLT2')
 	ntuple += process.trigger
 	
 	process.filter = cms.EDAnalyzer(
