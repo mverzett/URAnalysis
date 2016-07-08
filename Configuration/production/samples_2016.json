@@ -6,7 +6,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets",
@@ -19,7 +19,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_amcatnlo",
@@ -31,7 +31,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_madgraph",
@@ -43,7 +43,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_mtopdown",
@@ -55,7 +55,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_mtopup",
@@ -67,7 +67,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_amcatnlo_mtopdown",
@@ -79,7 +79,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_amcatnlo_mtopup",
@@ -91,7 +91,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_scaledown",
@@ -103,7 +103,7 @@
             "isMC": true,
             "storeLHEParticles": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "runJEC": true
         },
         "name": "ttJets_scaleup",
@@ -113,7 +113,7 @@
         "DBSName": "TO BE SET",
         "options": {
             "runJEC": true,
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "noSkim": true
         },
         "name": "ttJets_herwig",
@@ -122,7 +122,7 @@
     {
         "DBSName": "TO BE SET",
         "options": {
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2",
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1",
             "noSkim": true
         },
         "name": "ttJets_amcatnlo",
@@ -134,7 +134,7 @@
             "isMC": true,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "singlet_tW",
         "xsection": 19.3
@@ -145,7 +145,7 @@
             "isMC": true,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "singletbar_tW",
         "xsection": 19.3
@@ -156,7 +156,7 @@
             "isMC": true,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "singlet_tchannel",
         "xsection": 217
@@ -167,7 +167,7 @@
             "isMC": true,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "singlet_schannel",
         "xsection": 10
@@ -178,7 +178,7 @@
             "isMC": true,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "ZJets",
         "xsection": 6104
@@ -189,7 +189,7 @@
             "isMC": true,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "WJets",
         "xsection": 60290
@@ -202,7 +202,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_15to20",
         "xsection": 3819570
@@ -215,7 +215,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_20to30",
         "xsection": 2960198.4
@@ -229,7 +229,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_30to50",
         "xsection": 1652471.46
@@ -243,7 +243,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_50to80",
         "xsection": 437504.1
@@ -257,7 +257,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_80to120",
         "xsection": 106033.6648
@@ -271,7 +271,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_120to170",
         "xsection": 24720.71814
@@ -285,7 +285,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_170to300",
         "xsection": 8654.49315
@@ -299,7 +299,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_300to470",
         "xsection": 797.35269
@@ -312,7 +312,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_470to600",
         "xsection": 79.02553776
@@ -325,7 +325,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_600to800",
         "xsection": 25.09505908
@@ -338,7 +338,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_800to1000",
         "xsection": 4.707368272
@@ -351,7 +351,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_Mu_1000toInf",
         "xsection": 1.62131692
@@ -363,7 +363,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "DEPRECATED -- QCD_Mu_20toInf",
         "xsection": 720648000
@@ -375,7 +375,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_EM_20to30",
         "xsection": 2960198.4
@@ -387,7 +387,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_EM_30to50",
         "xsection": 9928000
@@ -399,7 +399,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_EM_50to80",
         "xsection": 2890800
@@ -411,7 +411,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_EM_80to120",
         "xsection": 350000
@@ -423,7 +423,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_EM_120to170",
         "xsection": 62964
@@ -435,7 +435,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_EM_170to300",
         "xsection": 18810
@@ -447,7 +447,7 @@
             "computeWeighted": false,
             "runJEC": true,
             "skims": "muPlus3Jets,elPlus3Jets",
-            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2"
+            "globalTag": "80X_mcRun2_asymptotic_2016_miniAODv2_v1"
         },
         "name": "QCD_EM_300toInf",
         "xsection": 135
@@ -503,10 +503,10 @@
             "isMC": false,
             "runJEC": true,
             "skims": "muPlus3Jets",
-            "globalTag": "80X_dataRun2_Prompt_v9"
+            "globalTag": "80X_dataRun2_Prompt_ICHEP16JEC_v0"
         },
         "name": "data_SingleMuon_2016B",
-        "lumimask": "inputs/lumimasks/Cert_13TeV_16Dec2015ReReco_Collisions15_25ns_JSON_v2.txt"
+        "lumimask": "inputs/lumimasks/Cert_271036-275125_13TeV_PromptReco_Collisions16_JSON.txt"
     },
     {
         "DBSName": "/SingleMuon/Run2016C-PromptReco-v2/MINIAOD",
@@ -514,10 +514,10 @@
             "isMC": false,
             "runJEC": true,
             "skims": "muPlus3Jets",
-            "globalTag": "80X_dataRun2_Prompt_v9"
+            "globalTag": "80X_dataRun2_Prompt_ICHEP16JEC_v0"
         },
         "name": "data_SingleMuon_2016C",
-        "lumimask": "inputs/lumimasks/Cert_13TeV_16Dec2015ReReco_Collisions15_25ns_JSON_v2.txt"
+        "lumimask": "inputs/lumimasks/Cert_271036-275125_13TeV_PromptReco_Collisions16_JSON.txt"
     },
     {
         "DBSName": "/SingleElectron/Run2016B-PromptReco-v2/MINIAOD",
@@ -525,10 +525,10 @@
             "isMC": false,
             "runJEC": true,
             "skims": "elPlus3Jets",
-            "globalTag": "80X_dataRun2_Prompt_v9"
+            "globalTag": "80X_dataRun2_Prompt_ICHEP16JEC_v0"
         },
         "name": "data_SingleElectron_2016B",
-        "lumimask": "inputs/lumimasks/Cert_13TeV_16Dec2015ReReco_Collisions15_25ns_JSON_v2.txt"
+        "lumimask": "inputs/lumimasks/Cert_271036-275125_13TeV_PromptReco_Collisions16_JSON.txt"
     },
     {
         "DBSName": "/SingleElectron/Run2016C-PromptReco-v2/MINIAOD",
@@ -536,9 +536,9 @@
             "isMC": false,
             "runJEC": true,
             "skims": "elPlus3Jets",
-            "globalTag": "80X_dataRun2_Prompt_v9"
+            "globalTag": "80X_dataRun2_Prompt_ICHEP16JEC_v0"
         },
         "name": "data_SingleElectron_2016C",
-        "lumimask": "inputs/lumimasks/Cert_13TeV_16Dec2015ReReco_Collisions15_25ns_JSON_v2.txt"
+        "lumimask": "inputs/lumimasks/Cert_271036-275125_13TeV_PromptReco_Collisions16_JSON.txt"
     }
 ]
