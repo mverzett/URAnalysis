@@ -21,6 +21,7 @@ parser.add_argument('--opts', default='', help='options to be passed to the anal
 parser.add_argument('--samples', nargs='*', help='samples to be analyze (full regex supported')
 parser.add_argument('--splitting', default='10', help='splitting to be used, either an integer of a valid path')
 parser.add_argument('--nocfg', action='store_true', help='do not provide job cfg')
+parser.add_argument('--cfg', default='', help='provide non-standard job cfg')
 parser.add_argument('--notransfer', action='store_true', help='do not provide additional input files')
 parser.add_argument('--nosubmit', action='store_true', help='does not submit the jobs')
 parser.add_argument('--noconversion', action='store_true', help='does not convert into .dat format')
@@ -46,6 +47,8 @@ exe_cfg = os.path.join(
         swdir,
         '%s.cfg' % exe
 )
+if args.cfg:
+	exe_cfg = args.cfg
 
 #external inputs: SFs, JEC and so forth
 externals = glob(
