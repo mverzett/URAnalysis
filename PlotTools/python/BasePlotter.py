@@ -1213,9 +1213,10 @@ class BasePlotter(object):
 			#after drawing because of stacks -.-'
 			histo.xaxis.title = xtitle if xtitle else histo.xaxis.title
 			histo.yaxis.title = ytitle if ytitle else histo.yaxis.title
-			label_size = ROOT.gStyle.GetTitleSize()*self.label_factor
-			histo.xaxis.SetLabelSize(label_size)  
-			histo.yaxis.SetLabelSize(label_size)  
+			if self.label_factor is not None:
+				label_size = ROOT.gStyle.GetTitleSize()*self.label_factor
+				histo.xaxis.SetLabelSize(label_size)  
+				histo.yaxis.SetLabelSize(label_size)  
 			
 			ROOT.gPad.Modified()
 			if first:

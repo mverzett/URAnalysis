@@ -164,7 +164,7 @@ class Plotter(BasePlotter):
 		_, self.label_factor = self.dual_pad_format()
 		self.lower_pad.cd()
 		x_range = kwargs.get('x_range', None)
-		xtitle  = kwargs.get('xtitle' , '')
+		xtitle  = kwargs.get('xtitle' , tests[0].xaxis.title)
 		quote_errors= kwargs.get('quote_errors', False)
 
 		test_hists = [
