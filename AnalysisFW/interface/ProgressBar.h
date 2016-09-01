@@ -72,12 +72,12 @@ public:
     float ratio = counter_/(float)max_;
     int   c     = ratio * wsize_;
     std::stringstream bar;
-    std::cout << setw(3) << (int)(ratio*100) << "% [";
-    //std::cout << c << " " << wsize_;
-    for (int x=0; x<c; x++)      std::cout << "=";
-    for (int x=c; x<wsize_; x++) std::cout << " ";
-    std::cout << "]\r" << std::flush;
-    if(c == wsize_) std::cout << std::endl;
+    std::cerr << setw(3) << (int)(ratio*100) << "% [";
+    //std::cerr << c << " " << wsize_;
+    for (int x=0; x<c; x++)      std::cerr << "=";
+    for (int x=c; x<wsize_; x++) std::cerr << " ";
+    std::cerr << "]\r" << std::flush;
+    if(c == wsize_) std::cerr << std::endl;
   }  
 
 private:

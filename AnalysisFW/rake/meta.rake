@@ -53,7 +53,8 @@ task :track_meta_batch, [:submit_dir] do |t, args|
 
   target_dir = "inputs/#{ENV['jobid']}"
   sh "cp #{args.submit_dir}/*.json #{target_dir}/."
-  if Dir["#{args.submit_dir}/*.root"].size > 0
+  sh "mkdir -p #{target_dir}/INPUT/."
+  if !Dir.glob("#{args.submit_dir}/*.root").empty?
     sh "cp #{args.submit_dir}/*.root #{target_dir}/."
     sh "cp #{args.submit_dir}/*.root #{target_dir}/INPUT/."
   end

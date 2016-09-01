@@ -1,5 +1,6 @@
 tools = "#{$fwk_dir}/rake/tools.rb"
 require tools
+$project_dir = ENV['URA_PROJECT']
 
 rule ".cfg" do |t|
   sh "touch #{t.name}"
@@ -7,9 +8,10 @@ rule ".cfg" do |t|
 end
 
 $external_opts=''
+$cfg=''
 rule ".root" => [ 
     # The cfg
-    proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "\\1.cfg")},
+    $cfg, #proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "\\1.cfg")},
     # The sample file list .txt file
     proc {|targ| targ.sub(%r{results/(.*)/.*/(.*).root}, "inputs/\\1/\\2.txt")} ] do |t|
   #delegate scram for checking if something needs to be built
@@ -19,12 +21,12 @@ rule ".root" => [
   workers = ENV.fetch('URA_NTHREADS', 2)
   executable = File.basename(File.dirname(t.name))
   puts executable
-  cfg = t.prerequisites[0]
+  #cfg = t.prerequisites[0]
   inputs = t.prerequisites[1]
-  sh "time #{executable} #{inputs} #{t.name} -c  #{cfg} --threads #{workers} #{$external_opts}"
+  sh "time #{executable} #{inputs} #{t.name} -c  #{$cfg} --threads #{workers} #{$external_opts}"
 end
 
-task :analyze, [:analyzer,:sample,:opts,:dirtag] do |t, args|
+task :analyze, [:analyzer,:sample,:cfg,:opts] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/*.txt").map{|x| File.basename(x).split('.')[0]}
@@ -34,6 +36,11 @@ task :analyze, [:analyzer,:sample,:opts,:dirtag] do |t, args|
   end
   if args.opts
     $external_opts=args.opts
+  end
+  if args.cfg
+    $cfg = "#{$project_dir}/#{args.cfg}"
+  else
+    $cfg = "#{bname}.cfg"
   end
   #remove meta tag if any
   sh "rm -f results/#{jobid}/#{bname}/meta.info"
@@ -45,16 +52,21 @@ task :analyze, [:analyzer,:sample,:opts,:dirtag] do |t, args|
   end
 end
 
-task :analyze_only, [:analyzer, :sample] do |t, args|
+task :analyze_only, [:analyzer, :sample,:cfg] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/#{args.sample}.txt").map{|x| File.basename(x).split('.')[0]}
   rootfiles = samples.map{|x| "results/#{jobid}/#{bname}/#{x}.root"}
+  if args.cfg
+    $cfg = "#{$project_dir}/#{args.cfg}"
+  else
+    $cfg = "#{bname}.cfg"
+  end
   task :runThis => rootfiles
   Rake::Task["runThis"].invoke
 end
 
-task :test, [:analyzer, :sample, :limit] do |t, args|
+task :test, [:analyzer, :sample, :cfg, :limit] do |t, args|
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
   samples = Dir.glob("inputs/#{jobid}/*.txt").map{|x| File.basename(x).split('.')[0]}
@@ -80,11 +92,17 @@ task :test, [:analyzer, :sample, :limit] do |t, args|
   jobid = ENV['jobid']
   #delegate scram for checking if something needs to be built
   scram_build_analyzers()
+  cfg=""
+  if args.cfg
+    cfg = "#{$project_dir}/#{args.cfg}"
+  else
+    cfg = "#{bname}.cfg"
+  end
   task :testThis => [] do |u|
     samples_to_test.each do |sample|
       input_list = "inputs/#{jobid}/#{sample}.txt"
       nlines =  %x{wc -l #{input_list}}.to_i
-      sh "time #{bname} #{input_list} #{sample}.#{bname}.test.root -c #{bname}.cfg --threads 1 --J #{nlines} -v #{limit}"
+      sh "time #{bname} #{input_list} #{sample}.#{bname}.test.root -c #{cfg} --threads 1 --J #{nlines} -v #{limit}"
     end
   end
   Rake::Task["testThis"].invoke
@@ -110,7 +128,7 @@ task :track_batch, [:submit_dir, :ignore_correctness] do |t, args|
   sh "echo #{args.submit_dir} > #{target_dir}/meta.info"
 end
 
-task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
+task :analyze_batch, [:analyzer,:samples,:cfg,:opts] do |t, args|
   puts "running on #{ENV['HOST']}"
   bname = File.basename(args.analyzer).split('.')[0]
   jobid = ENV['jobid']
@@ -127,12 +145,17 @@ task :analyze_batch, [:analyzer,:samples,:opts] do |t, args|
     opts+='--splitting=splitting.json'
   end
 
+  cfg=""
+  if args.cfg
+    cfg = "--cfg=#{$project_dir}/#{args.cfg}"
+  end
+
   #delegate scram for checking if something needs to be built
   scram_build_analyzers()
   task :runThisBatch => [] do |u|
     submit_dir = "/uscms_data/d3/#{ENV['USER']}/BATCH_#{Time.now.to_i}_#{bname}"
     puts "Submitting to #{submit_dir}"
-    sh "jobsub.py #{submit_dir} #{bname} #{samples} #{opts}"
+    sh "jobsub.py #{submit_dir} #{bname} #{samples} #{opts} #{cfg}"
     Rake::Task["track_batch"].invoke(submit_dir)
   end
   Rake::Task["runThisBatch"].invoke
