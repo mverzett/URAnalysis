@@ -191,10 +191,14 @@ if __name__ == '__main__':
         '--scheme2', help='Scheme of storing an event ID in second input file',
         default='0:1:2'
     )
+    optionParser.add_argument(
+        '--labels', help='coma-separated list of labels',
+        default='1,2'
+    )
 
     # Parse the arguments and options
     args = optionParser.parse_args()
-
+    f1label, f2label = tuple(args.labels.split(',')) 
 
     # Read event lists from the input files
     try:
@@ -212,12 +216,12 @@ if __name__ == '__main__':
     diff1 = eventsFile1 - eventsFile2
     diff2 = eventsFile2 - eventsFile1
     print 'Summary:'
-    print '  # events in file 1: {}'.format(len(eventsFile1))
-    print '  # events in file 2: {}'.format(len(eventsFile2))
+    print '  # events in file {}: {}'.format(f1label, len(eventsFile1))
+    print '  # events in file {}: {}'.format(f2label, len(eventsFile2))
     print '  # overlap: {}'.format(len(eventsFile1) - len(diff1))
-    print '  # in 1 but not in 2: {}'.format(len(diff1))
-    print '  # in 2 but not in 1: {}'.format(len(diff2))
-    print 'Event IDs in the first file but not the second:'
+    print '  # in {} but not in {}: {}'.format(f1label, f2label, len(diff1))
+    print '  # in {} but not in {}: {}'.format(f2label, f1label, len(diff2))
+    print 'Event IDs in file {} but not in file {}:'.format(f1label, f2label)
     diff = diff1
 
     if len(diff) > 0:
@@ -227,7 +231,7 @@ if __name__ == '__main__':
         print ' (none)'
     print ''
 
-    print 'Event IDs in the second file but not the first:'
+    print 'Event IDs in file {} but not in file {}:'.format(f2label, f1label)
     diff = diff2
 
     if len(diff) > 0:
