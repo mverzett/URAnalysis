@@ -3,18 +3,17 @@ require tools
 $project_dir = ENV['URA_PROJECT']
 
 rule ".cfg" do |t|
-  sh "touch #{t.name}"
+  #sh "touch #{t.name}"
   puts t.investigation
 end
 
-$external_opts=''
-$cfg=''
 rule ".root" => [ 
     # The cfg
-    $cfg, #proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "\\1.cfg")},
+    proc {|x| ENV['URA_RAKE_CFG']},#proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "\\1.cfg")},
     # The sample file list .txt file
     proc {|targ| targ.sub(%r{results/(.*)/.*/(.*).root}, "inputs/\\1/\\2.txt")} ] do |t|
   #delegate scram for checking if something needs to be built
+  #puts t.investigation
   scram_build_analyzers()
   # Make the output directory
   sh "mkdir -p `dirname #{t.name}`"
@@ -23,7 +22,7 @@ rule ".root" => [
   puts executable
   #cfg = t.prerequisites[0]
   inputs = t.prerequisites[1]
-  sh "time #{executable} #{inputs} #{t.name} -c  #{$cfg} --threads #{workers} #{$external_opts}"
+  sh "time #{executable} #{inputs} #{t.name} -c  #{ENV['URA_RAKE_CFG']} --threads #{workers} #{ENV.fetch('URA_RAKE_EXT_OPTS', '')}"
 end
 
 task :analyze, [:analyzer,:sample,:cfg,:opts] do |t, args|
@@ -35,20 +34,20 @@ task :analyze, [:analyzer,:sample,:cfg,:opts] do |t, args|
     samples = samples.select{|x| x =~ regex}
   end
   if args.opts
-    $external_opts=args.opts
+    ENV['URA_RAKE_EXT_OPTS'] = args.opts
   end
   if args.cfg
-    $cfg = "#{$project_dir}/#{args.cfg}"
+    ENV['URA_RAKE_CFG'] = "#{$project_dir}/#{args.cfg}"
   else
-    $cfg = "#{bname}.cfg"
+    ENV['URA_RAKE_CFG'] = "#{bname}.cfg"
   end
-  #remove meta tag if any
+  #remove meta tag if any 
   sh "rm -f results/#{jobid}/#{bname}/meta.info"
   rootfiles = samples.map{|x| "results/#{jobid}/#{bname}/#{x}.root"}
   task :runThis => rootfiles
   Rake::Task["runThis"].invoke
   if args.opts
-    $external_opts=''
+    ENV['URA_RAKE_EXT_OPTS'] = ''
   end
 end
 
