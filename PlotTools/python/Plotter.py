@@ -179,9 +179,9 @@ class Plotter(BasePlotter):
 		
 		if len(test_hists) > 1:
 			raise RuntimeError("add_ratio_plot works only for a single comparison (data/MC) for multiple ratios use compare or overlay_and_compare")
-		
 		self.compare(
-			test_hists[0], [data_hist.Clone()], 'ratio', xtitle=xtitle, ytitle='Observed/MC'
+			test_hists[0], [data_hist.Clone()], 'ratio', xtitle=xtitle, ytitle='Observed/MC',
+			x_range=x_range
 			)
 
 		if x_range is None:

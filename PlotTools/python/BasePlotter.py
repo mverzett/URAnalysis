@@ -1167,6 +1167,8 @@ class BasePlotter(object):
 		if isinstance(histo, plotting.HistStack):
 			histo.SetMinimum(y_range[0])
 			histo.SetMaximum(y_range[1])
+		elif histo.DIM > 1:
+			pass
 		else:
 			histo.yaxis.range_user = y_range
 		histo.Draw()
@@ -1232,6 +1234,7 @@ class BasePlotter(object):
 					histo.yaxis.range_user = y_range
 				if not x_range is None:
 					histo.GetXaxis().SetRangeUser(x_range[0], x_range[1])
+					histo.Draw()
 			first = False
 			self.keep.append(histo)
 
