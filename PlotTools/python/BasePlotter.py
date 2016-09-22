@@ -514,8 +514,6 @@ class BasePlotter(object):
 			
 	@staticmethod
 	def set_histo_style(histo, **kwargs):
-		if not plotting.hist._Hist in type(histo).__bases__: #work around isinstance issue
-			return
 		if 'linewidth' not in kwargs:
 			kwargs['linewidth'] = 2
 		if 'name' in kwargs:
@@ -531,9 +529,10 @@ class BasePlotter(object):
 				setattr(histo, key, val)
 			else:
 				raise RuntimeError('%s does not have attribute %s' % (histo, key))
-		histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
-		histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
-		histo.SetStats(False)
+		if plotting.hist._Hist in type(histo).__bases__: #work around isinstance issue
+			histo.SetTitleFont(ROOT.gStyle.GetTitleFont())
+			histo.SetTitleSize(ROOT.gStyle.GetTitleFontSize(), "")
+			histo.SetStats(False)
 
 	def style_histo(self, histo, **kwargs):
 		'''non static histo styling, uses default styles, 
