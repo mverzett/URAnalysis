@@ -118,7 +118,7 @@ task :track_batch, [:submit_dir, :ignore_correctness] do |t, args|
   end
   sh "hold.py #{holdopt}"
   Dir.chdir(args.submit_dir) do
-    sh "addjobs.py --fastHadd #{addopt}"
+    sh "addjobs.py #{addopt} --fastHadd"
   end
   analyzer = File.basename(args.submit_dir).split(/BATCH_\d+_/)[1]
   target_dir = "results/#{ENV['jobid']}/#{analyzer}"
@@ -154,7 +154,7 @@ task :analyze_batch, [:analyzer,:samples,:cfg,:opts] do |t, args|
   task :runThisBatch => [] do |u|
     submit_dir = "/uscms_data/d3/#{ENV['USER']}/BATCH_#{Time.now.to_i}_#{bname}"
     puts "Submitting to #{submit_dir}"
-    sh "jobsub.py #{submit_dir} #{bname} #{samples} #{opts} #{cfg}"
+    sh "jobsub.py #{submit_dir} #{bname} #{samples} #{opts} #{cfg}"# --noconversion"
     Rake::Task["track_batch"].invoke(submit_dir)
   end
   Rake::Task["runThisBatch"].invoke
