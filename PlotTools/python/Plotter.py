@@ -229,7 +229,7 @@ class Plotter(BasePlotter):
 		])
 		return tf1
 		
-	def plot(self, sample, path, drawopt='', rebin=None, styler=None, xaxis='', yaxis='', xrange=None):
+	def plot_shape(self, sample, path, drawopt='', rebin=None, styler=None, xaxis='', yaxis='', xrange=None):
 		''' Plot a single histogram from a single sample.
 
 		Returns a reference to the histogram.
@@ -301,6 +301,8 @@ class Plotter(BasePlotter):
 		if show_ratio:
 			labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
 			self.label_factor = labelSizeFactor1
+		else:
+			self.label_factor = 1
 		mc_stack_view = self.make_stack(rebin, preprocess, folder, sort, postprocess=postprocess)
 		mc_stack = mc_stack_view.Get(variable)
 		self.style_histo(mc_stack)
