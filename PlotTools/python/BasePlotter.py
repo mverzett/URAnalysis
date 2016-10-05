@@ -1158,6 +1158,10 @@ class BasePlotter(object):
 		BasePlotter.set_canvas_style(self.canvas, logx, logy, logz)
 		if name_canvas:
 			self.canvas.name = 'c'+hh.name
+		if hh.DIM == 2:
+			self.pad.SetRightMargin(0.15)
+			self.pad.SetLeftMargin(0.9)
+			ROOT.gStyle.SetPalette(53);
 
 		histo = hh.Clone() if do_clone else hh
 		self.pad.cd()
