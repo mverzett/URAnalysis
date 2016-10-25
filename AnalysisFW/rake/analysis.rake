@@ -7,7 +7,7 @@ rule ".cfg" do |t|
   puts t.investigation
 end
 
-rule ".root" => [ 
+rule /results\/.*.root$/ => [ 
     # The cfg
     proc {|x| ENV['URA_RAKE_CFG']},#proc {|targ| targ.sub(%r{results/.*/(.*)/.*root}, "\\1.cfg")},
     # The sample file list .txt file
