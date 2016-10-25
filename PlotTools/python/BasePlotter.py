@@ -1586,7 +1586,7 @@ class BasePlotter(object):
 			
 			#self.pad.Draw()
 			self.canvas.Update()
-			if not os.path.exists(self.outputdir):
+			if self.outputdir and not os.path.exists(self.outputdir):
 					os.makedirs(self.outputdir)
 			if verbose:
 					print 'saving '+os.path.join(self.outputdir, filename) + '.png'
