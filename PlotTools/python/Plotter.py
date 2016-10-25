@@ -143,7 +143,7 @@ class Plotter(BasePlotter):
 			legend = plotting.Legend(nentries, leftmargin=0.03, topmargin=0.05, rightmargin=0.65, entryheight=0.03)
 		else:
 			legend = plotting.Legend(nentries, rightmargin=0.07, topmargin=0.05, leftmargin=0.45, entryheight=0.03)
-		for sample in samples:
+		for sample in samples[::-1]:
 			legend.AddEntry(sample)
 			## if isinstance(sample, plotting.HistStack):
 			##	 for s in sample:
