@@ -255,9 +255,10 @@ class Envelope(object):
 
       nbins = len(self.median_) 
       max_pos = self._nhists-1
-      one_sigmas = ROOT.TMath.Nint(max_pos*0.158), ROOT.TMath.Nint(max_pos*(1-0.158))
-      two_sigmas = ROOT.TMath.Nint(max_pos*0.022), ROOT.TMath.Nint(max_pos*(1-0.022))
-      median     = ROOT.TMath.Nint(max_pos*0.5)
+      nint = lambda x: int(round(x))
+      one_sigmas = nint(max_pos*0.158), nint(max_pos*(1-0.158))
+      two_sigmas = nint(max_pos*0.022), nint(max_pos*(1-0.022))
+      median     = nint(max_pos*0.5)
       for ibin in range(1, nbins+1):
          vals = [i.get_bin_content(ibin) for i in self._hists]
          vals.sort()
