@@ -29,10 +29,24 @@ class LumiJson():
       self.evts = 0
       self.weightedevts = 0
       self.has_dupes = 0
+			self.sum_weights = None
       
-   def append(self, run, lumi, evts, weightedevts, filename):
+   def append(self, run, lumi, evts, weightedevts, filename, sumw=None):
       self.evts += evts
       self.weightedevts += weightedevts
+			if self.sum_weights is None and not sumw is None:
+				self.sum_weights = [i for i in sumw]
+			elif self.sum_weights and sumw:
+				if len(self.sum_weights) and len(sumw):
+					raise ValueError(
+						'I got a vector of size %d and'
+						' I was expecting it %d long' % (len(sumw), len(self.sum_weights)))
+				for i in range(self.sum_weights):
+					self.sum_weights[i] += sumw[i]
+			elif self.sum_weights and sumw is None:
+				raise ValueError('I was expecting a weights vector and I got none!')
+			else:
+				raise RuntimeError('this should never happen!')
       if run not in self.run_map:
          self.run_map[run] = set([lumi])
       else:
@@ -86,7 +100,8 @@ class LumiJson():
       json = {
          'events' : self.evts,
          'weightedEvents' : self.weightedevts,
-         'lumimap' : {}
+         'lumimap' : {},
+				 'sum_weights' : self.sum_weights if self.sum_weights else [],
          }
 
       for run, lumis in self.run_map.iteritems():
