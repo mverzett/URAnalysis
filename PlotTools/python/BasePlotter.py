@@ -17,7 +17,7 @@ import logging
 import ROOT
 import uuid
 from itertools import izip_longest 
-import rootpy
+import rootpy, math
 
 ROOT.gROOT.SetBatch(True)
 ROOT.TGaxis.SetMaxDigits(4)
@@ -1252,7 +1252,8 @@ class BasePlotter(object):
 			self.save(writeTo)
 		return None
 		
-	def compare(self, ref, targets, method, xtitle='', ytitle='', yrange=None, x_range=None, **styles_kw):
+	def compare(self, ref, targets, method, xtitle='', ytitle='', yrange=None, 
+							x_range=None, ignore_style=False, **styles_kw):
 		if method == 'datamc' and len(targets) > 1:
 			raise RuntimeError('datamc comparison mode works only with one target only!')
 
@@ -1304,6 +1305,7 @@ class BasePlotter(object):
 				'pull' : 'Pull',
 				'ratio': 'Ratio',
 				'datamc' : 'data / mc',
+				'shape' : 'data / mc',
 				'diff' : 'Difference'
 				}
 			yranges = {
@@ -1318,8 +1320,14 @@ class BasePlotter(object):
 				'datamc': 1.,
 				'diff' : 0,
 				}
-			styles_kw['drawstyle'] = 'e x0'
-			y_range = yranges[method] if not yrange else (centrals[method]-yrange, centrals[method]+yrange)
+			## if not ignore_style:
+			## 	styles_kw['drawstyle'] = 'e x0'
+			if yrange == 'auto':
+				y_range = max(i.error for i in targets[0] if not i.overflow)
+				y_range = 0.05 * math.ceil(y_range/0.05)
+				y_range = centrals[method]-y_range, centrals[method]+y_range
+			else:
+				y_range = yranges[method] if not yrange else (centrals[method]-yrange, centrals[method]+yrange)
 			if method == 'datamc':				 
 				targets = [targets[0], ref]
 				styles_kw['fillcolor'] = [1, 1]
@@ -1328,7 +1336,8 @@ class BasePlotter(object):
 				styles_kw['markerstyle']= [0, 20]
 			self.overlay(
 				targets, y_range=y_range, x_range=x_range, xtitle=xtitle, 
-				yaxis_divisions=4, ytitle=ylabels[method], **styles_kw)
+				yaxis_divisions=4, ytitle=ylabels[method], ignore_style=ignore_style,
+				**styles_kw)
 
 	def dual_pad_format(self):
 		if self.lower_pad is None:
@@ -1356,8 +1365,9 @@ class BasePlotter(object):
 		return labelSizeFactor1/mm, labelSizeFactor2/mm
 	
 	def overlay_and_compare(self, histos, reference, method='pull', 
-		legend_def=None, logx=False, logy=False, xtitle='', ytitle='',
-		logz=False, writeTo='', lower_y_range=None, ignore_style=False, **styles_kw):
+													legend_def=None, logx=False, logy=False, xtitle='', ytitle='',
+													logz=False, writeTo='', lower_y_range=None,
+													ignore_style=False, ratio_style={}, **styles_kw):
 		labelSizeFactor1, labelSizeFactor2 = self.dual_pad_format()
 		self.pad.cd()
 		self.label_factor = labelSizeFactor1
@@ -1384,12 +1394,15 @@ class BasePlotter(object):
 				to_compare = [sum(histos[0].hists)] 
 		else:
 			to_compare = [i.Clone() for i in histos]
-			for i, j in zip(to_compare, histos):
-				i.markercolor = j.linecolor
-
+			if not ignore_style:
+				for i, j in zip(to_compare, histos):
+					i.markercolor = j.linecolor
+		
+		styles_kw.update(ratio_style)
 		self.compare(
 			reference.Clone(), to_compare, method, xtitle=xtitle, 
-			ytitle=ytitle, yrange=lower_y_range, **styles_kw)
+			ytitle=ytitle, yrange=lower_y_range, ignore_style=ignore_style,
+			**styles_kw)
 
 		if writeTo:
 			self.save(writeTo)
