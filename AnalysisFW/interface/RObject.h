@@ -97,6 +97,20 @@ public:
 	T* getAs() const {return dynamic_cast<T*>(get());}
 	Type     type() const {return type_;} 
 
+	RObject clone(std::string name) {
+		TObject* ptr=0;
+		switch(type_){
+    case Type::T_TH1F: ptr = getAs<TH1F>()->Clone(name.c_str()); break;
+    case Type::T_TH1D: ptr = getAs<TH1D>()->Clone(name.c_str()); break;
+		case Type::T_TH2F: ptr = getAs<TH2F>()->Clone(name.c_str()); break;
+		case Type::T_TH2D: ptr = getAs<TH2D>()->Clone(name.c_str()); break;
+    case Type::T_UNKNOWN: throw std::runtime_error("You are trying to clone a non-defined object!"); //this will crash!
+		}
+		return RObject(
+			ptr,
+			type_
+			);
+	}
 private:
   RObject(TObject *obj, Type type):
 		robj_(obj),
